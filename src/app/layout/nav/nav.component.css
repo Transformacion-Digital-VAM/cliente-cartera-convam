@@ -1,0 +1,28 @@
+.floating-navbar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 2rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+  width: 95%;
+  max-width: 1100px;
+  margin: 0 auto;
+  position: sticky;
+  top: 1rem;
+  z-index: 999;
+}
+
+.floating-navbar:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.floating-navbar img {
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}
+
+.floating-navbar img:hover {
+  transform: scale(1.05);
+}
