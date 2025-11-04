@@ -1,0 +1,13 @@
+/* You can add global styles to this file, and also import other style files */
+:root {
+    --bs-primary: #6f42c1;
+    --bs-primary-rgb: 111, 66, 193;
+    --bs-border-width: 2px;
+    --bs-border-radius: 8px;
+    --bs-btn-border-radius: 8px;
+}
+
+.custom-form-container {
+    --bs-border-width: 3px;
+    --bs-border-color: #6f42c1;
+}

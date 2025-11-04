@@ -1,0 +1,33 @@
+/* Estilo minimalista */
+.minimal-form {
+    border: 2px solid #e9ecef !important;
+    border-radius: 10px;
+    padding: 2rem;
+    background: white;
+}
+
+.minimal-form .form-control {
+    border: none;
+    border-bottom: 2px solid #e9ecef;
+    border-radius: 0;
+    padding-left: 0;
+    background: transparent;
+}
+
+.minimal-form .form-control:focus {
+    border-bottom-color: #007bff;
+    box-shadow: none;
+    background: transparent;
+}
+
+.minimal-form .btn-primary {
+    background: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+    border-radius: 25px;
+}
+
+.minimal-form .btn-primary:hover {
+    background: #007bff;
+    color: white;
+}
