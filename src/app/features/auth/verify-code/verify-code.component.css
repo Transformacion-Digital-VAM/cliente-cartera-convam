@@ -1,0 +1,149 @@
+/* .verification-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-image: url('/assets/BackLogin.png'); 
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+} */
+.verification-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.575), rgba(255, 255, 255, 0.568)),
+    url('/assets/BackLogin.png');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+.verification-card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.158);
+  max-width: 520px;
+  max-height: 450px;
+  width: 100%;
+  text-align: center;
+  border-left: 5px solid #2980b9;
+  border-right: 5px solid #2980b9;
+}
+
+.verification-title {
+  color: #2c3e50;
+  font-size: 2rem;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.verification-description {
+  color: #6c757d;
+  line-height: 2;
+  margin-bottom: 24px;
+}
+
+.divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #d7da2a, transparent);
+  margin: 24px 0;
+}
+
+.code-inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.code-input {
+  width: 600px;
+  height: 45px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.6em;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  background-color: #f8f9fa;
+}
+
+.code-input:focus {
+  border-color: #615afe;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+.code-input.error {
+  border-color: #e74c3c;
+  background-color: #fdf2f2;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #e74c3c;
+  font-weight: 500;
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #fdf2f2;
+  border-radius: 6px;
+  border: 1px solid #fadbd8;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+}
+
+.resend-section {
+  margin-top: 24px;
+}
+
+.resend-text {
+  color: #6c757d;
+  margin-bottom: 12px;
+}
+
+.resend-button {
+  background: none;
+  border: 2px solid #615afe;
+  color: #4039b8;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.resend-button:hover {
+  background-color: #615afe;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .verification-card {
+    padding: 24px;
+  }
+  
+  .code-input {
+    width: 40px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+  
+  .code-inputs {
+    gap: 8px;
+  }
+}

@@ -1,27 +1,27 @@
 <div class="login-container">
-  <!-- Columna izquierda con la imagen -->
+  <!-- Logo -->
   <div class="login-left">
     <img src="../../../../assets/CONVAM.png" alt="Login Illustration" class="login-image">
   </div>
 
-  <!-- Columna derecha con el formulario -->
+  <!-- Formulario de Login -->
   <div class="login-right">
     <div class="login-form-container">
-      <h2 class="text-center">¡Bienvenido!</h2>
+      <h1 class="login-title">¡Bienvenido!</h1>
 
       <form class="login-form">
         <div class="form-group">
           <label for="email" class="form-label">Usuario</label>
-          <input type="email" class="form-control" id="email" placeholder="Usuario/Número de telefono">
+          <input type="email" class="form-control" id="email" placeholder="Usuario/Número de telefono" required>
         </div>
 
         <div class="form-group">
           <label for="password" class="form-label">Contraseña</label>
-          <input type="password" class="form-control" id="password" placeholder="••••••••">
+          <input type="password" class="form-control" id="password" placeholder="••••••••" required>
         </div>
 
         <button type="submit" class="btn btn-primary login-btn">Iniciar Sesión</button>
-        
+        <a href="verify-code" class="forgot-link">Verificación</a>
         <div class="divider">
           <span></span>
         </div>
@@ -32,13 +32,15 @@
         </button> -->
         
         <div class="forgot-password">
-          <a href="#" class="forgot-link">¿Olvidaste tu contraseña? Click aquí</a>
+          <a href="/reset-passw" class="forgot-link">¿Olvidaste tu contraseña? Click aquí</a>
         </div>
       </form>
+
+      <div class="footer">
+        <p>2025 CONVAM.</p>
+      </div>
     </div>
-    
-    <div class="footer">
-      <p>2025 CONVAM.</p>
-    </div>
+
   </div>
 </div>
+
