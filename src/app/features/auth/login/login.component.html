@@ -1,22 +1,44 @@
-<span class="custom-form-container">
-  <form class="custom-form">
-    <h4 class="text-center mb-4">Iniciar Sesión</h4>
+<div class="login-container">
+  <!-- Columna izquierda con la imagen -->
+  <div class="login-left">
+    <img src="../../../../assets/CONVAM.png" alt="Login Illustration" class="login-image">
+  </div>
 
-    <div class="mb-3">
-      <label for="exampleInputEmail1" class="form-label">Correo electrónico</label>
-      <input type="email" class="form-control" id="exampleInputEmail1" placeholder="ejemplo@correo.com" aria-describedby="emailHelp">
+  <!-- Columna derecha con el formulario -->
+  <div class="login-right">
+    <div class="login-form-container">
+      <h2 class="text-center">¡Bienvenido!</h2>
+
+      <form class="login-form">
+        <div class="form-group">
+          <label for="email" class="form-label">Usuario</label>
+          <input type="email" class="form-control" id="email" placeholder="Usuario/Número de telefono">
+        </div>
+
+        <div class="form-group">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="password" placeholder="••••••••">
+        </div>
+
+        <button type="submit" class="btn btn-primary login-btn">Iniciar Sesión</button>
+        
+        <div class="divider">
+          <span></span>
+        </div>
+        
+        <!-- <button type="button" class="btn btn-google">
+          <img src="../../../../assets/Google_logo.png" alt="" class="google-icon">
+          Iniciar sesión con Google
+        </button> -->
+        
+        <div class="forgot-password">
+          <a href="#" class="forgot-link">¿Olvidaste tu contraseña? Click aquí</a>
+        </div>
+      </form>
     </div>
-
-    <div class="mb-3">
-      <label for="exampleInputPassword1" class="form-label">Contraseña</label>
-      <input type="password" class="form-control" id="exampleInputPassword1" placeholder="••••••••">
+    
+    <div class="footer">
+      <p>2025 CONVAM.</p>
     </div>
-
-    <!-- <div class="mb-3 form-check">
-      <input type="checkbox" class="form-check-input" id="exampleCheck1">
-      <label class="form-check-label" for="exampleCheck1">Recordarme</label>
-    </div> -->
-
-    <button type="submit" class="btn btn-primary">Ingresar</button>
-  </form>
-</span>
+  </div>
+</div>

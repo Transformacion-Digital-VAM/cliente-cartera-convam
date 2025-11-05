@@ -1,51 +1,202 @@
-.custom-form-container {
+.login-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #e3f2fd, #f1f8e9);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.custom-form {
-  background: #fff;
-  padding: 2rem 2.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  width: 100%;
+.login-left {
+  flex: 1;
+  background-color: #f8f9fa;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.brand-section {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.brand-section h1 {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.tagline {
+  color: #6c757d;
+  font-size: 1.1rem;
   max-width: 400px;
-  transition: all 0.3s ease;
+  line-height: 1.5;
 }
 
-.custom-form:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+.login-image {
+  max-width: 80%;
+  height: auto;
 }
 
-.custom-form .form-label {
-  font-weight: 600;
-  color: #333;
+.login-right {
+  flex: 1;
+  background-color: #ffffff;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: #2980b9 5px solid;
 }
 
-.custom-form .form-control {
-  border-radius: 0.5rem;
-  border: 1px solid #ced4da;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.custom-form .form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
-}
-
-.custom-form .btn {
+.login-form-container {
+  max-width: 400px;
+  margin: 0 auto;
   width: 100%;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  padding: 0.6rem;
 }
 
-.custom-form .form-text {
-  color: #5500ff;
-  font-size: 0.85rem;
+.login-form-container h2 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 1.8rem;
+}
+
+.signup-prompt {
+  color: #6c757d;
+  margin-bottom: 30px;
+  font-size: 0.9rem;
+}
+
+.signup-link {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #3498db;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  margin-bottom: 20px;
+}
+
+.login-btn:hover {
+  background-color: #2980b9;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: #6c757d;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.divider span {
+  padding: 0 15px;
+}
+
+.btn-google {
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  color: #2c3e50;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-google:hover {
+  background-color: #f8f9fa;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.forgot-password {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.forgot-link {
+  color: #3498db;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 40px;
+  color: #6c757d;
+  font-size: 0.8rem;
+}
+
+/* Responsive design */
+@media (max-width: 608px) {
+  .login-container {
+    flex-direction: column;
+  }
+  
+  .login-left,
+  .login-right {
+    padding: 20px;
+  }
+  
+  .login-image {
+    max-width: 100%;
+  }
 }

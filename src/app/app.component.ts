@@ -4,7 +4,8 @@ import { NavComponent } from "./layout/nav/nav.component";
 
 @Component({
   selector: 'app-root',
-  imports: [NavComponent, RouterOutlet],
+  standalone: true,
+  imports: [NavComponent, RouterOutlet,],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
