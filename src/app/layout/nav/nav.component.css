@@ -1,27 +1,59 @@
+
 .floating-navbar {
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 2rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  padding: 0.5rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem 0;
+}
+
+.user-menu {
+  min-width: 200px;
+  justify-content: flex-end;
+}
+
+.user-info {
+  font-size: 0.875rem;
+}
+
+.dropdown-toggle {
+  border: 1px solid #dee2e6;
+  background: white;
+  color: #495057;
   transition: all 0.3s ease;
-  width: 95%;
-  max-width: 1100px;
-  margin: 0 auto;
-  position: sticky;
-  top: 1rem;
-  z-index: 999;
 }
 
-.floating-navbar:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+.dropdown-toggle:hover {
+  background: #f8f9fa;
+  border-color: #6c757d;
 }
 
-.floating-navbar img {
-  border-radius: 50%;
-  transition: transform 0.3s ease;
+.dropdown-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.floating-navbar img:hover {
-  transform: scale(1.05);
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: #f8d7da;
+  color: #721c24 !important;
+}
+
+/* Estilos para íconos de Bootstrap */
+.bi {
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .user-info {
+    display: none;
+  }
+  
+  .user-menu {
+    min-width: auto;
+  }
 }

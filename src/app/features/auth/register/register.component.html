@@ -1,0 +1,136 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="register-header">
+      <h2 class="register-title">Registrar Nuevo Usuario</h2>
+      <p class="register-subtitle">Crear cuenta en CONVAM</p>
+    </div>
+
+    <form class="register-form" (ngSubmit)="register()">
+      <div class="form-columns">
+        <!-- Columna izquierda -->
+        <div class="form-column left-column">
+          <!-- Nombre -->
+          <div class="form-group">
+            <label for="nombre" class="form-label">Nombre Completo *</label>
+            <input
+              type="text"
+              id="nombre"
+              [(ngModel)]="nombre"
+              name="nombre"
+              class="form-control"
+              placeholder="Nombre completo"
+              required
+              [disabled]="isLoading">
+          </div>
+
+          <!-- Rol -->
+          <div class="form-group">
+            <label for="rol" class="form-label">Rol *</label>
+            
+            <div *ngIf="loadingRoles" class="loading-roles">
+              <small class="text-muted">Cargando roles...</small>
+            </div>
+
+            <select
+              id="rol"
+              [(ngModel)]="rol_id"
+              name="rol_id"
+              class="form-control"
+              required
+              [disabled]="isLoading || loadingRoles">
+              <option value="0" disabled selected>
+                {{ loadingRoles ? 'Cargando...' : 'Selecciona un rol' }}
+              </option>
+              <option *ngFor="let rol of roles" [value]="rol.id_rol">
+                {{ rol.nombre_rol }}
+              </option>
+            </select>
+<!-- 
+            <small *ngIf="rol_id > 0" class="text-info">
+              Rol seleccionado: <strong>{{ getRolNombre() }}</strong>
+            </small> -->
+          </div>
+
+          <!-- Correo -->
+          <div class="form-group">
+            <label for="correo" class="form-label">Correo Electrónico *</label>
+            <input
+              type="email"
+              id="correo"
+              [(ngModel)]="correo"
+              name="correo"
+              class="form-control"
+              placeholder="correo@gmail.com"
+              required
+              [disabled]="isLoading">
+          </div>
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="form-column right-column">
+          <!-- Contraseña -->
+          <div class="form-group">
+            <label for="password" class="form-label">Contraseña *</label>
+            <div class="password-input-container">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                id="password"
+                [(ngModel)]="password"
+                name="password"
+                class="form-control"
+                placeholder="Mínimo 6 caracteres"
+                required
+                minlength="6"
+                [disabled]="isLoading">
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="togglePasswordVisibility()"
+                [disabled]="isLoading">
+                <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+              </button>
+            </div>
+            <small class="text-simbolos">La contraseña debe tener al menos 6 caracteres, mayusculas, minisculas y números</small>
+            <small class="text-simbolos"> ("#$%&/()=¿?¡!")</small>
+          </div>
+
+          <!-- Confirmar Contraseña -->
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">Confirmar Contraseña *</label>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="confirmPassword"
+              [(ngModel)]="confirmPassword"
+              name="confirmPassword"
+              class="form-control"
+              placeholder="Repite tu contraseña"
+              required
+              [disabled]="isLoading">
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón centrado -->
+      <div class="form-footer">
+        <button
+          type="button"
+          class="btn btn-secondary cancel-btn"
+          (click)="goToAdmin()"
+          [disabled]="isLoading">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="register-btn"
+          [disabled]="isLoading || !nombre || !correo || !password || !confirmPassword || rol_id === 0">
+          <span *ngIf="!isLoading">
+            <i class="bi bi-person-plus"></i> Guardar Usuario
+          </span>
+          <span *ngIf="isLoading" class="loading-spinner">
+            Creando cuenta...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
