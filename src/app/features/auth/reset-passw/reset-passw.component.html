@@ -1,36 +1,74 @@
+<!-- reset-passw.component.html -->
 <div class="reset-container">
-    <!-- Logo / imagen lateral -->
-  <div class="reset-left">
+  <!-- Logo / imagen lateral -->
+  <!-- <div class="reset-left">
     <img src="../../../../assets/CONVAM.png" alt="Logo CONVAM" class="reset-image">
-  </div>
+  </div> -->
 
-    <!-- Formulario de Reset Password -->
+  <!-- Formulario de Reset Password -->
   <div class="reset-right">
     <div class="reset-form-container">
-      <h2 class="text-center">Recupera tu contraseña</h2>
-      <p class="text-description">Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña.</p>
 
-      <form class="reset-form">
-        <div class="form-group">
-          <label for="email" class="form-label">Correo electrónico</label>
-          <input type="email" class="form-control" id="email" placeholder="Usuario/Número de telefono" required>
+      <!-- Formulario cuando aún no se ha enviado el email -->
+      <div *ngIf="!emailSent">
+        <h2 class="text-center">Restablecer una contraseña</h2>
+        <p class="text-description">
+          Ingresa el correo electrónico y enviaremos instrucciones para restablecer tu contraseña.
+        </p>
+
+        <form class="reset-form" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="email" class="form-label">Correo electrónico</label>
+            <input type="email" class="form-control" id="email" [(ngModel)]="email" name="email"
+              placeholder="tu@correo.com" required [disabled]="isLoading">
+            <small class="text-muted">
+              Ingresa el correo electrónico asociado a la cuenta
+            </small>
+          </div>
+
+          <div class="btn-actions">
+            <button type="submit" class="btn btn-primary reset-btn bold" [disabled]="isLoading || !email">
+              <span *ngIf="!isLoading">Enviar enlace de recuperación</span>
+              <span *ngIf="isLoading" class="loading-spinner">Enviando...</span>
+            </button>
+
+            <button type="button" class="btn btn-secondary cancel-btn bold" (click)="goToAdmin()" [disabled]="isLoading">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Mensaje de éxito cuando se ha enviado el email -->
+      <div *ngIf="emailSent" class="success-message">
+        <div class="success-icon">
+          <i class="bi bi-check-circle"></i>
+        </div>
+        <h3>¡Correo Enviado!</h3>
+        <p>Hemos enviado un enlace de recuperación a:</p>
+        <p class="email-sent"><strong>{{ email }}</strong></p>
+        <div class="success-actions">
+          <button class="btn btn-outline-primary" (click)="sendAnotherEmail()">
+            Enviar a otro correo
+          </button>
+          <button class="btn btn-primary text-center" (click)="goToAdmin()">
+            Volver
+          </button>
         </div>
 
-        <button type="submit" class="btn btn-primary reset-btn">Enviar enlace</button>
-
-        <div class="divider">
-          <span></span>
+        <div class="help-tips">
+          <h5 class="bold">En caso de no recibir el correo</h5>
+          <ul>
+            <li>Revisar la carpeta de spam o correo no deseado</li>
+            <li>Verificar que el correo fue escrito correctamente</li>
+            <li>Esperar unos minutos, puede tardar en llegar</li>
+          </ul>
         </div>
+      </div>
 
-        <div class="back-to-reset">
-          <a href="/login" class="forgot-link">← Volver al inicio de sesión</a>
-        </div>
-      </form>
-      
-        <div class="footer">
+      <!-- <div class="footer">
         <p>2025 CONVAM.</p>
-        </div>
+      </div> -->
     </div>
   </div>
-
 </div>

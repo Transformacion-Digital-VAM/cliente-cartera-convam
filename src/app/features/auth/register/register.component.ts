@@ -104,7 +104,7 @@ export class RegisterComponent implements OnInit {
         rol_seleccionado: this.roles.find(r => r.id_rol === this.rol_id)?.nombre_rol
       });
       
-      // ✅ REGISTRO SIN INICIAR SESIÓN
+      // REGISTRO SIN INICIAR SESIÓN
       const result = await this.authService.registerWithoutLogin(
         this.nombre, 
         this.correo, 
@@ -125,8 +125,8 @@ export class RegisterComponent implements OnInit {
         timer: 4000,
         showConfirmButton: true
       }).then(() => {
-        // ✅ REDIRIGIR AL LOGIN, NO AL DASHBOARD
-        this.router.navigate(['/login']);
+        // REDIRIGIR AL ADMIN-PANEL
+        this.router.navigate(['/admin-control']);
       });
 
     } catch (error: any) {
@@ -161,5 +161,8 @@ export class RegisterComponent implements OnInit {
 
   goToLogin(): void {
     this.router.navigate(['/login']);
+  }
+    goToAdmin(): void {
+    this.router.navigate(['/admin-control']);
   }
 }

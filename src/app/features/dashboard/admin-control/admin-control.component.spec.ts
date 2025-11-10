@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { VerifyCodeComponent } from './verify-code.component';
+import { AdminControlComponent } from './admin-control.component';
 
-describe('VerifyCodeComponent', () => {
-  let component: VerifyCodeComponent;
-  let fixture: ComponentFixture<VerifyCodeComponent>;
+describe('AdminControlComponent', () => {
+  let component: AdminControlComponent;
+  let fixture: ComponentFixture<AdminControlComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [VerifyCodeComponent]
+      imports: [AdminControlComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(VerifyCodeComponent);
+    fixture = TestBed.createComponent(AdminControlComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
