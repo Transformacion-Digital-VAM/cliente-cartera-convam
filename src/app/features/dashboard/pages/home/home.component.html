@@ -1,1 +1,227 @@
-<p>home works!</p>
+<div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-actions">
+                <button class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card total-portfolio">
+                <div class="metric-icon total-portfolio">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>$250,000</h3>
+                    <p>Cartera Total</p>
+                </div>
+            </div>
+
+            <div class="metric-card active-clients">
+                <div class="metric-icon active-clients">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>45</h3>
+                    <p>Clientes Activos</p>
+                </div>
+            </div>
+
+            <div class="metric-card overdue-payments">
+                <div class="metric-icon overdue-payments">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>3</h3>
+                    <p>Pagos Atrasados</p>
+                </div>
+            </div>
+
+            <div class="metric-card monthly-revenue">
+                <div class="metric-icon monthly-revenue">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>$12,500</h3>
+                    <p>Ingresos Mensuales</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="dashboard-content">
+            <div class="row">
+                <!-- Clientes Recientes -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Clientes Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Cliente</th>
+                                            <th>Inversión</th>
+                                            <th>Riesgo</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <strong>Juan Pérez</strong>
+                                                <br>
+                                                <small class="text-muted">4181145781</small>
+                                            </td>
+                                            <td>$50,000</td>
+                                            <td>
+                                                <span class="badge badge-warning">MEDIO</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-success">ACTIVO</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <strong>María García</strong>
+                                                <br>
+                                                <small class="text-muted">4181177599</small>
+                                            </td>
+                                            <td>$75,000</td>
+                                            <td>
+                                                <span class="badge badge-success">BAJO</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-success">ACTIVO</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <strong>Carlos López</strong>
+                                                <br>
+                                                <small class="text-muted">4181117896</small>
+                                            </td>
+                                            <td>$30,000</td>
+                                            <td>
+                                                <span class="badge badge-danger">ALTO</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-danger">MOROSO</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <strong>Ana Rodríguez</strong>
+                                                <br>
+                                                <small class="text-muted">4181134508</small>
+                                            </td>
+                                            <td>$60,000</td>
+                                            <td>
+                                                <span class="badge badge-success">BAJO</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-success">ACTIVO</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribución de Riesgo e Inversiones -->
+                <div class="col-md-6">
+                    <!-- Distribución de Riesgo -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title">Distribución de Riesgo</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="risk-distribution">
+                                <div class="risk-item">
+                                    <div class="risk-info">
+                                        <span class="risk-level">BAJO</span>
+                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">25 Clientes</a></p>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" style="width: 55%"></div>
+                                    </div>
+                                </div>
+                                <div class="risk-item">
+                                    <div class="risk-info">
+                                        <span class="risk-level">MEDIO</span>
+                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">30 Clientes</a></p>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-warning" style="width: 33%"></div>
+                                    </div>
+                                </div>
+                                <div class="risk-item">
+                                    <div class="risk-info">
+                                        <span class="risk-level">ALTO</span>
+                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">60 Clientes</a></p>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-danger" style="width: 11%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inversiones Recientes -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title">Inversiones Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="investment-item">
+                                <div class="investment-info">
+                                    <strong>Juan Pérez</strong>
+                                    <div class="investment-details">
+                                        <span>$50,000</span>
+                                        <span class="text-success">+8.5%</span>
+                                    </div>
+                                </div>
+                                <div class="investment-date">
+                                    15/02/2024
+                                </div>
+                            </div>
+                            <div class="investment-item">
+                                <div class="investment-info">
+                                    <strong>María García</strong>
+                                    <div class="investment-details">
+                                        <span>$75,000</span>
+                                        <span class="text-success">+6.2%</span>
+                                    </div>
+                                </div>
+                                <div class="investment-date">
+                                    10/02/2024
+                                </div>
+                            </div>
+                            <div class="investment-item">
+                                <div class="investment-info">
+                                    <strong>Roberto Silva</strong>
+                                    <div class="investment-details">
+                                        <span>$40,000</span>
+                                        <span class="text-success">+7.8%</span>
+                                    </div>
+                                </div>
+                                <div class="investment-date">
+                                    05/02/2024
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    

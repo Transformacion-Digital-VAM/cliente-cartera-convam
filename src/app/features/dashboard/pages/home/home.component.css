@@ -1,0 +1,373 @@
+.dashboard-container {
+    padding: 20px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(222, 226, 230, 0.8);
+    position: relative;
+}
+
+
+.dashboard-header h1 {
+    color: var(--primary);
+    margin: 0;
+    font-weight: 700;
+    font-size: 2.2rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.header-actions {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 
+        0 4px 20px rgba(0,0,0,0.08),
+        0 2px 8px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-left: 6px solid;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--secondary), transparent);
+}
+
+.metric-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        0 12px 35px rgba(0,0,0,0.15),
+        0 8px 20px rgba(0,0,0,0.1);
+}
+
+.metric-card.total-portfolio {
+    border-left-color: var(--secondary);
+}
+
+.metric-card.active-clients {
+    border-left-color: var(--success);
+}
+
+.metric-card.overdue-payments {
+    border-left-color: var(--warning);
+}
+
+.metric-card.monthly-revenue {
+    border-left-color: var(--danger);
+}
+
+.metric-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    transition: transform 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+
+.metric-icon::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+}
+
+.metric-icon.total-portfolio {
+    background: linear-gradient(135deg, var(--secondary), #8a4fff);
+}
+
+.metric-icon.active-clients {
+    background: linear-gradient(135deg, var(--success), #20c997);
+}
+
+.metric-icon.overdue-payments {
+    background: linear-gradient(135deg, var(--warning), #ffc107);
+}
+
+.metric-icon.monthly-revenue {
+    background: linear-gradient(135deg, var(--danger), #e83e8c);
+}
+
+.metric-icon i {
+    font-size: 28px;
+    color: white;
+    z-index: 1;
+}
+
+.metric-info h3 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.metric-info p {
+    margin: 8px 0 0 0;
+    color: #718096;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.metric-trend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.trend-up {
+    color: var(--success);
+}
+
+.trend-down {
+    color: var(--danger);
+}
+
+.card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.08);
+    margin-bottom: 25px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-bottom: 1px solid rgba(233, 236, 239, 0.8);
+    padding: 20px 25px;
+    border-radius: 16px 16px 0 0 !important;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+}
+
+.card-header h5 {
+    margin: 0;
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.table {
+    margin: 0;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 700;
+    color: var(--primary);
+    background-color: rgba(248, 249, 250, 0.8);
+    padding: 15px 20px;
+    border-bottom: 2px solid rgba(222, 226, 230, 0.6);
+}
+
+.table td {
+    padding: 15px 20px;
+    vertical-align: middle;
+    border-color: rgba(222, 226, 230, 0.5);
+}
+
+.risk-distribution .risk-item {
+    margin-bottom: 20px;
+    padding: 0 10px;
+}
+
+.risk-distribution .risk-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.risk-distribution .risk-level {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.risk-distribution .risk-count {
+    color: #718096;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.risk-distribution .progress {
+    height: 10px;
+    border-radius: 10px;
+    background-color: #e9ecef;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.investment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(233, 236, 239, 0.8);
+    transition: background-color 0.2s ease;
+}
+
+.investment-item:hover {
+    background-color: rgba(248, 249, 250, 0.6);
+    border-radius: 8px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.investment-item:last-child {
+    border-bottom: none;
+}
+
+.investment-info strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.investment-details {
+    display: flex;
+    gap: 20px;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.investment-date {
+    color: #a0aec0;
+    font-size: 0.85rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.badge-success {
+    background: linear-gradient(135deg, var(--success), #20c997);
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, var(--warning), #ffc107);
+    color: #212529;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, var(--danger), #e83e8c);
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.8s ease-in-out;
+}
+
+.progress-bar.bg-success {
+    background: linear-gradient(90deg, var(--success), #20c997) !important;
+}
+
+.progress-bar.bg-warning {
+    background: linear-gradient(90deg, var(--warning), #ffc107) !important;
+}
+
+.progress-bar.bg-danger {
+    background: linear-gradient(90deg, var(--danger), #e83e8c) !important;
+}
+
+.btn-primary {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(13, 0, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+}
+
+
+/* Efectos de carga skeleton */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+
+
+/* Scroll personalizado */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+}

@@ -1,5 +1,4 @@
 .floating-navbar {
-  background: rgba(63, 54, 248, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 2rem;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
