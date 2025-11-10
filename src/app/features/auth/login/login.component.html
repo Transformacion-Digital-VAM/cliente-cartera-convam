@@ -1,38 +1,64 @@
-<div class="login-container">
-  <!-- Logo -->
-  <div class="login-left">
-    <img src="../../../../assets/CONVAM.png" alt="Login Illustration" class="login-image">
-  </div>
+<div class="login-wrapper">
+  <div class="login-container">
+    <!-- Logo pequeño arriba -->
+    <div class="logo-container">
+      <img src="../../../../assets/CONVAM.png" alt="CONVAM" class="logo">
+    </div>
 
-  <!-- Formulario de Login -->
-  <div class="login-right">
+    <!-- Formulario de Login Centrado -->
     <div class="login-form-container">
       <h1 class="login-title">¡Bienvenido!</h1>
-
-      <form class="login-form">
+      
+      <form class="login-form" (ngSubmit)="login()">
         <div class="form-group">
-          <label for="email" class="form-label">Usuario</label>
-          <input type="email" class="form-control" id="email" placeholder="Usuario/Número de telefono" required>
+          <label for="correo" class="form-label">Usuario</label>
+          <input 
+            type="email" 
+            class="form-control" 
+            id="correo" 
+            [(ngModel)]="correo" 
+            name="correo"
+            placeholder="Usuario/Número de telefono" 
+            required 
+            [disabled]="isLoading">
         </div>
 
         <div class="form-group">
-          <label for="password" class="form-label">Contraseña</label>
-          <input type="password" class="form-control" id="password" placeholder="••••••••" required>
+          <label for="password" class="form-label">Contraseña *</label>
+          <div class="password-input-container">
+            <input 
+              [type]="showPassword ? 'text' : 'password'" 
+              class="form-control" 
+              id="password" 
+              [(ngModel)]="password"
+              name="password" 
+              placeholder="••••••••" 
+              required 
+              [disabled]="isLoading">
+
+            <button 
+              type="button" 
+              class="password-toggle" 
+              (click)="togglePasswordVisibility()" 
+              [disabled]="isLoading"
+              aria-label="Mostrar u ocultar contraseña">
+              <i [ngClass]="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
         </div>
 
-        <button type="submit" class="btn btn-primary login-btn">Iniciar Sesión</button>
-        <a href="verify-code" class="forgot-link">Verificación</a>
+        <button 
+          type="submit" 
+          class="btn btn-primary login-btn" 
+          [disabled]="isLoading || !correo || !password">
+          <span *ngIf="!isLoading">Iniciar Sesión</span>
+          <span *ngIf="isLoading" class="loading-spinner">
+            Cargando...
+          </span>
+        </button>
+
         <div class="divider">
           <span></span>
-        </div>
-        
-        <!-- <button type="button" class="btn btn-google">
-          <img src="../../../../assets/Google_logo.png" alt="" class="google-icon">
-          Iniciar sesión con Google
-        </button> -->
-        
-        <div class="forgot-password">
-          <a href="/reset-passw" class="forgot-link">¿Olvidaste tu contraseña? Click aquí</a>
         </div>
       </form>
 
@@ -40,7 +66,5 @@
         <p>2025 CONVAM.</p>
       </div>
     </div>
-
   </div>
 </div>
-
