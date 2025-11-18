@@ -7,7 +7,7 @@ import { HomeComponent } from "./features/dashboard/pages/home/home.component";
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NavComponent, FooterComponent, HomeComponent],
+  imports: [NavComponent, FooterComponent, RouterOutlet],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

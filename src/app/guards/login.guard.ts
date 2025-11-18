@@ -19,7 +19,7 @@ export const loginGuard: CanActivateFn = (route, state) => {
       if (!user) return true; // Permitir acceso al login
       
       // Redirigir según rol
-      const redirectUrl = authService.isAdmin() ? '/admin-control' : '/dashboard';
+      const redirectUrl = authService.isAdmin() ? '/admin-control' : '/login';
       router.navigate([redirectUrl], { replaceUrl: true });
       return false;
     }),
