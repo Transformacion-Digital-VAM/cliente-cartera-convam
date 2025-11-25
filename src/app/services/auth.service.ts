@@ -17,12 +17,13 @@ import {
 } from 'firebase/auth';
 
 export interface User {
-  id: number; 
+  id_usuario: number;  
+  rol_id: number;
   nombre: string;
   usuario: string;
-  rol_id: number;
-  firebase_uid: string;
-  created_at: string;
+  contrasenia?: string;
+  firebase_uid?: string;
+  rol_nombre?: string; 
 }
 
 export interface AuthResponse {
@@ -517,7 +518,7 @@ export class AuthService {
     // En auth.service.ts
   isAdmin(): boolean {
     const user = this.currentUserSubject.value;
-    return user ? user.rol_id === 1 : false;
+    return user ? user.rol_id === 4 : false;
   }
 
 

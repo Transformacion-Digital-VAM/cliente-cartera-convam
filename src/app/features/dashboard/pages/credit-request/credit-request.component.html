@@ -1,0 +1,223 @@
+<div class="client-list-container">
+  <!-- Migas de pan -->
+  <nav class="breadcrumb-nav">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="#" class="breadcrumb-link">Inicio</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="#" class="breadcrumb-link">Solicitudes</a>
+      </li>
+      <li class="breadcrumb-item active">Expedientes</li>
+    </ol>
+  </nav>
+
+  <div class="main-content-vertical">
+    <!-- Encabezado -->
+    <header class="header">
+      <h2>Solicitud de expedientes</h2>
+      <p>Gestión y seguimiento de solicitudes de expedientes</p>
+    </header>
+
+    <!-- Tarjetas de estado -->
+    <div class="filtros-card">
+      <div class="status-container">
+        <div class="status-item">
+          <div class="status-title">SOLICITUDES REALIZADAS</div>
+          <div class="status-count">{{totalSolicitudes}}</div>
+        </div>
+        
+        <div class="status-item">
+          <div class="status-title">EN PROCESO</div>
+          <div class="status-count">{{enProceso}}</div>
+        </div>
+        
+        <div class="status-item">
+          <div class="status-title">SOLICITUDES CONFIRMADAS</div>
+          <div class="status-count">{{confirmadas}}</div>
+        </div>
+        
+        <div class="status-item">
+          <div class="status-title">SOLICITUDES RECHAZADAS</div>
+          <div class="status-count">{{rechazadas}}</div>
+        </div>
+        
+        <div class="status-item">
+          <div class="status-title">SOLICITUDES ELIMINADAS</div>
+          <div class="status-count">{{eliminadas}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de solicitudes confirmadas -->
+    <section class="tabla-section-vertical">
+      <div class="tabla-header">
+        <h3>Listado de solicitudes confirmadas</h3>
+        <div class="botones-filtros">
+          <button class="btn btn-outline btn-sm">
+            <i class="fas fa-sync-alt"></i> Actualizar
+          </button>
+        </div>
+      </div>
+      
+      <div class="table-container-vertical">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="id-cell"># Solicitud</th>
+              <th class="nombre-cell">Depositórable</th>
+              <th class="apellido-cell">Solicitado A</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th class="actions-cell">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let solicitud of solicitudes; let i = index" 
+                [class.selected]="solicitudSeleccionada?.numero === solicitud.numero">
+              <td class="id-cell">{{solicitud.numero}}</td>
+              <td class="nombre-cell">{{solicitud.depositorable}}</td>
+              <td class="apellido-cell">{{solicitud.solicitadoA}}</td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
+                  {{solicitud.estado}}
+                </span>
+              </td>
+              <td>{{solicitud.fechaSolicitud}}</td>
+              <td class="actions-cell text-center">
+                <button class="btn btn-primary btn-sm" (click)="abrirModalDetalles(solicitud)">
+                  Ver
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal de Detalles -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-file-alt"></i>
+          Detalles de la Solicitud #{{solicitudSeleccionada?.numero}}
+        </h3>
+        <button class="modal-close" (click)="cerrarModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Información del cliente -->
+        <div class="info-section">
+          <h4>Información del Solicitante</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Nombre:</strong>
+              <span>{{solicitudSeleccionada?.depositorable}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Departamento:</strong>
+              <span>{{solicitudSeleccionada?.solicitadoA}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Fecha de Solicitud:</strong>
+              <span>{{solicitudSeleccionada?.fechaSolicitud}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Estado Actual:</strong>
+              <span>
+                <span class="badge" [ngClass]="getEstadoClass(solicitudSeleccionada?.estado)">
+                  {{solicitudSeleccionada?.estado}}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información adicional del expediente -->
+        <div class="info-section">
+          <h4>Detalles del Expediente</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Tipo de Expediente:</strong>
+              <span>{{solicitudSeleccionada?.tipoExpediente || 'Legal'}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Prioridad:</strong>
+              <span>{{solicitudSeleccionada?.prioridad || 'Media'}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Descripción:</strong>
+              <span class="descripcion-text">{{solicitudSeleccionada?.descripcion || 'Solicitud de expediente para revisión legal'}}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aprobación y Monto -->
+        <div class="info-section aprobacion-section">
+          <h4>Aprobar Solicitud</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Monto Aprobado:</strong>
+              <span>
+                <div class="monto-input-container">
+                  <span class="currency-symbol">$</span>
+                  <input type="number" 
+                         class="form-control monto-input" 
+                         placeholder="0.00"
+                         [(ngModel)]="montoAprobado"
+                         min="0"
+                         step="0.01">
+                </div>
+              </span>
+            </div>
+            <div class="info-item-detalle acciones-aprobacion">
+              <strong>Acciones:</strong>
+              <span class="botones-accion">
+                <button class="btn btn-success btn-action" 
+                        (click)="aprobarSolicitud()"
+                        [disabled]="!montoAprobado || montoAprobado <= 0">
+                  <i class="fas fa-check"></i> Aprobar Solicitud
+                </button>
+                <button class="btn btn-rechazar btn-action" (click)="rechazarSolicitud()">
+                  <i class="fas fa-times"></i> Rechazar
+                </button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial de la solicitud -->
+        <div class="info-section">
+          <h4>Historial de la Solicitud</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Fecha de Creación:</strong>
+              <span>{{solicitudSeleccionada?.fechaCreacion || solicitudSeleccionada?.fechaSolicitud}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Última Actualización:</strong>
+              <span>{{solicitudSeleccionada?.ultimaActualizacion || 'Hoy'}}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Comentarios:</strong>
+              <span>{{solicitudSeleccionada?.comentarios || 'Sin comentarios adicionales'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModal()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button class="btn btn-outline" (click)="descargarExpediente()">
+          <i class="fas fa-download"></i> Descargar Expediente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

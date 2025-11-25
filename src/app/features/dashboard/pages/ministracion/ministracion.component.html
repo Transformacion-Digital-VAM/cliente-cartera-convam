@@ -1,0 +1,358 @@
+<div class="admin-container">
+    <!-- Encabezado -->
+    <header class="admin-header">
+        <h1 class="reset-title">Gestión de Créditos y Pagos</h1>
+    </header>
+
+    <!-- Contenido principal -->
+    <div class="admin-content">
+        <!-- Barra de búsqueda y filtros -->
+        <div class="filtros-section">
+            <div class="filtros-card">
+                <h3>Filtrar Clientes</h3>
+                <div class="filtros-form">
+                    <div class="form-group">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" class="form-control" placeholder="Buscar por nombre..." id="filtroNombre">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Apellido Paterno</label>
+                        <input type="text" class="form-control" placeholder="Buscar por apellido paterno..." id="filtroApPaterno">
+                    </div>
+                    <div class="botones-filtros">
+                        <button class="btn btn-primary" id="btnBuscar">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <button class="btn btn-outline" id="btnLimpiar">
+                            <i class="fas fa-undo"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de clientes -->
+        <section class="tabla-section-vertical">
+            <div class="tabla-header">
+                <h3>Lista de Clientes con Créditos</h3>
+                <div class="botones-filtros">
+                    <button class="btn btn-outline btn-sm" id="btnActualizar">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container-vertical">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="id-cell">ID</th>
+                            <th class="nombre-cell">Nombre</th>
+                            <th class="apellido-cell">Apellido Paterno</th>
+                            <th class="apellido-cell">Apellido Materno</th>
+                            <th>Pago Semanal</th>
+                            <th>Total a Pagar</th>
+                            <th>Estado</th>
+                            <th class="actions-cell">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaClientes">
+                        <tr class="no-data-row">
+                            <td colspan="8" class="text-center">Cargando clientes...</td>
+                            
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mensaje cuando no hay datos -->
+            <div id="mensajeNoDatos" class="no-data" style="display: none;">
+                <i class="fas fa-users fa-2x"></i>
+                <p>No se encontraron clientes con los filtros aplicados</p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Modal de Detalles del Crédito con Pestañas -->
+<div class="modal-overlay" id="modalDetalles" style="display: none;">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-file-invoice-dollar"></i>
+                Detalles del Crédito - <span id="nombreClienteModal"></span>
+            </h3>
+            <button class="modal-close" id="btnCerrarModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+            <!-- Pestañas -->
+            <div class="tabs-container">
+                <nav class="tabs-nav">
+                    <button class="tab-button active" data-tab="informacion">
+                        <i class="fas fa-info-circle"></i>
+                        Información General
+                    </button>
+                    <button class="tab-button" data-tab="financiero">
+                        <i class="fas fa-chart-bar"></i>
+                        Resumen Financiero
+                    </button>
+                    <button class="tab-button" data-tab="pagos">
+                        <i class="fas fa-clock"></i>
+                        Estado de Pagos
+                    </button>
+                    <button class="tab-button" data-tab="registrar">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Registrar Pago
+                    </button>
+                    <button class="tab-button" data-tab="historial">
+                        <i class="fas fa-history"></i>
+                        Historial
+                    </button>
+                </nav>
+
+                <div class="tab-content">
+                    <!-- Pestaña: Información General -->
+                    <div class="tab-pane active" id="tab-informacion">
+                        <div class="info-grid-tabs">
+                            <!-- Información del Cliente -->
+                            <div class="info-section">
+                                <h4><i class="fas fa-user"></i> Información del Cliente</h4>
+                                <div class="info-grid-detalle">
+                                    <div class="info-item-detalle">
+                                        <strong>ID Cliente:</strong>
+                                        <span class="id-value" id="infoIdCliente"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Nombre Completo:</strong>
+                                        <span id="infoNombreCompleto"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Teléfono:</strong>
+                                        <span id="infoTelefono"></span>
+                                    </div>
+                                    <!-- <div class="info-item-detalle">
+                                        <strong>Email:</strong>
+                                        <span id="infoEmail"></span>
+                                    </div> -->
+                                </div>
+                            </div>
+
+                            <!-- Información del Crédito -->
+                            <div class="info-section">
+                                <h4><i class="fas fa-credit-card"></i> Información del Crédito</h4>
+                                <div class="info-grid-detalle">
+                                    <div class="info-item-detalle">
+                                        <strong>ID Crédito:</strong>
+                                        <span class="id-value" id="infoIdCredito"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Fecha Ministración:</strong>
+                                        <span id="infoFechaMinistracion"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Fecha Primer Pago:</strong>
+                                        <span id="infoFechaPrimerPago"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Tipo de Crédito:</strong>
+                                        <span id="infoTipoCredito"></span>
+                                    </div>
+                                    <div class="info-item-detalle">
+                                        <strong>Referencia Bancaria:</strong>
+                                        <span class="referencia-value" id="infoReferenciaBancaria"></span>
+                                    </div>
+                                    <!-- <div class="info-item-detalle">
+                                        <strong>Cuenta Bancaria:</strong>
+                                        <span id="infoCuentaBancaria"></span>
+                                    </div> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña: Resumen Financiero -->
+                    <div class="tab-pane" id="tab-financiero">
+                        <div class="info-section resumen-financiero">
+                            <h4><i class="fas fa-chart-bar"></i> Resumen Financiero</h4>
+                            <div class="info-grid-detalle">
+                                <div class="info-item-detalle">
+                                    <strong>Total Capital:</strong>
+                                    <span class="monto" id="finTotalCapital"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Total Interés:</strong>
+                                    <span class="monto" id="finTotalInteres"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Total Seguro:</strong>
+                                    <span class="monto" id="finTotalSeguro"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Total Garantía:</strong>
+                                    <span class="monto" id="finTotalGarantia"></span>
+                                </div>
+                                <div class="info-item-detalle total-section">
+                                    <strong>Total a Pagar:</strong>
+                                    <span class="monto-total" id="finTotalPagar"></span>
+                                </div>
+                                <!-- <div class="info-item-detalle">
+                                    <strong>CAT (%):</strong>
+                                    <span class="porcentaje" id="finCatPorcentaje"></span>
+                                </div> -->
+                                <div class="info-item-detalle">
+                                    <strong>Pago Semanal:</strong>
+                                    <span class="monto" id="finPagoSemanal"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Semanas Restantes:</strong>
+                                    <span class="semanas-restantes" id="finSemanasRestantes"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña: Estado de Pagos -->
+                    <div class="tab-pane" id="tab-pagos">
+                        <div class="info-section estado-pagos" id="seccionEstadoPagos">
+                            <h4><i class="fas fa-clock"></i> Estado de Pagos</h4>
+                            <div class="info-grid-detalle">
+                                <div class="info-item-detalle">
+                                    <strong>Próximo Pago:</strong>
+                                    <span class="fecha-destacada" id="pagosProximoPago"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Pagos Atrasados:</strong>
+                                    <span class="badge estado-activo" id="pagosAtrasadosBadge">0 pagos</span>
+                                </div>
+                                <div class="info-item-detalle" id="pagosMoraItem" style="display: none;">
+                                    <strong>Mora Acumulada:</strong>
+                                    <span class="mora-value" id="pagosMora"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Estado del Crédito:</strong>
+                                    <span class="badge estado-activo" id="pagosEstadoCredito"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Último Pago:</strong>
+                                    <span id="pagosUltimoPago"></span>
+                                </div>
+                                <div class="info-item-detalle">
+                                    <strong>Pagos Realizados:</strong>
+                                    <span id="pagosRealizados"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resumen Rápido de Pagos -->
+                        <div class="info-section resumen-rapido">
+                            <h4><i class="fas fa-list-alt"></i> Resumen de Pagos Recientes</h4>
+                            <div class="pagos-resumen" id="resumenPagos">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña: Registrar Pago -->
+                    <div class="tab-pane" id="tab-registrar">
+                        <div class="info-section registro-pago">
+                            <h4><i class="fas fa-money-bill-wave"></i> Registrar Pago Semanal</h4>
+                            <div class="pago-form">
+                                <div class="form-group">
+                                    <label class="form-label">Monto del Pago</label>
+                                    <div class="monto-input-container">
+                                        <span class="currency-symbol">$</span>
+                                        <input type="number" class="form-control monto-input" 
+                                               placeholder="0.00" id="inputMontoPago" step="0.01">
+                                    </div>
+                                    <small class="form-text">Pago semanal sugerido: <span id="pagoSugerido"></span></small>
+                                </div>
+                                
+                                <div class="form-group" id="grupoPagosAtrasados" style="display: none;">
+                                    <label class="form-label">Pagos Atrasados a Cubrir</label>
+                                    <select class="form-control" id="selectPagosAtrasados">
+                                        <option value="0">Solo pago actual</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="grupoAlertaMora" style="display: none;">
+                                    <div class="alerta-mora">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Mora pendiente:</strong> <span id="textoMoraPendiente"></span>
+                                    </div>
+                                </div>
+
+                                <!-- Resumen del Pago -->
+                                <div class="resumen-pago" id="resumenPago" style="display: none;">
+                                    <h5>Resumen del Pago</h5>
+                                    <div class="resumen-detalle">
+                                        <div class="resumen-item">
+                                            <span>Pago actual:</span>
+                                            <span id="resumenPagoActual">$0.00</span>
+                                        </div>
+                                        <div class="resumen-item" id="resumenPagosAtrasadosItem" style="display: none;">
+                                            <span>Pagos atrasados:</span>
+                                            <span id="resumenPagosAtrasados">$0.00</span>
+                                        </div>
+                                        <div class="resumen-item" id="resumenMoraItem" style="display: none;">
+                                            <span>Mora:</span>
+                                            <span id="resumenMora">$0.00</span>
+                                        </div>
+                                        <div class="resumen-item total">
+                                            <strong>Total a pagar:</strong>
+                                            <strong id="resumenTotalPagar">$0.00</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions-pago">
+                                    <button class="btn btn-success btn-lg" id="btnRegistrarPago" disabled>
+                                        <i class="fas fa-check-circle"></i> Registrar Pago
+                                    </button>
+                                    <button class="btn btn-outline" id="btnCancelarPago">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña: Historial -->
+                    <div class="tab-pane" id="tab-historial">
+                        <div class="info-section" id="seccionHistorial">
+                            <h4><i class="fas fa-history"></i> Historial Completo de Pagos</h4>
+                            <div class="table-container-mini">
+                                <table class="table table-mini">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Monto</th>
+                                            <th>Estado</th>
+                                            <th>Tipo</th>
+                                            <th>Referencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tablaHistorialPagos">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="no-data" id="mensajeNoHistorial" style="display: none;">
+                            <i class="fas fa-receipt fa-2x"></i>
+                            <p>No hay historial de pagos registrado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="btnCerrarModalFooter">
+                <i class="fas fa-times"></i> Cerrar
+            </button>
+            <button class="btn btn-outline" id="btnGenerarReporte">
+                <i class="fas fa-file-pdf"></i> Generar Reporte
+            </button>
+        </div>
+    </div>
+</div>

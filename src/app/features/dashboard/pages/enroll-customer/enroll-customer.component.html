@@ -1,0 +1,394 @@
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="reset-title">Alta de Cliente</h1>
+    </div>
+
+    <div class="admin-content">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress" [style.width]="progreso + '%'"></div>
+            </div>
+            <div class="step-indicator">Paso {{ currentStep }} de {{ totalSteps }}</div>
+        </div>
+
+        <form class="register-form" (ngSubmit)="registrarCliente()">
+            <!-- PASO 1: Dirección del Cliente -->
+            <div *ngIf="currentStep === 1">
+                <h2 class="section-title">Dirección del Cliente</h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="municipio">Municipio *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccion.municipio" name="municipio"
+                                [class.is-invalid]="errors['municipio']" required>
+                            <div class="error-message" *ngIf="errors['municipio']">
+                                {{ errors['municipio'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="localidad">Localidad *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccion.localidad" name="localidad"
+                                [class.is-invalid]="errors['localidad']" required>
+                            <div class="error-message" *ngIf="errors['localidad']">
+                                {{ errors['localidad'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="calle">Calle *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccion.calle" name="calle"
+                                [class.is-invalid]="errors['calle']" required>
+                            <div class="error-message" *ngIf="errors['calle']">
+                                {{ errors['calle'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="form-label" for="numero">Número *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccion.numero" name="numero"
+                                [class.is-invalid]="errors['numero']" required>
+                            <div class="error-message" *ngIf="errors['numero']">
+                                {{ errors['numero'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" (click)="siguientePaso()" [disabled]="loading">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 2: Datos Básicos del Cliente -->
+            <div *ngIf="currentStep === 2">
+                <h2 class="section-title">Datos Personales del Cliente</h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="curp">CURP *</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.curp" name="curp"
+                                [class.is-invalid]="errors['curp']" required>
+                            <div class="error-message" *ngIf="errors['curp']">
+                                {{ errors['curp'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="nacionalidad">Nacionalidad</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.nacionalidad"
+                                name="nacionalidad">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="nombre_cliente">Nombre(s) *</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.nombre_cliente"
+                                name="nombre_cliente" [class.is-invalid]="errors['nombre_cliente']" required>
+                            <div class="error-message" *ngIf="errors['nombre_cliente']">
+                                {{ errors['nombre_cliente'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="app_cliente">Apellido Paterno *</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.app_cliente" name="app_cliente"
+                                [class.is-invalid]="errors['app_cliente']" required>
+                            <div class="error-message" *ngIf="errors['app_cliente']">
+                                {{ errors['app_cliente'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="apm_cliente">Apellido Materno *</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.apm_cliente" name="apm_cliente"
+                                [class.is-invalid]="errors['apm_cliente']" required>
+                            <div class="error-message" *ngIf="errors['apm_cliente']">
+                                {{ errors['apm_cliente'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="ocupacion">Ocupación *</label>
+                            <input type="text" class="form-control" [(ngModel)]="cliente.ocupacion" name="ocupacion"
+                                [class.is-invalid]="errors['ocupacion']" required>
+                            <div class="error-message" *ngIf="errors['ocupacion']">
+                                {{ errors['ocupacion'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="ciclo_actual">Ciclo Actual</label>
+                            <input type="number" class="form-control" [(ngModel)]="cliente.ciclo_actual"
+                                name="ciclo_actual" min="1">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" (click)="pasoAnterior()">
+                        Anterior
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="siguientePaso()" [disabled]="loading">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 3: Dirección del Aval -->
+            <div *ngIf="currentStep === 3">
+                <h2 class="section-title">Dirección del Aval</h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="municipio_aval">Municipio *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccionAval.municipio" name="municipio_aval"
+                                [class.is-invalid]="errors['municipio_aval']" required>
+                            <div class="error-message" *ngIf="errors['municipio_aval']">
+                                {{ errors['municipio_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="localidad_aval">Localidad *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccionAval.localidad" name="localidad_aval"
+                                [class.is-invalid]="errors['localidad_aval']" required>
+                            <div class="error-message" *ngIf="errors['localidad_aval']">
+                                {{ errors['localidad_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="calle_aval">Calle *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccionAval.calle" name="calle_aval"
+                                [class.is-invalid]="errors['calle_aval']" required>
+                            <div class="error-message" *ngIf="errors['calle_aval']">
+                                {{ errors['calle_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label class="form-label" for="numero_aval">Número *</label>
+                            <input type="text" class="form-control" [(ngModel)]="direccionAval.numero" name="numero_aval"
+                                [class.is-invalid]="errors['numero_aval']" required>
+                            <div class="error-message" *ngIf="errors['numero_aval']">
+                                {{ errors['numero_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" (click)="pasoAnterior()">
+                        Anterior
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="siguientePaso()" [disabled]="loading">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 4: Datos del Aval -->
+            <div *ngIf="currentStep === 4">
+                <h2 class="section-title">Datos Personales del Aval</h2>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="rfc_aval">RFC *</label>
+                            <input type="text" class="form-control" [(ngModel)]="aval.curp" name="rfc_aval"
+                                [class.is-invalid]="errors['rfc_aval']" required>
+                            <div class="error-message" *ngIf="errors['rfc_aval']">
+                                {{ errors['rfc_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="nombre_aval">Nombre(s) *</label>
+                            <input type="text" class="form-control" [(ngModel)]="aval.nombre_aval" name="nombre_aval"
+                                [class.is-invalid]="errors['nombre_aval']" required>
+                            <div class="error-message" *ngIf="errors['nombre_aval']">
+                                {{ errors['nombre_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="app_aval">Apellido Paterno *</label>
+                            <input type="text" class="form-control" [(ngModel)]="aval.app_aval" name="app_aval"
+                                [class.is-invalid]="errors['app_aval']" required>
+                            <div class="error-message" *ngIf="errors['app_aval']">
+                                {{ errors['app_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label" for="apm_aval">Apellido Materno *</label>
+                            <input type="text" class="form-control" [(ngModel)]="aval.apm_aval" name="apm_aval"
+                                [class.is-invalid]="errors['apm_aval']" required>
+                            <div class="error-message" *ngIf="errors['apm_aval']">
+                                {{ errors['apm_aval'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" (click)="pasoAnterior()">
+                        Anterior
+                    </button>
+                    <button type="button" class="btn btn-primary" (click)="siguientePaso()" [disabled]="loading">
+                        Siguiente
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 5: Datos de la Solicitud -->
+            <div *ngIf="currentStep === 5">
+                <h2 class="section-title">Datos de la Solicitud</h2>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="monto_solicitado">Monto Solicitado *</label>
+                            <input type="number" class="form-control" [(ngModel)]="solicitud.monto_solicitado" 
+                                name="monto_solicitado" [class.is-invalid]="errors['monto_solicitado']" 
+                                min="0" step="0.01" required>
+                            <div class="error-message" *ngIf="errors['monto_solicitado']">
+                                {{ errors['monto_solicitado'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="plazo_meses">Plazo en Meses *</label>
+                            <input type="number" class="form-control" [(ngModel)]="solicitud.plazo_meses" 
+                                name="plazo_meses" [class.is-invalid]="errors['plazo_meses']" 
+                                min="1" required>
+                            <div class="error-message" *ngIf="errors['plazo_meses']">
+                                {{ errors['plazo_meses'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="tasa_interes">Tasa de Interés (%) *</label>
+                            <input type="number" class="form-control" [(ngModel)]="solicitud.tasa_interes" 
+                                name="tasa_interes" [class.is-invalid]="errors['tasa_interes']" 
+                                min="0" step="0.01" required>
+                            <div class="error-message" *ngIf="errors['tasa_interes']">
+                                {{ errors['tasa_interes'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="tasa_moratoria">Tasa Moratoria (%) *</label>
+                            <input type="number" class="form-control" [(ngModel)]="solicitud.tasa_moratoria" 
+                                name="tasa_moratoria" [class.is-invalid]="errors['tasa_moratoria']" 
+                                min="0" step="0.01" required>
+                            <div class="error-message" *ngIf="errors['tasa_moratoria']">
+                                {{ errors['tasa_moratoria'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="no_pagos">Número de Pagos *</label>
+                            <input type="number" class="form-control" [(ngModel)]="solicitud.no_pagos" 
+                                name="no_pagos" [class.is-invalid]="errors['no_pagos']" 
+                                min="1" required>
+                            <div class="error-message" *ngIf="errors['no_pagos']">
+                                {{ errors['no_pagos'] }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="tipo_vencimiento">Tipo de Vencimiento *</label>
+                            <select class="form-control" [(ngModel)]="solicitud.tipo_vencimiento" 
+                                name="tipo_vencimiento" [class.is-invalid]="errors['tipo_vencimiento']" required>
+                                <option value="">Seleccione</option>
+                                <option value="mensual">Mensual</option>
+                                <option value="quincenal">Quincenal</option>
+                                <option value="semanal">Semanal</option>
+                            </select>
+                            <div class="error-message" *ngIf="errors['tipo_vencimiento']">
+                                {{ errors['tipo_vencimiento'] }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label" for="seguro">Seguro</label>
+                            <div class="checkbox-container">
+                                <input type="checkbox" [(ngModel)]="solicitud.seguro" name="seguro">
+                                <label>Incluir seguro</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label" for="observaciones">Observaciones</label>
+                            <textarea class="form-control" [(ngModel)]="solicitud.observaciones" 
+                                name="observaciones" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" (click)="pasoAnterior()">
+                        Anterior
+                    </button>
+                    <button type="submit" class="btn btn-success" [disabled]="loading">
+                        {{ loading ? 'Registrando...' : 'Registrar Cliente' }}
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

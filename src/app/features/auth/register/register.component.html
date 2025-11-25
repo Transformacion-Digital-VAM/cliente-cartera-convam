@@ -31,13 +31,7 @@
               <small class="text-muted">Cargando roles...</small>
             </div>
 
-            <select
-              id="rol"
-              [(ngModel)]="rol_id"
-              name="rol_id"
-              class="form-control"
-              required
-              [disabled]="isLoading || loadingRoles">
+            <select id="rol" [(ngModel)]="rol_id" name="rol_id" class="form-control" required [disabled]="isLoading || loadingRoles">
               <option value="0" disabled selected>
                 {{ loadingRoles ? 'Cargando...' : 'Selecciona un rol' }}
               </option>
@@ -45,10 +39,6 @@
                 {{ rol.nombre_rol }}
               </option>
             </select>
-<!-- 
-            <small *ngIf="rol_id > 0" class="text-info">
-              Rol seleccionado: <strong>{{ getRolNombre() }}</strong>
-            </small> -->
           </div>
 
           <!-- Correo -->

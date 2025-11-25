@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { AdminControlService } from '../../../services/admin-control.service';
 import { AuthService, User } from '../../../services/auth.service';
 import { Subscription } from 'rxjs';
@@ -8,7 +8,7 @@ import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-admin-control',
-  imports: [CommonModule, ReactiveFormsModule, DatePipe],
+  imports: [CommonModule, ReactiveFormsModule],
   standalone: true,
   templateUrl: './admin-control.component.html',
   styleUrl: './admin-control.component.css'
@@ -110,38 +110,28 @@ export class AdminControlComponent implements OnInit, OnDestroy {
   }
 
   // Eliminar usuario
-// En el método deleteUser
-async deleteUser(user: User) {
-  if (confirm(`¿Estás seguro de que deseas eliminar al usuario ${user.nombre}?`)) {
-    this.isLoading = true;
-    try {
-      await this.adminControlService.deleteUser(user.id); 
-      this.showSuccess('Usuario eliminado exitosamente');
-      await this.loadUsers();
-    } catch (error: any) {
-      console.error('Error eliminando usuario:', error);
-      this.showError(error.message || 'Error al eliminar usuario');
-    } finally {
-      this.isLoading = false;
+  async deleteUser(user: User) {
+    if (confirm(`¿Estás seguro de que deseas eliminar al usuario ${user.nombre}?`)) {
+      this.isLoading = true;
+      try {
+        // USA id_usuario en lugar de id
+        await this.adminControlService.deleteUser(user.id_usuario); 
+        this.showSuccess('Usuario eliminado exitosamente');
+        await this.loadUsers();
+      } catch (error: any) {
+        console.error('Error eliminando usuario:', error);
+        this.showError(error.message || 'Error al eliminar usuario');
+      } finally {
+        this.isLoading = false;
+      }
     }
   }
-}
 
   // Ver detalles del usuario
   viewUser(user: User) {
     this.selectedUser = user;
   }
 
-  // Obtener nombre del rol
-  getRoleName(rol_id: number): string {
-    const roles: { [key: number]: string } = {
-      1: 'Administrador',
-      2: 'Usuario',
-      3: 'Moderador',
-      4: 'Super Admin' // Agrega más roles según tu sistema
-    };
-    return roles[rol_id] || `Rol ${rol_id}`;
-  }
 
   // Mostrar mensaje de éxito
   private showSuccess(message: string) {

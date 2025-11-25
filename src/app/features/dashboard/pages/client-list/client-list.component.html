@@ -1,1 +1,229 @@
-<p>client-list works!</p>
+<div class="client-list-container">
+  
+  <!-- Migajas de Pan -->
+  <nav class="breadcrumb-nav" aria-label="Migajas de pan">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="/dashboard" class="breadcrumb-link">Inicio</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">
+        Consulta de Clientes
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Encabezado -->
+  <!-- <div class="header">
+    <h2>Consulta de Clientes</h2>
+    <p>Gestión y consulta de información de clientes</p>
+  </div> -->
+
+  <!-- Filtros de búsqueda -->
+  <div class="filtros-section">
+    <div class="filtros-card">
+      <h3>Filtros de Búsqueda</h3>
+      <div class="filtros-form">
+        <!-- Nombre -->
+        <div class="form-group">
+          <!-- <label for="nombre">Nombre:</label> -->
+          <input 
+            type="text"
+            id="nombre"
+            name="nombre"
+            [(ngModel)]="filtro.nombre"
+            placeholder="Buscar por nombre..."
+            class="form-control"
+          />
+        </div>
+
+        <!-- CURP -->
+        <div class="form-group">
+          <!-- <label for="identificacion">CURP:</label> -->
+          <input 
+            type="text"
+            id="identificacion"
+            name="identificacion"
+            [(ngModel)]="filtro.identificacion"
+            placeholder="Buscar por CURP"
+            class="form-control"
+          />
+        </div>
+
+        <!-- Estado Crédito -->
+        <div class="form-group">
+          <!-- <label for="estadoCredito">Estado de Crédito:</label> -->
+          <select
+            id="estadoCredito"
+            name="estadoCredito"
+            [(ngModel)]="filtro.estadoCredito"
+            class="form-control"
+          >
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="vencido">Vencido</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="bloqueado">Bloqueado</option>
+          </select>
+        </div>
+
+        <!-- Botones -->
+        <div class="botones-filtros">
+          <button (click)="buscarCliente()" class="btn btn-primary">
+            Buscar
+          </button>
+          <button (click)="limpiarFiltros()" class="btn btn-secondary">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="cargando" class="loading-state">
+    <div class="spinner"></div>
+    <p>Cargando información...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !cargando" class="error-state">
+    <div class="error-icon">⚠️</div>
+    <p>{{ error }}</p>
+    <button (click)="cargarClientes()" class="btn btn-primary">
+      Reintentar
+    </button>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div *ngIf="!cargando && !error" class="main-content-vertical">
+    
+    <!-- Tabla de Clientes con Scroll -->
+    <div class="tabla-section-vertical">
+      <div class="tabla-header">
+        <h3>Lista de Clientes ({{ clientes.length }})</h3>
+      </div>
+
+      <div class="table-container-vertical">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Apellido Paterno</th>
+              <th scope="col">Apellido Materno</th>
+              <th scope="col">CURP</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cliente of clientes" 
+                [class.selected]="clienteSeleccionado?.id_cliente === cliente.id_cliente"
+                (click)="seleccionarCliente(cliente)">
+              <td class="id-cell">{{ cliente.id_cliente }}</td>
+              <td class="nombre-cell">{{ cliente.nombre_cliente || 'N/A' }}</td>
+              <td class="apellido-cell">{{ cliente.app_cliente || 'N/A' }}</td>
+              <td class="apellido-cell">{{ cliente.apm_cliente || 'N/A' }}</td>
+              <td class="curp-cell">{{ cliente.curp || 'N/A' }}</td>
+              <td class="actions-cell">
+                <button 
+                  class="btn btn-outline btn-sm"
+                  (click)="seleccionarCliente(cliente); $event.stopPropagation()"
+                ><i class="fas fa-info-circle"></i>                  
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot *ngIf="clientes.length === 0">
+            <tr>
+              <td colspan="6" class="text-center no-data">
+                No se encontraron clientes
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Detalles del Cliente -->
+    <div *ngIf="clienteSeleccionado" class="detalles-section-vertical">
+      <div class="detalles-header">
+        <h3>Detalles del Cliente: {{ getNombreCompleto(clienteSeleccionado) }}</h3>
+        <button (click)="volverALista()" class="btn btn-close-detalles">
+          Cerrar Detalles
+        </button>
+      </div>
+
+      <div class="detalles-content">
+        <!-- Información Personal -->
+        <div class="info-section">
+          <h4>Datos Personales</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>ID Cliente:</strong>
+              <span>{{ clienteSeleccionado.id_cliente }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Nombre completo:</strong>
+              <span>{{ getNombreCompleto(clienteSeleccionado) }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>CURP:</strong>
+              <span class="curp-value">{{ clienteSeleccionado.curp || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Ocupación:</strong>
+              <span>{{ clienteSeleccionado.ocupacion || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Nacionalidad:</strong>
+              <span>{{ clienteSeleccionado.nacionalidad || 'No especificada' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Domicilio -->
+        <div class="info-section">
+          <h4>Domicilio</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Calle:</strong>
+              <span>{{ clienteSeleccionado.calle || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Número:</strong>
+              <span>{{ clienteSeleccionado.numero || 'No especificado' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Localidad:</strong>
+              <span>{{ clienteSeleccionado.localidad || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Municipio:</strong>
+              <span>{{ clienteSeleccionado.municipio || 'No especificado' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información de Crédito -->
+        <div class="info-section">
+          <h4>Información de Crédito</h4>
+          <div class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>Estado:</strong>
+              <span class="badge" [ngClass]="getEstadoCreditoClass(clienteSeleccionado)">
+                {{ getEstadoCreditoText(clienteSeleccionado) }}
+              </span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>Ciclo Actual:</strong>
+              <span>{{ clienteSeleccionado.ciclo_actual || 'No definido' }}</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
