@@ -7,6 +7,13 @@ import { map } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class ClienteService {
+  buscarMunicipios: any;
+  buscarLocalidades(municipio: string, arg1: string) {
+    throw new Error('Method not implemented.');
+  }
+  obtenerAliados() {
+    throw new Error('Method not implemented.');
+  }
   private apiUrl = 'http://localhost:3000/cliente';
 
   constructor(private http: HttpClient) { }
@@ -107,4 +114,8 @@ export class ClienteService {
   crearCliente(datosCompletos: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/crear`, datosCompletos);
   }
+  
+
+
+  
 }

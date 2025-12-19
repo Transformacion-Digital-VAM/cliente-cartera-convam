@@ -9,6 +9,7 @@ import { EnrollCustomerComponent } from './features/dashboard/pages/enroll-custo
 import { ClientListComponent } from './features/dashboard/pages/client-list/client-list.component';
 import { MinistracionComponent } from './features/dashboard/pages/ministracion/ministracion.component';
 import { CreditRequestComponent } from './features/dashboard/pages/credit-request/credit-request.component';
+import { FinancialHistoryComponent } from './features/dashboard/pages/financial-history/financial-history.component';
 
 
 export const routes: Routes = [
@@ -65,11 +66,17 @@ export const routes: Routes = [
         data: { breadcrumb: 'Ministracion de Creditos' }
     },
     { 
+        path: 'cartera', 
+        component: FinancialHistoryComponent,
+        data: { breadcrumb: 'Cartera' }
+    },
+    { 
         path: 'solicitud', 
         component: CreditRequestComponent,
-        data: { breadcrumb: 'Solicitud' }
+        data: { breadcrumb: 'Solicitudes' }
     },
     
+
     // Ruta para redirigir a login si no encuentra la ruta
     { 
         path: '**', 

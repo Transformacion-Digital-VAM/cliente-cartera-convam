@@ -9,6 +9,57 @@
     background-position: center;
     padding: 20px;
 }
+/* Migajas de Pan (Breadcrumbs) */
+.breadcrumb-nav {
+    margin-bottom: 15px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px 15px;
+    margin-bottom: 0;
+    list-style: none;
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    font-size: 0.85rem;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    padding: 0 8px;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.breadcrumb-link {
+    color: #615afe;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.breadcrumb-link:hover {
+    color: #4e48e0;
+    text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
 
 /* Encabezado del panel */
 .admin-header {
@@ -71,6 +122,19 @@
     color: #6c757d;
     font-size: 0.9rem;
 }
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon i {
+  position: absolute;
+  left: 10px; 
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 
 /* Grupos de formulario */
 .form-group {
@@ -264,4 +328,62 @@
     .reset-title {
         font-size: 1.3rem;
     }
+}
+
+
+/* Añade esto a tu archivo CSS para personalizar SweetAlert2 */
+
+.swal2-popup {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
+}
+
+.swal2-title {
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  color: #2c3e50 !important;
+}
+
+.swal2-html-container {
+  font-size: 0.95rem !important;
+  color: #495057 !important;
+}
+
+.swal2-confirm, .swal2-cancel {
+  border-radius: 8px !important;
+  padding: 10px 24px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.swal2-confirm {
+  background-color: #615afe !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #4e48e0 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(97, 90, 254, 0.3) !important;
+}
+
+.swal2-success {
+  border-color: #28a745 !important;
+}
+
+.swal2-success [class^="swal2-success-line"] {
+  background-color: #28a745 !important;
+}
+
+.swal2-success .swal2-success-ring {
+  border-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+.swal2-error {
+  border-color: #dc3545 !important;
+}
+
+.swal2-error [class^="swal2-x-mark-line"] {
+  background-color: #dc3545 !important;
 }

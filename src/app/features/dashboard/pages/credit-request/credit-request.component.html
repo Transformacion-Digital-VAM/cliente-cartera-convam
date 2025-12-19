@@ -8,84 +8,71 @@
       <li class="breadcrumb-item">
         <a href="#" class="breadcrumb-link">Solicitudes</a>
       </li>
-      <li class="breadcrumb-item active">Expedientes</li>
+      <li class="breadcrumb-item active">Lista de Solicitudes</li>
     </ol>
   </nav>
 
+  <header class="admin-header">
+    <h1 class="reset-title">Gestión de Solicitudes</h1>
+  </header>
+
   <div class="main-content-vertical">
-    <!-- Encabezado -->
-    <header class="header">
-      <h2>Solicitud de expedientes</h2>
-      <p>Gestión y seguimiento de solicitudes de expedientes</p>
-    </header>
-
-    <!-- Tarjetas de estado -->
-    <div class="filtros-card">
-      <div class="status-container">
-        <div class="status-item">
-          <div class="status-title">SOLICITUDES REALIZADAS</div>
-          <div class="status-count">{{totalSolicitudes}}</div>
-        </div>
-        
-        <div class="status-item">
-          <div class="status-title">EN PROCESO</div>
-          <div class="status-count">{{enProceso}}</div>
-        </div>
-        
-        <div class="status-item">
-          <div class="status-title">SOLICITUDES CONFIRMADAS</div>
-          <div class="status-count">{{confirmadas}}</div>
-        </div>
-        
-        <div class="status-item">
-          <div class="status-title">SOLICITUDES RECHAZADAS</div>
-          <div class="status-count">{{rechazadas}}</div>
-        </div>
-        
-        <div class="status-item">
-          <div class="status-title">SOLICITUDES ELIMINADAS</div>
-          <div class="status-count">{{eliminadas}}</div>
-        </div>
-      </div>
-    </div>
-
     <!-- Tabla de solicitudes confirmadas -->
     <section class="tabla-section-vertical">
       <div class="tabla-header">
-        <h3>Listado de solicitudes confirmadas</h3>
+        <h3>Listado de solicitudes nuevas</h3>
         <div class="botones-filtros">
-          <button class="btn btn-outline btn-sm">
-            <i class="fas fa-sync-alt"></i> Actualizar
+          <button class="btn btn-outline btn-sm" (click)="cargarSolicitudesPendientes()" [disabled]="cargando">
+            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i> 
+            {{ cargando ? 'Cargando...' : 'Actualizar' }}
           </button>
         </div>
       </div>
-      
+
       <div class="table-container-vertical">
         <table class="table">
           <thead>
             <tr>
-              <th class="id-cell"># Solicitud</th>
-              <th class="nombre-cell">Depositórable</th>
-              <th class="apellido-cell">Solicitado A</th>
-              <th>Estado</th>
-              <th>Fecha</th>
+              <th scope="col" class="id_solicitud">ID</th>
+              <th>Nombre de cliente</th>
+              <th>Tipo Solicitud</th>
+              <th>Monto Solicitado</th>
+              <th>Aliada</th>
+              <th>Nombre del Aval</th>
+              <th>Observaciones</th>
               <th class="actions-cell">Acción</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let solicitud of solicitudes; let i = index" 
-                [class.selected]="solicitudSeleccionada?.numero === solicitud.numero">
-              <td class="id-cell">{{solicitud.numero}}</td>
-              <td class="nombre-cell">{{solicitud.depositorable}}</td>
-              <td class="apellido-cell">{{solicitud.solicitadoA}}</td>
-              <td>
-                <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
-                  {{solicitud.estado}}
-                </span>
+            <!-- Estado de carga -->
+            <tr *ngIf="cargando">
+              <td colspan="7" class="text-center">
+                <i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...
               </td>
-              <td>{{solicitud.fechaSolicitud}}</td>
+            </tr>
+            
+            <!-- Sin solicitudes -->
+            <tr *ngIf="!cargando && solicitudesPendientes.length === 0">
+              <td colspan="7" class="text-center">
+                No hay solicitudes pendientes
+              </td>
+            </tr>
+            
+            <!-- Lista de solicitudes -->
+            <tr *ngFor="let solicitud of solicitudesPendientes">
+              <td>{{ solicitud.id_solicitud }}</td>
+              <td>{{ getNombreCompleto(solicitud) }}</td>
+              <td>{{ solicitud.tipo_credito }}</td>
+              <td>{{ formatearMoneda(solicitud.monto_solicitado) }}</td>
+              <td class="aliado-info" [title]="solicitud.aliado_id ? '' + solicitud.aliado_id : 'Sin aliado'">
+                {{ solicitud.nombre_aliado || 'No asignado' }}
+              </td>
+              <td class="aval-info" [title]="solicitud.aval_id ? '' + solicitud.aval_id : 'Sin aval'">
+                {{ getNombreAval(solicitud) }}
+              </td>
+              <td>{{ solicitud.observaciones || 'N/A'}}</td>
               <td class="actions-cell text-center">
-                <button class="btn btn-primary btn-sm" (click)="abrirModalDetalles(solicitud)">
+                <button class="btn btn-primary btn-sm" (click)="abrirModal(solicitud)">
                   Ver
                 </button>
               </td>
@@ -97,125 +84,100 @@
   </div>
 
   <!-- Modal de Detalles -->
-  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" *ngIf="modalAbierto">
+    <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">
           <i class="fas fa-file-alt"></i>
-          Detalles de la Solicitud #{{solicitudSeleccionada?.numero}}
+          Detalles de la Solicitud #{{ solicitudSeleccionada?.id_solicitud }}
         </h3>
-        <button class="modal-close" (click)="cerrarModal()">
+        <button class="modal-close" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
       <div class="modal-body">
-        <!-- Información del cliente -->
+        <!-- Información de la solicitud -->
         <div class="info-section">
-          <h4>Información del Solicitante</h4>
-          <div class="info-grid-detalle">
-            <div class="info-item-detalle">
-              <strong>Nombre:</strong>
-              <span>{{solicitudSeleccionada?.depositorable}}</span>
+          <h4>Información de la Solicitud</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Cliente:</label>
+              <span>{{ getNombreCompleto(solicitudSeleccionada) }}</span>
             </div>
-            <div class="info-item-detalle">
-              <strong>Departamento:</strong>
-              <span>{{solicitudSeleccionada?.solicitadoA}}</span>
+            <div class="info-item">
+              <label>Monto Solicitado:</label>
+              <span>{{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}</span>
             </div>
-            <div class="info-item-detalle">
-              <strong>Fecha de Solicitud:</strong>
-              <span>{{solicitudSeleccionada?.fechaSolicitud}}</span>
+            <div class="info-item">
+              <label>Plazo:</label>
+              <span>{{ solicitudSeleccionada?.plazo_meses }} meses</span>
             </div>
-            <div class="info-item-detalle">
-              <strong>Estado Actual:</strong>
-              <span>
-                <span class="badge" [ngClass]="getEstadoClass(solicitudSeleccionada?.estado)">
-                  {{solicitudSeleccionada?.estado}}
-                </span>
-              </span>
+            <div class="info-item">
+              <label>Número de Pagos:</label>
+              <span>{{ solicitudSeleccionada?.no_pagos }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Información adicional del expediente -->
-        <div class="info-section">
-          <h4>Detalles del Expediente</h4>
-          <div class="info-grid-detalle">
-            <div class="info-item-detalle">
-              <strong>Tipo de Expediente:</strong>
-              <span>{{solicitudSeleccionada?.tipoExpediente || 'Legal'}}</span>
+            <div class="info-item">
+              <label>Tipo de Crédito:</label>
+              <span>{{ solicitudSeleccionada?.tipo_credito }}</span>
             </div>
-            <div class="info-item-detalle">
-              <strong>Prioridad:</strong>
-              <span>{{solicitudSeleccionada?.prioridad || 'Media'}}</span>
-            </div>
-            <div class="info-item-detalle">
-              <strong>Descripción:</strong>
-              <span class="descripcion-text">{{solicitudSeleccionada?.descripcion || 'Solicitud de expediente para revisión legal'}}</span>
+            <div class="info-item">
+              <label>Fecha de Creación:</label>
+              <span>{{ solicitudSeleccionada?.fecha_creacion | date:'dd/MM/yyyy' }}</span>
             </div>
           </div>
         </div>
 
         <!-- Aprobación y Monto -->
-        <div class="info-section aprobacion-section">
-          <h4>Aprobar Solicitud</h4>
-          <div class="info-grid-detalle">
-            <div class="info-item-detalle">
-              <strong>Monto Aprobado:</strong>
-              <span>
+        <div class="md-6">
+          <div class="info-section aprobacion-section">
+            <h4>Monto aprobado</h4>
+            <div class="info-grid-detalle">
+              <div class="monto-centrado">
                 <div class="monto-input-container">
                   <span class="currency-symbol">$</span>
-                  <input type="number" 
-                         class="form-control monto-input" 
-                         placeholder="0.00"
-                         [(ngModel)]="montoAprobado"
-                         min="0"
-                         step="0.01">
+                  <input 
+                    type="number" 
+                    class="form-control monto-input" 
+                    placeholder="0.00" 
+                    min="0" 
+                    step="0.01"
+                    max="{{ solicitudSeleccionada?.monto_solicitado }}"
+                    [(ngModel)]="montoAprobado"
+                    [disabled]="cargandoAprobacion">
                 </div>
-              </span>
-            </div>
-            <div class="info-item-detalle acciones-aprobacion">
-              <strong>Acciones:</strong>
-              <span class="botones-accion">
-                <button class="btn btn-success btn-action" 
-                        (click)="aprobarSolicitud()"
-                        [disabled]="!montoAprobado || montoAprobado <= 0">
-                  <i class="fas fa-check"></i> Aprobar Solicitud
-                </button>
-                <button class="btn btn-rechazar btn-action" (click)="rechazarSolicitud()">
-                  <i class="fas fa-times"></i> Rechazar
-                </button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Historial de la solicitud -->
-        <div class="info-section">
-          <h4>Historial de la Solicitud</h4>
-          <div class="info-grid-detalle">
-            <div class="info-item-detalle">
-              <strong>Fecha de Creación:</strong>
-              <span>{{solicitudSeleccionada?.fechaCreacion || solicitudSeleccionada?.fechaSolicitud}}</span>
-            </div>
-            <div class="info-item-detalle">
-              <strong>Última Actualización:</strong>
-              <span>{{solicitudSeleccionada?.ultimaActualizacion || 'Hoy'}}</span>
-            </div>
-            <div class="info-item-detalle">
-              <strong>Comentarios:</strong>
-              <span>{{solicitudSeleccionada?.comentarios || 'Sin comentarios adicionales'}}</span>
+                <small class="text-muted">
+                  Máximo: {{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}
+                </small>
+              </div>
+              <div class="acciones-aprobacion">
+                <span class="botones-accion">
+                  <button 
+                    class="btn btn-success btn-action" 
+                    (click)="aprobarSolicitud()"
+                    [disabled]="!montoAprobado || montoAprobado <= 0 || cargandoAprobacion">
+                    <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i> 
+                    {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar Solicitud' }}
+                  </button>
+                  <button 
+                    class="btn btn-rechazar btn-action"
+                    (click)="rechazarSolicitud()"
+                    [disabled]="cargandoAprobacion">
+                    <i class="fas fa-times"></i> Rechazar
+                  </button>
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="cerrarModal()">
+        <button 
+          class="btn btn-secondary" 
+          (click)="cerrarModal()"
+          [disabled]="cargandoAprobacion">
           <i class="fas fa-times"></i> Cerrar
-        </button>
-        <button class="btn btn-outline" (click)="descargarExpediente()">
-          <i class="fas fa-download"></i> Descargar Expediente
         </button>
       </div>
     </div>

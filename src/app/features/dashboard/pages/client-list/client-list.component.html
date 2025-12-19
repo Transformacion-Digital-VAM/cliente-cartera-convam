@@ -1,63 +1,42 @@
 <div class="client-list-container">
-  
+
   <!-- Migajas de Pan -->
   <nav class="breadcrumb-nav" aria-label="Migajas de pan">
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
-        <a href="/dashboard" class="breadcrumb-link">Inicio</a>
+        <a href="/dashboard" class="breadcrumb-link">INICIO</a>
       </li>
       <li class="breadcrumb-item active" aria-current="page">
-        Consulta de Clientes
+        CONSULTA DE CLIENTES
       </li>
     </ol>
   </nav>
 
-  <!-- Encabezado -->
-  <!-- <div class="header">
-    <h2>Consulta de Clientes</h2>
-    <p>Gestión y consulta de información de clientes</p>
-  </div> -->
-
   <!-- Filtros de búsqueda -->
   <div class="filtros-section">
     <div class="filtros-card">
-      <h3>Filtros de Búsqueda</h3>
+      <h3>FILROS DE BUSQUEDA</h3>
       <div class="filtros-form">
         <!-- Nombre -->
         <div class="form-group">
-          <!-- <label for="nombre">Nombre:</label> -->
-          <input 
-            type="text"
-            id="nombre"
-            name="nombre"
-            [(ngModel)]="filtro.nombre"
-            placeholder="Buscar por nombre..."
-            class="form-control"
-          />
+          <input type="text" id="nombre" name="nombre" [(ngModel)]="filtro.nombre" placeholder="Buscar por nombre..."
+            class="form-control" />
         </div>
 
         <!-- CURP -->
         <div class="form-group">
-          <!-- <label for="identificacion">CURP:</label> -->
-          <input 
-            type="text"
-            id="identificacion"
-            name="identificacion"
-            [(ngModel)]="filtro.identificacion"
-            placeholder="Buscar por CURP"
-            class="form-control"
-          />
+          <input type="text" id="identificacion" name="identificacion" [(ngModel)]="filtro.identificacion"
+            placeholder="Buscar por CURP" class="form-control" />
+        </div>
+
+        <div class="form-group">
+          <input type="text" id="aliado" name="aliado" [(ngModel)]="filtro.identificacion"
+            placeholder="Buscar por Aliada" class="form-control" />
         </div>
 
         <!-- Estado Crédito -->
         <div class="form-group">
-          <!-- <label for="estadoCredito">Estado de Crédito:</label> -->
-          <select
-            id="estadoCredito"
-            name="estadoCredito"
-            [(ngModel)]="filtro.estadoCredito"
-            class="form-control"
-          >
+          <select id="estadoCredito" name="estadoCredito" [(ngModel)]="filtro.estadoCredito" class="form-control">
             <option value="">Todos los estados</option>
             <option value="activo">Activo</option>
             <option value="vencido">Vencido</option>
@@ -69,10 +48,10 @@
         <!-- Botones -->
         <div class="botones-filtros">
           <button (click)="buscarCliente()" class="btn btn-primary">
-            Buscar
+            BUSCAR
           </button>
           <button (click)="limpiarFiltros()" class="btn btn-secondary">
-            Limpiar
+            LIMPIAR
           </button>
         </div>
       </div>
@@ -82,61 +61,62 @@
   <!-- Loading -->
   <div *ngIf="cargando" class="loading-state">
     <div class="spinner"></div>
-    <p>Cargando información...</p>
+    <p>CARGANDO INFORMACIÓN...</p>
   </div>
 
   <!-- Error -->
   <div *ngIf="error && !cargando" class="error-state">
-    <div class="error-icon">⚠️</div>
+    <div class="error-icon"></div>
     <p>{{ error }}</p>
     <button (click)="cargarClientes()" class="btn btn-primary">
-      Reintentar
+      REINTENTAR
     </button>
   </div>
 
   <!-- Contenido Principal -->
   <div *ngIf="!cargando && !error" class="main-content-vertical">
-    
-    <!-- Tabla de Clientes con Scroll -->
+
+    <!-- Tabla de Clientes -->
     <div class="tabla-section-vertical">
       <div class="tabla-header">
-        <h3>Lista de Clientes ({{ clientes.length }})</h3>
+        <h3>LISTA DE CLIENTES ({{ clientes.length }})</h3>
       </div>
 
       <div class="table-container-vertical">
         <table class="table">
           <thead>
             <tr>
-              <th scope="col">ID</th>
-              <th scope="col">Nombre</th>
-              <th scope="col">Apellido Paterno</th>
-              <th scope="col">Apellido Materno</th>
-              <th scope="col">CURP</th>
-              <th scope="col">Acciones</th>
+              <th scope="col" class="text-center">ID</th>
+              <th scope="col">NOMBRE</th>
+              <th scope="col">APELLIDO PATERNO</th>
+              <th scope="col">APELLIDO MATERNO</th>
+              <th scope="col" class="text-center">CURP</th>
+              <th scope="col" class="text-center">TELÉFONO</th>
+              <th scope="col" class="text-center">GENERAR SOLICITUD</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let cliente of clientes" 
-                [class.selected]="clienteSeleccionado?.id_cliente === cliente.id_cliente"
-                (click)="seleccionarCliente(cliente)">
+            <tr *ngFor="let cliente of clientes"
+              [class.selected]="clienteSeleccionado?.id_cliente === cliente.id_cliente"
+              (click)="seleccionarCliente(cliente)">
               <td class="id-cell">{{ cliente.id_cliente }}</td>
               <td class="nombre-cell">{{ cliente.nombre_cliente || 'N/A' }}</td>
               <td class="apellido-cell">{{ cliente.app_cliente || 'N/A' }}</td>
               <td class="apellido-cell">{{ cliente.apm_cliente || 'N/A' }}</td>
-              <td class="curp-cell">{{ cliente.curp || 'N/A' }}</td>
+              <td class="curp-cell text-center">{{ cliente.curp || 'N/A' }}</td>
+              <td class="curp-cell text-center">{{ cliente.telefono || 'N/A' }}</td>
               <td class="actions-cell">
-                <button 
-                  class="btn btn-outline btn-sm"
-                  (click)="seleccionarCliente(cliente); $event.stopPropagation()"
-                ><i class="fas fa-info-circle"></i>                  
+                <button class="btn btn-outline-primary btn-sm"
+                  (click)="abrirModalSolicitud(cliente); $event.stopPropagation()">
+                  <i class="fa-solid fa-clipboard-list"></i>
                 </button>
               </td>
             </tr>
           </tbody>
           <tfoot *ngIf="clientes.length === 0">
             <tr>
-              <td colspan="6" class="text-center no-data">
-                No se encontraron clientes
+              <td colspan="7" class="text-center no-data">
+                NO SE ENCONTRARON CLIENTES
               </td>
             </tr>
           </tfoot>
@@ -147,23 +127,22 @@
     <!-- Detalles del Cliente -->
     <div *ngIf="clienteSeleccionado" class="detalles-section-vertical">
       <div class="detalles-header">
-        <h3>Detalles del Cliente: {{ getNombreCompleto(clienteSeleccionado) }}</h3>
+        <h3><span class="bold">DETALLES DE CLIENTE: </span>{{ getNombreCompleto(clienteSeleccionado) }}</h3>
         <button (click)="volverALista()" class="btn btn-close-detalles">
-          Cerrar Detalles
+          CERRAR
         </button>
       </div>
 
       <div class="detalles-content">
         <!-- Información Personal -->
         <div class="info-section">
-          <h4>Datos Personales</h4>
           <div class="info-grid-detalle">
             <div class="info-item-detalle">
-              <strong>ID Cliente:</strong>
+              <strong>ID CLIENTE:</strong>
               <span>{{ clienteSeleccionado.id_cliente }}</span>
             </div>
             <div class="info-item-detalle">
-              <strong>Nombre completo:</strong>
+              <strong>NOMBRE:</strong>
               <span>{{ getNombreCompleto(clienteSeleccionado) }}</span>
             </div>
             <div class="info-item-detalle">
@@ -171,59 +150,262 @@
               <span class="curp-value">{{ clienteSeleccionado.curp || 'No especificada' }}</span>
             </div>
             <div class="info-item-detalle">
-              <strong>Ocupación:</strong>
+              <strong>OCUPACIÓN:</strong>
               <span>{{ clienteSeleccionado.ocupacion || 'No especificada' }}</span>
             </div>
             <div class="info-item-detalle">
-              <strong>Nacionalidad:</strong>
+              <strong>NACIONALIDAD:</strong>
               <span>{{ clienteSeleccionado.nacionalidad || 'No especificada' }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Domicilio -->
-        <div class="info-section">
-          <h4>Domicilio</h4>
-          <div class="info-grid-detalle">
             <div class="info-item-detalle">
-              <strong>Calle:</strong>
-              <span>{{ clienteSeleccionado.calle || 'No especificada' }}</span>
+              <strong>MUNICIPIO:</strong>
+              <span>{{ clienteSeleccionado.municipio || 'No especificado' }}</span>
             </div>
             <div class="info-item-detalle">
-              <strong>Número:</strong>
-              <span>{{ clienteSeleccionado.numero || 'No especificado' }}</span>
-            </div>
-            <div class="info-item-detalle">
-              <strong>Localidad:</strong>
+              <strong>LOCALIDAD:</strong>
               <span>{{ clienteSeleccionado.localidad || 'No especificada' }}</span>
             </div>
             <div class="info-item-detalle">
-              <strong>Municipio:</strong>
-              <span>{{ clienteSeleccionado.municipio || 'No especificado' }}</span>
+              <strong>CALLE:</strong>
+              <span>{{ clienteSeleccionado.calle || 'No especificada' }}</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Información de Crédito -->
-        <div class="info-section">
-          <h4>Información de Crédito</h4>
-          <div class="info-grid-detalle">
             <div class="info-item-detalle">
-              <strong>Estado:</strong>
+              <strong>NÚMERO:</strong>
+              <span>{{ clienteSeleccionado.numero || 'No especificado' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>TELÉFONO:</strong>
+              <span>{{ clienteSeleccionado.telefono || 'No especificado' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>ESTADO:</strong>
               <span class="badge" [ngClass]="getEstadoCreditoClass(clienteSeleccionado)">
                 {{ getEstadoCreditoText(clienteSeleccionado) }}
               </span>
             </div>
             <div class="info-item-detalle">
-              <strong>Ciclo Actual:</strong>
+              <strong>CICLO ACTUAL:</strong>
               <span>{{ clienteSeleccionado.ciclo_actual || 'No definido' }}</span>
             </div>
           </div>
         </div>
+        <!-- Información de Aval -->
+        <div class="info-section">
+          <h4>DATOS DEL AVAL</h4>
+          <div *ngIf="avalSeleccionado; else sinAval" class="info-grid-detalle">
+            <div class="info-item-detalle">
+              <strong>NOMBRE:</strong>
+              <span>{{ getNombreCompletoAval(avalSeleccionado) }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>CURP:</strong>
+              <span class="curp-value">{{ avalSeleccionado.curp || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>TELÉFONO:</strong>
+              <span>{{ avalSeleccionado.telefono || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>MUNICIPIO:</strong>
+              <span>{{ avalSeleccionado.municipio || 'No especificado' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>LOCALIDAD:</strong>
+              <span>{{ avalSeleccionado.localidad || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>CALLE:</strong>
+              <span>{{ avalSeleccionado.calle || 'No especificada' }}</span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>NÚMERO:</strong>
+              <span>{{ avalSeleccionado.numero || 'No especificado' }}</span>
+            </div>
+          </div>
+          <ng-template #sinAval>
+            <p class="text-muted">NO SE HA ASIGNADO UN AVAL PARA ESTE CLIENTE.</p>
+          </ng-template>
+        </div>
 
       </div>
     </div>
-
   </div>
 
+  <!-- Modal de Solicitud -->
+  <div class="modal fade" id="crearSolicitud" tabindex="-1" aria-labelledby="solicitudModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-icon">
+            <i class="fa-solid fa-clipboard-list"></i>
+          </div>
+          <div class="modal-header-text">
+            <h3 class="modal-title"> NUEVA SOLICITUD</h3>
+          </div>
+          <!-- <h5 class="modal-title" id="solicitudModalLabel"> Nueva Solicitud de Crédito</h5> -->
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+            (click)="cerrarModalSolicitud()"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Información del Cliente -->
+          <!-- <div class="card mb-2">
+            <div class="card-header">
+              <h6 class="mb-0">INFORMACIÓN DEL CLIENTE</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-2">
+                  <strong>ID CLIENTE:</strong> {{ clienteParaSolicitud?.id_cliente }}
+                </div>
+                <div class="col-md-6">
+                  <strong>NOMBRE:</strong> {{ getNombreCompleto(clienteParaSolicitud) }}
+                </div>
+              </div>
+            </div>
+          </div> -->
+            <div class="alert alert-info mb-3">
+            <small>
+              <strong>Ejecutivo responsable:</strong> 
+              {{usuarioActual?.nombre || usuarioActual?.usuario || 'No identificado'}}
+              <br>
+              <strong>ID de ejecutivo:</strong> {{usuarioActual?.id_usuario || 'N/A'}}
+            </small>
+          </div>
+          <div class="resumen-compacto">
+            <div class="resumen-item mb-2">
+              <span class="resumen-label">ID CLIENTE:</span>
+              <span class="resumen-value">{{ clienteParaSolicitud?.id_cliente }}</span>
+            </div>
+            <div class="resumen-item">
+              <span class="resumen-label">NOMBRE</span>
+              <span class="resumen-value total">{{ getNombreCompleto(clienteParaSolicitud) }}</span>
+            </div>
+          </div>
+
+          <!-- Formulario de Solicitud -->
+          <div class="solicitud-form-container mb-2">
+          <form [formGroup]="solicitudForm">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="montoSolicitado" class="form-label">MONTO SOLICITADO *</label>
+                  <input type="number" class="form-control" id="montoSolicitado" formControlName="monto_solicitado"
+                    min="5000" step="100">
+                  <div
+                    *ngIf="solicitudForm.get('monto_solicitado')?.invalid && solicitudForm.get('monto_solicitado')?.touched"
+                    class="text-danger small">
+                    El monto es requerido (mínimo $5000)
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <div class="form-group">
+                    <label class="form-label" for="plazo">PlAZO DE MESES</label>
+                    <input type="number" class="form-control" formControlName="plazo_meses" id="plazo" min="1" max="60"
+                      required>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="tipoVencimiento" class="form-label">TIPO DE VENCIMIENTO</label>
+                  <select class="form-select" id="tipoVencimiento" formControlName="tipo_vencimiento">
+                    <option *ngFor="let tipo of tiposVencimiento" [value]="tipo.value">
+                      {{ tipo.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="tipoSolicitud" class="form-label">TIPO DE SOLICITUD *</label>
+                  <select class="form-select" id="tipoSolicitud" formControlName="tipo_credito" required>
+                    <option *ngFor="let tipo of tiposSolicitud" [value]="tipo.value">
+                      {{ tipo.label }}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-3">
+                <div class="form-group">
+                  <label for="aliado" class="form-label">ALIADO *</label>
+                  <select class="form-select" id="aliado" formControlName="aliado_id" required>
+                    <option value="">SELECCIONA UN ALIADO</option>
+                    <option *ngFor="let aliado of aliados" [value]="aliado.id_aliado">
+                      {{ aliado.nom_aliado }}
+                    </option>
+                  </select>
+                  <div *ngIf="solicitudForm.get('aliado_id')?.invalid && solicitudForm.get('aliado_id')?.touched"
+                    class="text-danger small">
+                    Debes seleccionar un aliado
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2">
+                <div class="mb-3">
+                  <label for="noPagos" class="form-label">PAGOS</label>
+                  <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1" readonly>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label for="aval" class="form-label">AVAL *</label>
+                  <select class="form-select" id="aval" formControlName="aval_id" required>
+                    <option value="">Seleccionar Aval</option>
+                    <option *ngFor="let aval of avales" [value]="aval.id_aval">
+                      {{ getNombreCompletoAval(aval) }}
+                    </option>
+                  </select>
+                  <div *ngIf="solicitudForm.get('aval_id')?.invalid && solicitudForm.get('aval_id')?.touched"
+                    class="text-danger small">
+                    Debes seleccionar un aval
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="mb-3">
+                  <label for="diaPago" class="form-label">Día de Pago *</label>
+                  <select class="form-select" id="diaPago" formControlName="dia_pago" required>
+                    <option *ngFor="let dia of diasPago" [value]="dia.value">
+                      {{ dia.label }}
+                    </option>
+                  </select>
+                  <div *ngIf="solicitudForm.get('dia_pago')?.invalid && solicitudForm.get('dia_pago')?.touched"
+                    class="text-danger small">
+                    Debes seleccionar un día de pago
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-12">
+                <div class="mb-3">
+                  <label for="observaciones" class="form-label">OBSERVACIONES</label>
+                  <textarea class="form-control" id="observaciones" rows="3" formControlName="observaciones"
+                    placeholder="Observaciones adicionales..."></textarea>
+                </div>
+              </div>
+            </div>
+          </form>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalSolicitud()" [disabled]="guardando">
+            CANCELAR
+          </button>
+          <button type="button" class="btn btn-primary" (click)="guardarSolicitud()"
+            [disabled]="!solicitudForm.valid || guardando">
+            <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+            {{ guardando ? 'Creando Solicitud...' : 'ENVIAR SOLICITUD' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

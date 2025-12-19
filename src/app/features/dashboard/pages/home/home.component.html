@@ -1,227 +1,541 @@
+<!-- dashboard-cartera.component.html -->
 <div class="dashboard-container">
-        <!-- Header -->
-        <div class="dashboard-header">
-            <div class="header-actions">
-                <button class="btn btn-primary">
-                    <i class="fas fa-sync-alt"></i> Actualizar
-                </button>
-            </div>
+  <!-- Encabezado del Dashboard -->
+  <div class="dashboard-header">
+    <h1><i class="fas fa-chart-line"></i> Dashboard de Cartera</h1>
+    <div class="dashboard-filters">
+      <button class="btn btn-outline btn-sm" (click)="actualizarDashboard()" [disabled]="cargandoDashboard">
+        <i class="fas fa-sync-alt" [class.fa-spin]="cargandoDashboard"></i>
+        {{ cargandoDashboard ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+      <select class="form-control form-control-sm" [(ngModel)]="periodoDashboard" (change)="actualizarDashboard()">
+        <option value="hoy">Hoy</option>
+        <option value="semana">Última Semana</option>
+        <option value="mes" selected>Último Mes</option>
+        <option value="trimestre">Último Trimestre</option>
+        <option value="anual">Último Año</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 1: CARTERA GENERAL -->
+  <!-- ============================================ -->
+  <div class="section-header">
+    <h2><i class="fas fa-wallet"></i> Cartera General</h2>
+    <span class="periodo-label">Período: {{ getPeriodoTexto() }}</span>
+  </div>
+
+  <div class="metrics-grid">
+    <!-- Cartera Total -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <i class="fas fa-wallet metric-icon total"></i>
+        <h3>Cartera Total</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(carteraTotal) }}</div>
+      <div class="metric-breakdown">
+        <div class="breakdown-item">
+          <span>Total Créditos:</span>
+          <strong>{{ totalCreditos }}</strong>
         </div>
-
-        <!-- Metrics Cards -->
-        <div class="metrics-grid">
-            <div class="metric-card total-portfolio">
-                <div class="metric-icon total-portfolio">
-                    <i class="fas fa-wallet"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>$250,000</h3>
-                    <p>Cartera Total</p>
-                </div>
-            </div>
-
-            <div class="metric-card active-clients">
-                <div class="metric-icon active-clients">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>45</h3>
-                    <p>Clientes Activos</p>
-                </div>
-            </div>
-
-            <div class="metric-card overdue-payments">
-                <div class="metric-icon overdue-payments">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>3</h3>
-                    <p>Pagos Atrasados</p>
-                </div>
-            </div>
-
-            <div class="metric-card monthly-revenue">
-                <div class="metric-icon monthly-revenue">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>$12,500</h3>
-                    <p>Ingresos Mensuales</p>
-                </div>
-            </div>
+        <div class="breakdown-item">
+          <span>Clientes Activos:</span>
+          <strong>{{ clientesVigentes }}</strong>
         </div>
-
-        <!-- Main Content -->
-        <div class="dashboard-content">
-            <div class="row">
-                <!-- Clientes Recientes -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">Clientes Recientes</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Cliente</th>
-                                            <th>Inversión</th>
-                                            <th>Riesgo</th>
-                                            <th>Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <strong>Juan Pérez</strong>
-                                                <br>
-                                                <small class="text-muted">4181145781</small>
-                                            </td>
-                                            <td>$50,000</td>
-                                            <td>
-                                                <span class="badge badge-warning">MEDIO</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-success">ACTIVO</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <strong>María García</strong>
-                                                <br>
-                                                <small class="text-muted">4181177599</small>
-                                            </td>
-                                            <td>$75,000</td>
-                                            <td>
-                                                <span class="badge badge-success">BAJO</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-success">ACTIVO</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <strong>Carlos López</strong>
-                                                <br>
-                                                <small class="text-muted">4181117896</small>
-                                            </td>
-                                            <td>$30,000</td>
-                                            <td>
-                                                <span class="badge badge-danger">ALTO</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-danger">MOROSO</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <strong>Ana Rodríguez</strong>
-                                                <br>
-                                                <small class="text-muted">4181134508</small>
-                                            </td>
-                                            <td>$60,000</td>
-                                            <td>
-                                                <span class="badge badge-success">BAJO</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge badge-success">ACTIVO</span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Distribución de Riesgo e Inversiones -->
-                <div class="col-md-6">
-                    <!-- Distribución de Riesgo -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">Distribución de Riesgo</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="risk-distribution">
-                                <div class="risk-item">
-                                    <div class="risk-info">
-                                        <span class="risk-level">BAJO</span>
-                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">25 Clientes</a></p>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-success" style="width: 55%"></div>
-                                    </div>
-                                </div>
-                                <div class="risk-item">
-                                    <div class="risk-info">
-                                        <span class="risk-level">MEDIO</span>
-                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">30 Clientes</a></p>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-warning" style="width: 33%"></div>
-                                    </div>
-                                </div>
-                                <div class="risk-item">
-                                    <div class="risk-info">
-                                        <span class="risk-level">ALTO</span>
-                                            <p><a href="#" class="link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">60 Clientes</a></p>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-danger" style="width: 11%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Inversiones Recientes -->
-                    <div class="card mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title">Inversiones Recientes</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="investment-item">
-                                <div class="investment-info">
-                                    <strong>Juan Pérez</strong>
-                                    <div class="investment-details">
-                                        <span>$50,000</span>
-                                        <span class="text-success">+8.5%</span>
-                                    </div>
-                                </div>
-                                <div class="investment-date">
-                                    15/02/2024
-                                </div>
-                            </div>
-                            <div class="investment-item">
-                                <div class="investment-info">
-                                    <strong>María García</strong>
-                                    <div class="investment-details">
-                                        <span>$75,000</span>
-                                        <span class="text-success">+6.2%</span>
-                                    </div>
-                                </div>
-                                <div class="investment-date">
-                                    10/02/2024
-                                </div>
-                            </div>
-                            <div class="investment-item">
-                                <div class="investment-info">
-                                    <strong>Roberto Silva</strong>
-                                    <div class="investment-details">
-                                        <span>$40,000</span>
-                                        <span class="text-success">+7.8%</span>
-                                    </div>
-                                </div>
-                                <div class="investment-date">
-                                    05/02/2024
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
+    <!-- Cartera Corriente -->
+    <div class="metric-card success">
+      <div class="metric-header">
+        <i class="fas fa-check-circle metric-icon corriente"></i>
+        <h3>Cartera Corriente</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(carteraCorriente) }}</div>
+      <div class="metric-subtitle">
+        {{ getPorcentajeCarteraCorriente() }}% del total
+        <span class="badge success-badge">{{ creditosVigentes }} créditos</span>
+      </div>
+    </div>
 
+    <!-- Cartera Vencida -->
+    <div class="metric-card warning">
+      <div class="metric-header">
+        <i class="fas fa-exclamation-triangle metric-icon vencida"></i>
+        <h3>Cartera Vencida</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(carteraVencida) }}</div>
+      <div class="metric-subtitle">
+        {{ porcentajeCarteraVencida }}% del total
+        <span class="badge warning-badge">{{ creditosVencidos }} créditos</span>
+      </div>
+    </div>
+
+    <!-- Cartera en Mora -->
+    <div class="metric-card danger">
+      <div class="metric-header">
+        <i class="fas fa-clock metric-icon mora"></i>
+        <h3>Cartera en Mora</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(carteraMora) }}</div>
+      <div class="metric-subtitle">
+        {{ porcentajeCarteraMora }}% del total
+        <span class="badge danger-badge">{{ clientesMora }} clientes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 2: GRÁFICOS -->
+  <!-- ============================================ -->
+  <div class="charts-grid">
+    <!-- Gráfico de Distribución de Cartera -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="fas fa-chart-pie"></i> Distribución de Cartera</h3>
+      </div>
+      <div class="chart-container">
+        <canvas #distribucionChart></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(40, 167, 69, 0.8);"></span>
+          Corriente: {{ formatearMoneda(carteraCorriente) }} ({{ getPorcentajeCarteraCorriente() }}%)
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(255, 193, 7, 0.8);"></span>
+          Vencida: {{ formatearMoneda(carteraVencida) }} ({{ porcentajeCarteraVencida }}%)
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(220, 53, 69, 0.8);"></span>
+          En Mora: {{ formatearMoneda(carteraMora) }} ({{ porcentajeCarteraMora }}%)
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de Ingresos Totales -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="fas fa-money-bill-wave"></i> Ingresos Totales Acumulados</h3>
+      </div>
+      <div class="chart-container">
+        <canvas #ingresosChart></canvas>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(97, 90, 254, 0.8);"></span>
+          Capital: {{ formatearMoneda(ingresosCapitalTotal) }}
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(40, 167, 69, 0.8);"></span>
+          Intereses: {{ formatearMoneda(ingresosInteresesTotal) }}
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: rgba(220, 53, 69, 0.8);"></span>
+          Moratorios: {{ formatearMoneda(ingresosMoratoriosTotal) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 3: INGRESOS Y MINISTRACIONES -->
+  <!-- ============================================ -->
+  <div class="section-header">
+    <h2><i class="fas fa-cash-register"></i> Ingresos y Ministraciones - {{ getPeriodoTexto() }}</h2>
+  </div>
+
+  <div class="metrics-grid">
+    <!-- Ingresos del Período -->
+    <div class="metric-card info">
+      <div class="metric-header">
+        <i class="fas fa-money-bill-wave metric-icon ingresos"></i>
+        <h3>Ingresos Totales</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(ingresosPeriodo) }}</div>
+      <div class="metric-breakdown">
+        <div class="breakdown-item">
+          <span>Capital:</span>
+          <strong>{{ formatearMoneda(ingresosCapitalPeriodo) }}</strong>
+        </div>
+        <div class="breakdown-item">
+          <span>Intereses:</span>
+          <strong>{{ formatearMoneda(ingresosInteresesPeriodo) }}</strong>
+        </div>
+        <div class="breakdown-item">
+          <span>Moratorios:</span>
+          <strong>{{ formatearMoneda(ingresosMoratoriosPeriodo) }}</strong>
+        </div>
+      </div>
+      <div class="metric-footer">
+        <small>Suma de todos los pagos registrados en el período</small>
+      </div>
+    </div>
+
+    <!-- Ministraciones Entregadas -->
+    <div class="metric-card success">
+      <div class="metric-header">
+        <i class="fas fa-hand-holding-usd metric-icon entregados"></i>
+        <h3>Ministraciones Entregadas</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(ministracionesEntregados) }}</div>
+      <div class="metric-subtitle">
+        Créditos con estado: ENTREGADO
+      </div>
+      <div class="metric-footer">
+        <small>Total de montos aprobados en créditos entregados</small>
+      </div>
+    </div>
+
+    <!-- Devoluciones -->
+    <div class="metric-card warning">
+      <div class="metric-header">
+        <i class="fas fa-undo metric-icon devoluciones"></i>
+        <h3>Devoluciones</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(ministracionesDevolucion) }}</div>
+      <div class="metric-subtitle">
+        Créditos con estado: DEVOLUCION
+      </div>
+      <div class="metric-footer">
+        <small>Total de montos devueltos en el período</small>
+      </div>
+    </div>
+
+    <!-- Neto Ministraciones -->
+    <div class="metric-card">
+      <div class="metric-header">
+        <i class="fas fa-calculator metric-icon neto"></i>
+        <h3>Neto Ministraciones</h3>
+      </div>
+      <div class="metric-value">{{ formatearMoneda(ministracionesTotal) }}</div>
+      <div class="metric-subtitle">
+        Entregas - Devoluciones
+      </div>
+      <div class="metric-breakdown">
+        <div class="breakdown-item">
+          <span>Entregados:</span>
+          <strong>{{ formatearMoneda(ministracionesEntregados) }}</strong>
+        </div>
+        <div class="breakdown-item">
+          <span>Devueltos:</span>
+          <strong>{{ formatearMoneda(ministracionesDevolucion) }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 4: ANÁLISIS POR ALIADO -->
+  <!-- ============================================ -->
+  <div class="section-header">
+    <h2><i class="fas fa-handshake"></i> Análisis por Aliado</h2>
+  </div>
+
+  <div class="tables-grid">
+    <!-- Top 5 Aliados por Cartera -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3><i class="fas fa-trophy"></i> Top 5 Aliados por Cartera</h3>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th width="40">#</th>
+              <th>Aliado</th>
+              <th class="text-right">Cartera</th>
+              <th class="text-right">% Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let aliado of topAliados; let i = index">
+              <td class="text-center">
+                <span class="ranking-badge" [class.top-1]="i === 0" [class.top-2]="i === 1" [class.top-3]="i === 2">
+                  {{ aliado.ranking }}
+                </span>
+              </td>
+              <td>{{ aliado.nombre }}</td>
+              <td class="text-right">{{ formatearMoneda(aliado.cartera) }}</td>
+              <td class="text-right">
+                <span class="percentage-badge">
+                  {{ getPorcentajeCarteraAliado(aliado.cartera) }}%
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="topAliados.length === 0">
+              <td colspan="4" class="text-center no-data">
+                <i class="fas fa-exclamation-circle"></i> No hay datos de aliados
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mora por Aliado -->
+    <div class="table-card">
+      <div class="table-header danger">
+        <h3><i class="fas fa-exclamation-triangle"></i> Mora por Aliado</h3>
+        <span class="badge danger-badge">{{ moraPorAliado.length }} con mora</span>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Aliado</th>
+              <th class="text-right">Monto en Mora</th>
+              <th class="text-right">% Cartera Mora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let aliado of moraPorAliado.slice(0, 5)">
+              <td>{{ aliado.nombre }}</td>
+              <td class="text-right monto-mora">{{ formatearMoneda(aliado.mora) }}</td>
+              <td class="text-right">
+                <div class="progress-with-label">
+                  <!-- <div class="progress">
+                    <div class="progress-bar danger" 
+                         [style.width.%]="(aliado.mora / carteraMora) * 100"></div>
+                  </div> -->
+                  <div class="progress-bar danger" 
+                          [style.width.%]="getPorcentajeMora(aliado.mora)"></div>
+                      <span class="percentage-label">{{ getPorcentajeMora(aliado.mora) }}%</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="moraPorAliado.length === 0">
+              <td colspan="3" class="text-center no-data success">
+                <i class="fas fa-check-circle"></i> No hay mora por aliado
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 5: LISTADOS IMPORTANTES -->
+  <!-- ============================================ -->
+  <div class="section-header">
+    <h2><i class="fas fa-list-alt"></i> Listados Importantes</h2>
+  </div>
+
+  <div class="lists-grid">
+    <!-- Próximos Vencimientos -->
+    <div class="list-card">
+      <div class="list-header">
+        <div>
+          <h3><i class="fas fa-calendar-alt"></i> Próximos Vencimientos</h3>
+          <small>Próximos 30 días</small>
+        </div>
+        <span class="badge info-badge">{{ proximosVencimientos.length }} créditos</span>
+      </div>
+      <div class="list-content">
+        <div *ngIf="proximosVencimientos.length === 0" class="empty-state">
+          <i class="fas fa-check-circle success"></i>
+          <p>No hay vencimientos próximos</p>
+        </div>
+        <div *ngFor="let vencimiento of proximosVencimientos" 
+             class="list-item" 
+             [class.urgente]="vencimiento.dias <= 3"
+             [class.proximo]="vencimiento.dias > 3 && vencimiento.dias <= 7">
+          <div class="item-main">
+            <div class="item-header">
+              <strong>{{ vencimiento.cliente }}</strong>
+              <span class="item-id">#{{ vencimiento.credito_id }}</span>
+            </div>
+            <div class="item-details">
+              <span class="item-aliado">
+                <i class="fas fa-handshake"></i> {{ vencimiento.aliado }}
+              </span>
+            </div>
+          </div>
+          <div class="item-side">
+            <div class="item-monto">{{ formatearMoneda(vencimiento.monto) }}</div>
+            <div class="item-fecha">
+              <i class="fas fa-calendar-day"></i>
+              <span class="fecha-text">{{ formatearFecha(vencimiento.fecha) }}</span>
+              <span class="dias-text" [class.urgente]="vencimiento.dias <= 3">
+                ({{ vencimiento.dias }} días)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas de Mora -->
+    <div class="list-card">
+      <div class="list-header danger">
+        <div>
+          <h3><i class="fas fa-exclamation-circle"></i> Alertas de Mora Crítica</h3>
+          <small>Más de 7 días de mora</small>
+        </div>
+        <span class="badge danger-badge">{{ alertasMora.length }} alertas</span>
+      </div>
+      <div class="list-content">
+        <div *ngIf="alertasMora.length === 0" class="empty-state">
+          <i class="fas fa-check-circle success"></i>
+          <p>No hay alertas críticas</p>
+        </div>
+        <div *ngFor="let alerta of alertasMora" 
+             class="list-item alert-item"
+             (click)="contactarCliente(alerta)"
+             [class.critical]="alerta.dias_mora > 30"
+             [class.high]="alerta.dias_mora > 14 && alerta.dias_mora <= 30"
+             [class.medium]="alerta.dias_mora > 7 && alerta.dias_mora <= 14">
+          <div class="item-main">
+            <div class="item-header">
+              <strong>{{ alerta.cliente }}</strong>
+              <span class="item-id">#{{ alerta.credito_id }}</span>
+            </div>
+            <div class="item-details">
+              <span class="item-aliado">
+                <i class="fas fa-handshake"></i> {{ alerta.aliado }}
+              </span>
+              <!-- <span *ngIf="alerta.ultimo_pago" class="item-ultimo-pago">
+                <i class="fas fa-history"></i> Último pago: {{ formatearFecha(alerta.ultimo_pago) }}
+              </span> -->
+              <span *ngIf="alerta.ultimo_pago" class="item-ultimo-pago">
+                <i class="fas fa-history"></i> Último pago: {{ formatearFechaSegura(alerta.ultimo_pago) }}
+              </span>
+            </div>
+          </div>
+          <div class="item-side">
+            <div class="item-monto">{{ formatearMoneda(alerta.monto_vencido) }}</div>
+            <div class="item-dias">
+              <span class="badge" [class]="getClaseMora(alerta.dias_mora)">
+                {{ alerta.dias_mora }} días
+              </span>
+              <button class="btn-contactar" title="Contactar cliente">
+                <i class="fas fa-phone"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- SECCIÓN 6: RESUMEN ESTADÍSTICO -->
+  <!-- ============================================ -->
+  <div class="section-header">
+    <h2><i class="fas fa-chart-bar"></i> Resumen Estadístico</h2>
+  </div>
+
+  <div class="stats-grid">
+    <!-- Tasa de Morosidad -->
+    <div class="stat-card">
+      <div class="stat-icon danger">
+        <i class="fas fa-percentage"></i>
+      </div>
+      <div class="stat-content">
+        <h4>Tasa de Morosidad</h4>
+        <div class="stat-value">{{ tasaMorosidad }}%</div>
+        <small>Cartera en mora / Cartera total</small>
+      </div>
+    </div>
+    
+    <!-- Distribución de Créditos -->
+    <div class="stat-card">
+      <div class="stat-icon info">
+        <i class="fas fa-chart-pie"></i>
+      </div>
+      <div class="stat-content">
+        <h4>Distribución</h4>
+        <div class="stat-distribution">
+          <div class="distribution-item">
+            <span class="dot success"></span>
+            <span>Vigentes: {{ creditosVigentes }}</span>
+          </div>
+          <div class="distribution-item">
+            <span class="dot warning"></span>
+            <span>Vencidos: {{ creditosVencidos }}</span>
+          </div>
+          <div class="distribution-item">
+            <span class="dot danger"></span>
+            <span>Mora: {{ creditosMora }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Efectividad de Cobranza -->
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <i class="fas fa-money-bill-wave"></i>
+      </div>
+      <div class="stat-content">
+        <h4>Ingresos {{ getPeriodoTexto() }}</h4>
+        <div class="stat-value">{{ formatearMoneda(ingresosPeriodo) }}</div>
+        <small>Total de pagos recibidos</small>
+        <div class="stat-breakdown">
+          <div class="breakdown-item">
+            <span>Capital:</span>
+            <span>{{ formatearMoneda(ingresosCapitalPeriodo) }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span>Intereses:</span>
+            <span>{{ formatearMoneda(ingresosInteresesPeriodo) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Ministraciones Netas -->
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="fas fa-hand-holding-usd"></i>
+      </div>
+      <div class="stat-content">
+        <h4>Ministraciones Netas</h4>
+        <div class="stat-value">{{ formatearMoneda(ministracionesTotal) }}</div>
+        <small>{{ getPeriodoTexto() }}</small>
+        <div class="stat-breakdown">
+          <div class="breakdown-item">
+            <span>Entregados:</span>
+            <span>{{ formatearMoneda(ministracionesEntregados) }}</span>
+          </div>
+          <div class="breakdown-item">
+            <span>Devueltos:</span>
+            <span>{{ formatearMoneda(ministracionesDevolucion) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PIE DE PÁGINA INFORMATIVO -->
+  <!-- ============================================ -->
+  <div class="dashboard-footer">
+    <div class="footer-info">
+      <!-- <div class="update-info">
+        <i class="fas fa-clock"></i>
+        <span>Última actualización: {{ formatearFechaCompleta(new Date()) }}</span>
+      </div> -->
+      <div class="update-info">
+        <i class="fas fa-clock"></i>
+        <span>Última actualización: {{ getFechaActual() }}</span>
+      </div>
+      <div class="data-summary">
+        <span class="summary-item">
+          <i class="fas fa-database"></i>
+          {{ creditos.length }} créditos cargados
+        </span>
+        <span class="summary-item">
+          <i class="fas fa-receipt"></i>
+          {{ pagos.length }} pagos registrados
+        </span>
+        <span class="summary-item">
+          <i class="fas fa-users"></i>
+          {{ clientes.length }} clientes
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

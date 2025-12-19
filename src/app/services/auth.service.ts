@@ -64,6 +64,7 @@ export class AuthService {
     this.setupAuthStateListener();
   }
 
+  
   // Sesión de Firebase
   private setupAuthStateListener(): void {
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
@@ -103,6 +104,8 @@ export class AuthService {
       this.logout();
     }
   }
+
+
 
   // Registro, no inicia sesión en automático
   async registerWithoutLogin(nombre: string, correo: string, password: string, rol_id: number): Promise<RegisterResponse> {
@@ -285,9 +288,9 @@ export class AuthService {
   }
 
   // Obtener datos del usuario de forma síncrona
-  getUserDataSync(): User | null {
-    return this.currentUserSubject.value;
-  }
+  // getUserDataSync(): User | null {
+  //   return this.currentUserSubject.value;
+  // }
 
   // Obtener datos del usuario como Observable
   getUserDataObservable(): Observable<User | null> {
@@ -346,9 +349,9 @@ export class AuthService {
   }
 
   // Obtener UID del usuario actual de Firebase
-  getCurrentFirebaseUser(): FirebaseUser | null {
-    return this.auth.currentUser;
-  }
+  // getCurrentFirebaseUser(): FirebaseUser | null {
+  //   return this.auth.currentUser;
+  // }
 
   // Actualizar perfil de usuario en Firebase
   async updateUserProfile(displayName: string, photoURL?: string): Promise<void> {
@@ -527,4 +530,12 @@ export class AuthService {
     return this.isAdmin() ? '/admin-control' : '/dashboard';
   }
 
+
+    getCurrentFirebaseUser(): any {
+    return this.auth?.currentUser || null;
+  }
+
+  getUserDataSync(): User | null {
+    return this.currentUserSubject.value;
+  }
 }
