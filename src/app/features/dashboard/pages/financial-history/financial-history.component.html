@@ -73,16 +73,12 @@
               <th>NO. PAGO</th>
               <th>MONTO SEMANAL</th>
               <th>PRÓXIMA FECHA</th>
-              <!-- <th>MORA PAGADA</th> -->
               <th>TOTAL PAGADO</th>
               <th>SALDO PENDIENTE</th>
               <th>PAGOS REALIZADOS</th>
               <th>ESTADO</th>
               <th>DÍAS ATRASO</th>
               <th>SEMANAS ATRASO</th>
-              <!-- <th>CARTERA ATRASADA</th>
-              <th>MORA ACUMULADA</th> -->
-              <!-- <th>MORA PENDIENTE</th> -->
               <th>TOTAL ATRASADO</th>
               <th>ACCIONES</th>
             </tr>
@@ -117,7 +113,6 @@
                 <td>{{ calcularProximoNumeroPago(credito) }}/16</td>
                 <td>{{ formatearMoneda(calcularPagoSemanal(credito)) }}</td>
                 <td>{{ formatearProximaFechaPago(credito) }}</td>
-                <!-- <td>{{ formatearMoneda(calcularMoratorioTotal(credito)) }}</td> -->
                 <td>{{ formatearMoneda(calcularTotalPagado(credito)) }}</td>
                 <td>{{ formatearMoneda(credito.saldo_pendiente) }}</td>
                 <td>
@@ -129,11 +124,6 @@
                 </td>
                 <td>{{ calcularDiasAtraso(credito) }}</td>
                 <td>{{ calcularSemanasAtraso(credito) }}</td>
-                <!-- <td>{{ formatearMoneda(calcularCarteraAtrasada(credito)) }}</td>
-                <td>{{ formatearMoneda(calcularMoraAcumulada(credito)) }}</td>
-                <td [ngClass]="{'text-danger': calcularMoraPendiente(credito) > 0}">
-                  {{ formatearMoneda(calcularMoraPendiente(credito)) }}
-                </td> -->
                 <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
                   {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
                 </td>
@@ -178,9 +168,8 @@
                             <td>{{ formatearMoneda(detalle.mora) }}</td>
                             <td>
                               <span class="badge" 
-                                    [class.badge-success]="detalle.tipoPago.includes('NORMAL')"
-                                    [class.badge-warning]="detalle.tipoPago.includes('COMPLEMENTO')"
-                                    [class.badge-info]="detalle.tipoPago.includes('ADICIONAL')">
+                                    [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
+                                    [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
                                 {{ detalle.tipoPago }}
                               </span>
                             </td>
@@ -247,14 +236,6 @@
             <strong>Cartera Atrasada:</strong>
             <span>{{ formatearMoneda(carteraAtrasada) }}</span>
           </div>
-          <!-- <div class="info-item">
-            <strong>Mora Acumulada:</strong>
-            <span class="text-danger">{{ formatearMoneda(moraAcumulada) }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Mora Pagada:</strong>
-            <span>{{ formatearMoneda(calcularMoratorioTotal(creditoSeleccionado)) }}</span>
-          </div> -->
           <div class="info-item">
             <strong>Mora Pendiente:</strong>
             <span class="text-danger">{{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}</span>
@@ -279,18 +260,27 @@
             <strong>Pagos Completados:</strong>
             <span>{{ calcularPagosRealizados(creditoSeleccionado) }}</span>
           </div>
+          <div class="info-item">
+            <strong>Adeudo (Mora):</strong>
+            <span class="text-danger">{{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Saldo Futuro:</strong>
+            <span>{{ formatearMoneda(calcularAdeudoYFuturo(creditoSeleccionado).saldoFuturo) }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Opciones de pago -->
       <div class="opciones-pago">
-        <div class="opcion-pago" (click)="abrirModalPago('NORMAL')">
+        <!-- Opción PAGO -->
+        <div class="opcion-pago" (click)="abrirModalPago('PAGO')">
           <div class="opcion-icon">
             <i class="fas fa-calendar-week"></i>
           </div>
           <div class="opcion-content">
-            <h4>PAGO NORMAL</h4>
-            <p>Pago semanal correspondiente</p>
+            <h4>PAGO</h4>
+            <p>Pago normal o atrasado</p>
             <div class="opcion-details">
               <span class="monto-sugerido">
                 {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
@@ -298,27 +288,9 @@
               <span class="text-danger" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
                 + {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }} de mora
               </span>
-            </div>
-          </div>
-          <div class="opcion-arrow">
-            <i class="fas fa-chevron-right"></i>
-          </div>
-        </div>
-
-        <div class="opcion-pago" (click)="abrirModalPago('COMPLEMENTO')">
-          <div class="opcion-icon">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="opcion-content">
-            <h4>COMPLEMENTO</h4>
-            <p>Pagar semanas atrasadas y mora</p>
-            <div class="opcion-details">
               <span class="text-danger" *ngIf="semanasAtraso > 0">
                 {{ semanasAtraso }} semana(s) atrasada(s)
               </span>
-              <!-- <span class="text-danger" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
-                {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }} de mora
-              </span> -->
             </div>
           </div>
           <div class="opcion-arrow">
@@ -326,15 +298,24 @@
           </div>
         </div>
 
-        <div class="opcion-pago" (click)="abrirModalPago('ADICIONAL')">
+        <!-- Opción ADELANTO -->
+        <div class="opcion-pago" 
+             (click)="calcularMoraPendiente(creditoSeleccionado) === 0 ? abrirModalPago('ADELANTO') : null"
+             [ngClass]="{'disabled': calcularMoraPendiente(creditoSeleccionado) > 0}"
+             [title]="calcularMoraPendiente(creditoSeleccionado) > 0 ? 'No disponible con mora pendiente' : ''">
           <div class="opcion-icon">
-            <i class="fas fa-plus-circle"></i>
+            <i class="fas fa-forward"></i>
           </div>
           <div class="opcion-content">
-            <h4>ADICIONAL</h4>
-            <p>Pago extra para reducir saldo</p>
+            <h4>ADELANTO</h4>
+            <p>Pago de semana futura</p>
             <div class="opcion-details">
-              <span class="text-success">Aplica directamente a capital</span>
+              <span class="text-success" *ngIf="calcularMoraPendiente(creditoSeleccionado) === 0">
+                Aplica automáticamente a próxima semana
+              </span>
+              <span class="text-danger" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
+                No disponible (mora pendiente)
+              </span>
             </div>
           </div>
           <div class="opcion-arrow">
@@ -352,23 +333,16 @@
   </div>
 </div>
 
-<!-- MODAL DE PAGO -->
-<div class="modal-overlay" *ngIf="modalPagoAbierto">
+<!-- MODAL DE PAGO (Tipo: PAGO) -->
+<div class="modal-overlay" *ngIf="modalPagoAbierto && tipoPago === 'PAGO'">
   <div class="modal-content">
     <div class="modal-header">
       <div class="modal-header-content">
-        <div class="modal-icon" [ngClass]="{
-          'text-success': tipoPago === 'NORMAL',
-          'text-warning': tipoPago === 'COMPLEMENTO',
-          'text-info': tipoPago === 'ADICIONAL'
-        }">
-          <i class="fas" 
-             [class.fa-calendar-week]="tipoPago === 'NORMAL'"
-             [class.fa-clock]="tipoPago === 'COMPLEMENTO'"
-             [class.fa-plus-circle]="tipoPago === 'ADICIONAL'"></i>
+        <div class="modal-icon bg-primary">
+          <i class="fas fa-calendar-week"></i>
         </div>
         <div class="modal-header-text">
-          <h3 class="modal-title">{{ tipoPago }}</h3>
+          <h3 class="modal-title">PAGO</h3>
           <p class="modal-subtitle">{{ getNombreCliente(creditoSeleccionado) }}</p>
         </div>
       </div>
@@ -397,14 +371,6 @@
             <span class="text-danger">{{ semanasAtraso }}</span>
           </div>
           <div class="info-item">
-            <strong>Cartera Atrasada:</strong>
-            <span>{{ formatearMoneda(carteraAtrasada) }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Mora Acumulada:</strong>
-            <span class="text-danger">{{ formatearMoneda(moraAcumulada) }}</span>
-          </div>
-          <div class="info-item">
             <strong>Mora Pendiente:</strong>
             <span class="text-danger">{{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}</span>
           </div>
@@ -422,31 +388,30 @@
       <!-- Formulario de pago -->
       <div class="form-section">
         <div class="form-grid">
-          <!-- NUEVO: Selector de número de semana/pago -->
+          <!-- Selector de número de semana/pago SOLO PARA PAGO -->
           <div class="form-group full-width">
             <label class="form-label">
-              <i class="fas fa-calendar-alt"></i> SEMANA/NÚMERO DE PAGO * 
-              <small class="text-muted">(Seleccione la semana a la que aplicará este pago)</small>
+              <i class="fas fa-calendar-alt"></i> SELECCIONE LA SEMANA *
             </label>
             <select class="form-control" 
                     [(ngModel)]="numeroPagoSeleccionado"
                     [disabled]="procesandoPago">
-              <option *ngFor="let num of obtenerSemanasDisponibles()" 
-                      [value]="num"
-                      [disabled]="getEstadoSemana(num).disabled">
-                Semana {{ num }}/16 - {{ getEstadoSemana(num).texto }}
+              <option *ngFor="let semana of obtenerSemanasDisponibles()" 
+                      [value]="semana.numero"
+                      [disabled]="semana.disabled">
+                Semana {{ semana.numero }}/16 - {{ getEstadoSemana(semana.numero).texto }} ({{ formatearFecha(calcularFechaSemana(creditoSeleccionado, semana.numero).toISOString()) }})
               </option>
             </select>
             <small class="form-text text-info">
               <i class="fas fa-info-circle"></i>
               <span *ngIf="numeroPagoSeleccionado === calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta es la siguiente semana que debe pagarse
+                Esta es la próxima semana que debe pagarse
               </span>
               <span *ngIf="numeroPagoSeleccionado < calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta semana ya fue pagada - puede aplicar pagos adicionales o correcciones
+                Esta semana está atrasada
               </span>
               <span *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta es una semana futura - asegúrese de que es correcto
+                Esta es una semana futura
               </span>
             </small>
           </div>
@@ -461,9 +426,7 @@
                      [disabled]="procesandoPago">
             </div>
             <small class="form-text">
-              <span *ngIf="tipoPago === 'NORMAL'">Sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}</span>
-              <span *ngIf="tipoPago === 'COMPLEMENTO'">Sugerido: {{ formatearMoneda(carteraAtrasada) }}</span>
-              <span *ngIf="tipoPago === 'ADICIONAL'">Sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}</span>
+              Sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
             </small>
           </div>
 
@@ -479,8 +442,8 @@
             </select>
           </div>
 
-          <!-- Campo para moratorios -->
-          <!-- <div class="form-group full-width" *ngIf="tipoPago !== 'ADICIONAL'">
+          <!-- Campo para moratorios solo si hay mora pendiente -->
+          <div class="form-group full-width" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
             <label class="form-label">MORA A PAGAR</label>
             <div class="monto-input-container">
               <span class="currency-symbol">$</span>
@@ -490,9 +453,9 @@
                      [disabled]="procesandoPago">
             </div>
             <small class="form-text">
-              Sugerido: {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}
+              Moratoria pendiente: {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}
             </small>
-          </div> -->
+          </div>
         </div>
 
         <!-- Resumen del pago -->
@@ -507,10 +470,10 @@
               <span>PAGO PRINCIPAL:</span>
               <span>{{ formatearMoneda(montoPago || 0) }}</span>
             </div>
-            <!-- <div class="resumen-item" *ngIf="moratorios > 0">
+            <div class="resumen-item" *ngIf="moratorios > 0">
               <span>MORA:</span>
               <span class="text-danger">+ {{ formatearMoneda(moratorios) }}</span>
-            </div> -->
+            </div>
             <div class="resumen-item total">
               <strong>TOTAL A PAGAR:</strong>
               <strong class="monto-total">{{ formatearMoneda(getTotalPago()) }}</strong>
@@ -518,20 +481,10 @@
           </div>
         </div>
 
-        <div class="alert alert-info mt-3" *ngIf="tipoPago === 'COMPLEMENTO'">
+        <div class="alert alert-info mt-3" *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
           <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> Este pago se aplicará a la semana {{ numeroPagoSeleccionado }} para cubrir atrasos.
-        </div>
-
-        <div class="alert alert-success mt-3" *ngIf="tipoPago === 'ADICIONAL'">
-          <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> Este pago adicional se aplicará a la semana {{ numeroPagoSeleccionado }}.
-        </div>
-
-        <div class="alert alert-warning mt-3" *ngIf="numeroPagoSeleccionado < calcularProximoNumeroPago(creditoSeleccionado)">
-          <i class="fas fa-exclamation-triangle"></i>
-          <strong>Atención:</strong> Está aplicando un pago a una semana que ya ha sido pagada (Semana {{ numeroPagoSeleccionado }}). 
-          Esto puede ser correcto si está haciendo un ajuste o pago adicional.
+          <strong>Nota:</strong> Este pago se aplicará a la semana {{ numeroPagoSeleccionado }}. 
+          Si hay semanas atrasadas, primero se cubrirán las semanas en mora.
         </div>
       </div>
     </div>
@@ -540,16 +493,137 @@
       <button class="btn btn-secondary" (click)="cerrarModalPago()" [disabled]="procesandoPago">
         <i class="fas fa-times"></i> CANCELAR
       </button>
-      <button class="btn" 
-              [ngClass]="{
-                'btn-success': tipoPago === 'NORMAL',
-                'btn-warning': tipoPago === 'COMPLEMENTO',
-                'btn-info': tipoPago === 'ADICIONAL'
-              }"
+      <button class="btn btn-primary"
               (click)="registrarPago()" 
               [disabled]="!montoPago || montoPago <= 0 || !metodoPago || !numeroPagoSeleccionado || procesandoPago">
         <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i> 
-        {{ procesandoPago ? 'Procesando...' : 'REGISTRAR ' + tipoPago }}
+        {{ procesandoPago ? 'Procesando...' : 'REGISTRAR PAGO' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE ADELANTO (Tipo: ADELANTO) -->
+<div class="modal-overlay" *ngIf="modalPagoAbierto && tipoPago === 'ADELANTO'">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-header-content">
+        <div class="modal-icon bg-success">
+          <i class="fas fa-forward"></i>
+        </div>
+        <div class="modal-header-text">
+          <h3 class="modal-title">ADELANTO</h3>
+          <p class="modal-subtitle">{{ getNombreCliente(creditoSeleccionado) }}</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="cerrarModalPago()" [disabled]="procesandoPago">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Información de situación actual -->
+      <div class="info-section">
+        <h4><i class="fas fa-exclamation-triangle"></i> SITUACIÓN ACTUAL</h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <strong>Próxima Fecha:</strong>
+            <span>{{ formatearFecha(proximaFechaPago?.toISOString() || '') }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Días de Atraso:</strong>
+            <span [ngClass]="{'text-success': diasAtraso === 0, 'text-danger': diasAtraso > 0}">
+              {{ diasAtraso }} días
+            </span>
+          </div>
+          <div class="info-item">
+            <strong>Mora Pendiente:</strong>
+            <span class="text-danger">{{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Saldo Pendiente:</strong>
+            <span class="monto-total">{{ formatearMoneda(creditoSeleccionado.saldo_pendiente) }}</span>
+          </div>
+          <div class="info-item">
+            <strong>Próximo Pago N°:</strong>
+            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/16</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formulario de adelanto -->
+      <div class="form-section">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          <h5>ADELANTO A SEMANA FUTURA</h5>
+          <p>Este pago se aplicará como adelanto. El sistema automáticamente lo asignará a la próxima semana pendiente según el calendario.</p>
+          <p><strong>No es necesario seleccionar semana.</strong></p>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">MONTO DEL ADELANTO *</label>
+            <div class="monto-input-container">
+              <span class="currency-symbol">$</span>
+              <input type="number" class="form-control monto-input" 
+                     [(ngModel)]="montoPago" 
+                     step="0.01" min="0"
+                     placeholder="Ej: {{ creditoSeleccionado.pago_semanal }}"
+                     [disabled]="procesandoPago">
+            </div>
+            <small class="form-text">
+              Monto sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">MÉTODO DE PAGO *</label>
+            <select class="form-control" 
+                    [(ngModel)]="metodoPago"
+                    [disabled]="procesandoPago">
+              <option value="">SELECCIONAR MÉTODO</option>
+              <option *ngFor="let metodo of metodosPago" [value]="metodo">
+                {{ metodo | titlecase }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Resumen del adelanto -->
+        <div class="resumen-pago">
+          <h5><i class="fas fa-calculator"></i> RESUMEN DEL ADELANTO</h5>
+          <div class="resumen-detalle">
+            <div class="resumen-item">
+              <span>TIPO:</span>
+              <span class="font-weight-bold">ADELANTO A SEMANA FUTURA</span>
+            </div>
+            <div class="resumen-item">
+              <span>MONTO:</span>
+              <span>{{ formatearMoneda(montoPago || 0) }}</span>
+            </div>
+            <div class="resumen-item total">
+              <strong>TOTAL A PAGAR:</strong>
+              <strong class="monto-total">{{ formatearMoneda(getTotalPago()) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-success mt-3">
+          <i class="fas fa-info-circle"></i>
+          <strong>Nota:</strong> El sistema asignará automáticamente este adelanto a la próxima semana pendiente en el calendario.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalPago()" [disabled]="procesandoPago">
+        <i class="fas fa-times"></i> CANCELAR
+      </button>
+      <button class="btn btn-success"
+              (click)="registrarPago()" 
+              [disabled]="!montoPago || montoPago <= 0 || !metodoPago || procesandoPago">
+        <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i> 
+        {{ procesandoPago ? 'Procesando...' : 'REGISTRAR ADELANTO' }}
       </button>
     </div>
   </div>

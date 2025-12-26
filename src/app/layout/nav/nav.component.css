@@ -1,11 +1,10 @@
-
-.floating-navbar {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-  padding: 0.5rem 0;
+.navbar-brand img {
+  width: 150px;
+  height: auto;
+  max-height: 150px;
+  object-fit: contain;
 }
+
 
 .user-menu {
   min-width: 200px;
@@ -55,5 +54,80 @@
   
   .user-menu {
     min-width: auto;
+  }
+}
+
+/* Añade estos estilos a tu CSS existente */
+
+.floating-navbar {
+  min-height: 70px;
+}
+
+.floating-navbar .container {
+  flex-wrap: nowrap;
+  min-width: 0; /* Importante para evitar desbordamientos */
+}
+
+.floating-navbar .nav {
+  flex-wrap: nowrap;
+  overflow-x: auto; /* Permite scroll horizontal si es necesario */
+  overflow-y: hidden;
+  white-space: nowrap;
+  margin-left: 1rem;
+  margin-right: 1rem;
+  min-width: 0;
+  flex-shrink: 1;
+  -ms-overflow-style: none; /* IE y Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.floating-navbar .nav::-webkit-scrollbar {
+  display: none; /* Chrome, Safari y Opera */
+}
+
+.floating-navbar .nav-item {
+  flex-shrink: 0;
+}
+
+.floating-navbar .nav-link {
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.9rem !important;
+}
+
+.user-menu {
+  min-width: auto !important;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .floating-navbar .nav-link {
+    padding: 0.5rem 0.5rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  .navbar-brand img {
+    width: 120px;
+  }
+}
+
+@media (max-width: 992px) {
+  .floating-navbar .container {
+    flex-wrap: wrap;
+  }
+  
+  .floating-navbar .nav {
+    order: 3;
+    width: 100%;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
+  
+  .user-menu {
+    order: 2;
+  }
+  
+  .navbar-brand {
+    order: 1;
   }
 }

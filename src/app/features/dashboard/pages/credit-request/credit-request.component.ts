@@ -1,209 +1,3 @@
-// import { Component, OnInit } from '@angular/core';
-// import { CommonModule } from '@angular/common';
-// import { FormsModule } from '@angular/forms';
-// import { SolicitudService } from '../../../../services/solicitud.service';
-// import Swal from 'sweetalert2';
-
-// @Component({
-//   selector: 'app-credit-request',
-//   imports: [CommonModule, FormsModule],
-//   standalone: true,
-//   templateUrl: './credit-request.component.html',
-//   styleUrl: './credit-request.component.css'
-// })
-// export class CreditRequestComponent implements OnInit {
-//   // Lista de solicitudes pendientes
-//   solicitudesPendientes: any[] = [];
-//   // Solicitud seleccionada para el modal
-//   solicitudSeleccionada: any = null;
-//   // Monto para aprobación
-//   montoAprobado: number | null = null;
-//   // Control de modal
-//   modalAbierto: boolean = false;
-//   // Estados de carga
-//   cargando: boolean = false;
-//   cargandoAprobacion: boolean = false;
-
-//   constructor(private solicitudService: SolicitudService) {}
-
-//   ngOnInit(): void {
-//     this.cargarSolicitudesPendientes();
-//   }
-
-//   // Cargar solicitudes con estado PENDIENTE
-//   cargarSolicitudesPendientes(): void {
-//     this.cargando = true;
-//     this.solicitudService.obtenerSolicitudesPorEstado('PENDIENTE').subscribe({
-//       next: (solicitudes) => {
-//         this.solicitudesPendientes = solicitudes;
-//         this.cargando = false;
-//       },
-//       error: (error) => {
-//         console.error('Error al cargar solicitudes:', error);
-//         Swal.fire({
-//           icon: 'error',
-//           title: 'Error',
-//           text: 'No se pudieron cargar las solicitudes',
-//           confirmButtonText: 'Aceptar'
-//         });
-//         this.cargando = false;
-//       }
-//     });
-//   }
-
-//   // Abrir modal con los detalles de la solicitud
-//   abrirModal(solicitud: any): void {
-//     this.solicitudSeleccionada = solicitud;
-//     this.montoAprobado = null;
-//     this.modalAbierto = true;
-//   }
-
-//   // Cerrar modal
-//   cerrarModal(): void {
-//     this.modalAbierto = false;
-//     this.solicitudSeleccionada = null;
-//     this.montoAprobado = null;
-//     this.cargandoAprobacion = false;
-//   }
-
-//   // Aprobar solicitud
-//   aprobarSolicitud(): void {
-//     if (!this.montoAprobado || this.montoAprobado <= 0) {
-//       Swal.fire({
-//         icon: 'warning',
-//         title: 'Monto inválido',
-//         text: 'Por favor ingrese un monto válido',
-//         confirmButtonText: 'Aceptar'
-//       });
-//       return;
-//     }
-
-//     if (this.montoAprobado > this.solicitudSeleccionada.monto_solicitado) {
-//       Swal.fire({
-//         icon: 'warning',
-//         title: 'Monto excedido',
-//         text: 'El monto aprobado no puede ser mayor al monto solicitado',
-//         confirmButtonText: 'Aceptar'
-//       });
-//       return;
-//     }
-
-//     this.cargandoAprobacion = true;
-    
-//     this.solicitudService.aprobarSolicitud(
-//       this.solicitudSeleccionada.id_solicitud, 
-//       this.montoAprobado
-//     ).subscribe({
-//       next: (response) => {
-//         console.log('Solicitud aprobada:', response);
-        
-//         // Remover la solicitud aprobada de la lista
-//         this.solicitudesPendientes = this.solicitudesPendientes.filter(
-//           s => s.id_solicitud !== this.solicitudSeleccionada.id_solicitud
-//         );
-        
-//         Swal.fire({
-//           icon: 'success',
-//           title: '¡Aprobado!',
-//           text: 'La solicitud ha sido aprobada exitosamente',
-//           confirmButtonText: 'Aceptar',
-//           timer: 3000,
-//           timerProgressBar: true
-//         });
-        
-//         this.cerrarModal();
-//         this.cargandoAprobacion = false;
-//       },
-//       error: (error) => {
-//         console.error('Error al aprobar solicitud:', error);
-//         Swal.fire({
-//           icon: 'error',
-//           title: 'Error',
-//           text: `Error al aprobar la solicitud: ${error.error?.error || error.message}`,
-//           confirmButtonText: 'Aceptar'
-//         });
-//         this.cargandoAprobacion = false;
-//       }
-//     });
-//   }
-
-//   // Rechazar solicitud
-//   async rechazarSolicitud(): Promise<void> {
-//     const { value: motivo } = await Swal.fire({
-//       title: 'Motivo de rechazo',
-//       input: 'text',
-//       inputLabel: 'Ingrese el motivo del rechazo:',
-//       inputPlaceholder: 'Escriba el motivo aquí...',
-//       showCancelButton: true,
-//       cancelButtonText: 'Cancelar',
-//       confirmButtonText: 'Rechazar',
-//       inputValidator: (value) => {
-//         if (!value) {
-//           return 'Debe ingresar un motivo para rechazar la solicitud';
-//         }
-//         return null;
-//       }
-//     });
-
-//     if (!motivo) {
-//       return; 
-//     }
-
-//     this.cargandoAprobacion = true;
-
-//     this.solicitudService.rechazarSolicitud(
-//       this.solicitudSeleccionada.id_solicitud,
-//       motivo
-//     ).subscribe({
-//       next: (response) => {
-//         console.log('Solicitud rechazada:', response);
-        
-//         // Remover la solicitud rechazada de la lista
-//         this.solicitudesPendientes = this.solicitudesPendientes.filter(
-//           s => s.id_solicitud !== this.solicitudSeleccionada.id_solicitud
-//         );
-        
-//         Swal.fire({
-//           icon: 'info',
-//           title: 'Rechazado',
-//           text: 'La solicitud ha sido rechazada',
-//           confirmButtonText: 'Aceptar',
-//           timer: 3000,
-//           timerProgressBar: true
-//         });
-        
-//         this.cerrarModal();
-//         this.cargandoAprobacion = false;
-//       },
-//       error: (error) => {
-//         console.error('Error al rechazar solicitud:', error);
-//         Swal.fire({
-//           icon: 'error',
-//           title: 'Error',
-//           text: `Error al rechazar la solicitud: ${error.error?.error || error.message}`,
-//           confirmButtonText: 'Aceptar'
-//         });
-//         this.cargandoAprobacion = false;
-//       }
-//     });
-//   }
-
-//   // Formatear nombre completo del cliente
-//   getNombreCompleto(solicitud: any): string {
-//     return `${solicitud.nombre_cliente} ${solicitud.app_cliente} ${solicitud.apm_cliente}`.trim();
-//   }
-
-//   // Formatear moneda
-//   formatearMoneda(monto: number): string {
-//     return new Intl.NumberFormat('es-MX', {
-//       style: 'currency',
-//       currency: 'MXN'
-//     }).format(monto);
-//   }
-// }
-
-
-
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -267,36 +61,6 @@ export class CreditRequestComponent implements OnInit {
       }
     });
   }
-//   cargarSolicitudesPendientes(): void {
-//   this.cargando = true;
-  
-//   this.solicitudService.obtenerSolicitudesPorEstado('PENDIENTE').subscribe({
-//     next: (solicitudes) => {
-//       this.solicitudesPendientes = solicitudes;
-//       this.calcularEstadisticas();
-//       this.cargando = false;
-      
-//       // Debug: verificar estructura completa de datos
-//       if (solicitudes.length > 0) {
-//         console.log('Primera solicitud completa:', solicitudes[0]);
-//         console.log('Todas las claves:', Object.keys(solicitudes[0]));
-        
-//         // Verificar específicamente campos relacionados con aval y aliado
-//         console.log('¿Tiene aval_id?', solicitudes[0].aval_id);
-//         console.log('¿Tiene nombre_aval?', solicitudes[0].nombre_aval);
-//         console.log('¿Tiene aliado_id?', solicitudes[0].aliado_id);
-//         console.log('¿Tiene nombre_aliado?', solicitudes[0].nombre_aliado);
-//       }
-//     },
-//     error: (error) => {
-//       console.error('Error al cargar solicitudes:', error);
-//       this.mostrarError('No se pudieron cargar las solicitudes', error);
-//       this.cargando = false;
-//     }
-//   });
-// }
-
-  // Calcular estadísticas
   calcularEstadisticas(): void {
     this.totalSolicitudes = this.solicitudesPendientes.length;
     this.totalMontoSolicitado = this.solicitudesPendientes.reduce(
@@ -304,11 +68,43 @@ export class CreditRequestComponent implements OnInit {
     );
   }
 
+  esDomiciliada(solicitud: any): boolean {
+    if (!solicitud) return false;
+    // Compatibilizar con distintas posibles propiedades
+    return Boolean(
+      solicitud.estado_domiciliacion ??
+      solicitud.domiciliado ??
+      solicitud.domiciliacion ??
+      solicitud.domiciliada
+    );
+  }
+
+  
+  getTextoDomiciliacion(solicitud: any): string {
+    return this.esDomiciliada(solicitud) ? 'Domiciliada' : 'No domiciliada';
+  }
+
+  // Clase CSS para badge según estado
+  getClaseBadgeDomiciliacion(solicitud: any): string {
+    return this.esDomiciliada(solicitud) ? 'badge-success' : 'badge-secondary';
+  }
+
+  // Información adicional: fecha o quien confirmó (si existe)
+  getDetalleDomiciliacion(solicitud: any): string {
+    const fecha = solicitud.fecha_domiciliada || solicitud.fecha_domiciliacion || solicitud.fecha_domicilio;
+    const quien = solicitud.persona_confirma || solicitud.persona_confirmo || solicitud.confirmado_por;
+    const horario = solicitud.horario_entrega || solicitud.horario_domicilio;
+    const partes = [];
+    if (fecha) partes.push(`Fecha: ${this.formatearFecha(fecha)}`);
+    if (horario) partes.push(`Horario: ${horario}`);
+    if (quien) partes.push(`Confirmó: ${quien}`);
+    return partes.length ? partes.join(' · ') : 'Sin detalles';
+  }
+
   // Abrir modal con los detalles de la solicitud
   abrirModal(solicitud: any): void {
     this.solicitudSeleccionada = solicitud;
-    this.montoAprobado = solicitud.monto_solicitado; // Sugerir el monto solicitado
-    this.modalAbierto = true;
+    this.montoAprobado = solicitud.monto_solicitado;
   }
 
   // Cerrar modal
@@ -558,3 +354,4 @@ export class CreditRequestComponent implements OnInit {
     return this.solicitudesPendientes.length > 0;
   }
 }
+

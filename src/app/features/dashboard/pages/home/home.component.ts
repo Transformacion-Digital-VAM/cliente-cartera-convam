@@ -1,590 +1,3 @@
-// // import { Component, OnInit } from '@angular/core';
-// // import { CommonModule } from '@angular/common';
-// // import { AuthService } from '../../../../services/auth.service'; // ajusta la ruta según tu estructura
-
-// // @Component({
-// //   selector: 'app-home',
-// //   standalone: true,
-// //   imports: [CommonModule],
-// //   templateUrl: './home.component.html',
-// //   styleUrls: ['./home.component.css']
-// // })
-// // export class HomeComponent implements OnInit {
-// //   nombreUsuario: string | null = null;
-
-// //   constructor(private authService: AuthService) {}
-
-// //   ngOnInit(): void {
-// //     const user = this.authService.getCurrentUser();
-// //     this.nombreUsuario = user?.nombre || 'Invitado';
-// //   }
-// // }
-
-
-
-// // dashboard-cartera.component.ts
-// import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
-// import { CommonModule } from '@angular/common';
-// import { FormsModule } from '@angular/forms';
-// import { Chart, registerables } from 'chart.js';
-// import { CreditoService } from '../../../../services/credito.service';
-// import { PagoService } from '../../../../services/pago.service';
-// import { AliadoService } from '../../../../services/aliado.service';
-// import { ClienteService } from '../../../../services/client.service';
-
-// @Component({
-//   selector: 'app-home',
-//   standalone: true,
-//   imports: [CommonModule, FormsModule],
-//   templateUrl: './home.component.html',
-//   styleUrls: ['./home.component.css']
-// })
-// export class HomeComponent implements OnInit, AfterViewInit {
-//   @ViewChild('distribucionChart') distribucionChartRef!: ElementRef;
-  
-//   // Datos del dashboard
-//   carteraTotal: number = 0;
-//   carteraVigente: number = 0;
-//   carteraVencida: number = 0;
-//   carteraMora: number = 0;
-//   ingresosPeriodo: number = 0;
-//   ingresosCapital: number = 0;
-//   ingresosIntereses: number = 0;
-//   ingresosMoratorios: number = 0;
-//   moratoriosAcumulados: number = 0;
-  
-//   // Estadísticas
-//   clientesVigentes: number = 0;
-//   creditosVigentes: number = 0;
-//   creditosVencidos: number = 0;
-//   clientesMora: number = 0;
-//   creditosConMoratorio: number = 0;
-//   diasPromedioMora: number = 0;
-  
-//   // Tendencias
-//   variacionCarteraTotal: number = 0;
-//   porcentajeCarteraVencida: number = 0;
-//   tasaMorosidad: number = 0;
-//   pagoPromedio: number = 0;
-//   antiguedadPromedio: number = 0;
-//   tasaCumplimiento: number = 0;
-  
-//   // Listados
-//   proximosVencimientos: any[] = [];
-//   topAliados: any[] = [];
-//   alertasMora: any[] = [];
-  
-//   // Configuración
-//   periodoDashboard: string = 'mes';
-//   cargandoDashboard: boolean = false;
-  
-//   // Gráfico
-//   private distribucionChart: any;
-//   maxCarteraAliado: number = 0;
-  
-//   // Datos crudos
-//   private creditos: any[] = [];
-//   private pagos: any[] = [];
-//   private aliados: any[] = [];
-//   private clientes: any[] = [];
-
-//   constructor(
-//     private creditoService: CreditoService,
-//     private pagoService: PagoService,
-//     private aliadoService: AliadoService,
-//     private clienteService: ClienteService
-//   ) {
-//     Chart.register(...registerables);
-//   }
-
-//   ngOnInit(): void {
-//     this.cargarDatosDashboard();
-//   }
-
-//   ngAfterViewInit(): void {
-//     // El gráfico se inicializará después de cargar los datos
-//   }
-
-//   cargarDatosDashboard(): void {
-//     this.cargandoDashboard = true;
-    
-//     // Cargar todos los datos necesarios
-//     Promise.all([
-//       this.cargarCreditos(),
-//       this.cargarPagos(),
-//       this.cargarAliados(),
-//       this.cargarClientes()
-//     ]).then(() => {
-//       this.calcularMetricas();
-//       this.cargandoDashboard = false;
-//     }).catch(error => {
-//       console.error('Error al cargar datos del dashboard:', error);
-//       this.cargandoDashboard = false;
-//     });
-//   }
-
-//   async cargarCreditos(): Promise<void> {
-//     return new Promise((resolve, reject) => {
-//       this.creditoService.obtenerCreditos().subscribe({
-//         next: (creditos) => {
-//           this.creditos = creditos;
-//           resolve();
-//         },
-//         error: reject
-//       });
-//     });
-//   }
-
-//   async cargarPagos(): Promise<void> {
-//     return new Promise((resolve, reject) => {
-//       this.pagoService.obtenerPagos().subscribe({
-//         next: (pagos) => {
-//           this.pagos = pagos;
-//           resolve();
-//         },
-//         error: reject
-//       });
-//     });
-//   }
-
-//   async cargarAliados(): Promise<void> {
-//     return new Promise((resolve, reject) => {
-//       this.aliadoService.obtenerAliados().subscribe({
-//         next: (aliados) => {
-//           this.aliados = aliados;
-//           resolve();
-//         },
-//         error: reject
-//       });
-//     });
-//   }
-
-//   async cargarClientes(): Promise<void> {
-//     return new Promise((resolve, reject) => {
-//       this.clienteService.obtenerClientes().subscribe({
-//         next: (clientes) => {
-//           this.clientes = clientes;
-//           resolve();
-//         },
-//         error: reject
-//       });
-//     });
-//   }
-
-//   calcularMetricas(): void {
-//     // Calcular cartera total
-//     this.carteraTotal = this.creditos.reduce((total, credito) => {
-//       return total + (credito.total_a_pagar || 0);
-//     }, 0);
-
-//     // Identificar créditos vigentes, vencidos y en mora
-//     const hoy = new Date();
-//     let totalVigente = 0;
-//     let totalVencido = 0;
-//     let totalMora = 0;
-//     let creditosVigentesCount = 0;
-//     let creditosVencidosCount = 0;
-//     let clientesMoraSet = new Set();
-//     let totalDiasMora = 0;
-//     let moraCount = 0;
-
-//     this.creditos.forEach(credito => {
-//       const saldoPendiente = this.calcularSaldoPendiente(credito);
-//       const estado = this.determinarEstadoCredito(credito, hoy);
-
-//       if (estado === 'vigente') {
-//         totalVigente += saldoPendiente;
-//         creditosVigentesCount++;
-//       } else if (estado === 'vencido') {
-//         totalVencido += saldoPendiente;
-//         creditosVencidosCount++;
-//       } else if (estado === 'mora') {
-//         totalMora += saldoPendiente;
-//         clientesMoraSet.add(credito.cliente_id);
-        
-//         // Calcular días de mora
-//         const diasMora = this.calcularDiasMora(credito, hoy);
-//         totalDiasMora += diasMora;
-//         moraCount++;
-//       }
-//     });
-
-//     this.carteraVigente = totalVigente;
-//     this.carteraVencida = totalVencido;
-//     this.carteraMora = totalMora;
-//     this.creditosVigentes = creditosVigentesCount;
-//     this.creditosVencidos = creditosVencidosCount;
-//     this.clientesMora = clientesMoraSet.size;
-//     this.diasPromedioMora = moraCount > 0 ? Math.round(totalDiasMora / moraCount) : 0;
-
-//     // Calcular porcentajes
-//     this.porcentajeCarteraVencida = this.carteraTotal > 0 ? 
-//       Math.round((this.carteraVencida / this.carteraTotal) * 100) : 0;
-    
-//     this.tasaMorosidad = this.carteraTotal > 0 ?
-//       Math.round((this.carteraMora / this.carteraTotal) * 10000) / 100 : 0;
-
-//     // Calcular ingresos del período
-//     this.calcularIngresosPeriodo();
-
-//     // Calcular moratorios acumulados
-//     this.moratoriosAcumulados = this.pagos.reduce((total, pago) => {
-//       return total + (pago.moratorios || 0);
-//     }, 0);
-
-//     // Contar créditos con moratorio
-//     this.creditosConMoratorio = new Set(
-//       this.pagos
-//         .filter(pago => pago.moratorios && pago.moratorios > 0)
-//         .map(pago => pago.credito_id)
-//     ).size;
-
-//     // Generar listados
-//     this.generarProximosVencimientos();
-//     this.generarTopAliados();
-//     this.generarAlertasMora();
-//     this.calcularEstadisticasAdicionales();
-
-//     // Inicializar gráfico
-//     this.inicializarGrafico();
-//   }
-
-//   determinarEstadoCredito(credito: any, fechaReferencia: Date): string {
-//     const saldoPendiente = this.calcularSaldoPendiente(credito);
-    
-//     if (saldoPendiente <= 0) return 'liquidado';
-    
-//     const fechaUltimoPago = this.obtenerFechaUltimoPago(credito.id_credito);
-//     const proximoPago = this.calcularProximaFechaPago(credito);
-    
-//     if (!proximoPago) return 'vigente';
-    
-//     const diasDiferencia = Math.floor(
-//       (fechaReferencia.getTime() - proximoPago.getTime()) / (1000 * 60 * 60 * 24)
-//     );
-    
-//     if (diasDiferencia <= 0) return 'vigente';
-//     if (diasDiferencia <= 7) return 'vencido';
-//     return 'mora';
-//   }
-
-//   calcularSaldoPendiente(credito: any): number {
-//     const pagosCredito = this.pagos.filter(p => p.credito_id === credito.id_credito);
-//     const totalPagado = pagosCredito.reduce((sum, pago) => sum + (pago.total_pago || 0), 0);
-//     return (credito.total_a_pagar || 0) - totalPagado;
-//   }
-
-//   calcularDiasMora(credito: any, fechaReferencia: Date): number {
-//     const proximoPago = this.calcularProximaFechaPago(credito);
-//     if (!proximoPago) return 0;
-    
-//     return Math.max(0, Math.floor(
-//       (fechaReferencia.getTime() - proximoPago.getTime()) / (1000 * 60 * 60 * 24)
-//     ));
-//   }
-
-//   calcularProximaFechaPago(credito: any): Date | null {
-//     if (!credito.fecha_primer_pago) return null;
-    
-//     const pagosCredito = this.pagos.filter(p => p.credito_id === credito.id_credito);
-//     const pagosRealizados = pagosCredito.length;
-    
-//     const fechaBase = new Date(credito.fecha_primer_pago);
-//     fechaBase.setDate(fechaBase.getDate() + (pagosRealizados * 7));
-    
-//     return fechaBase;
-//   }
-
-//   obtenerFechaUltimoPago(creditoId: number): Date | null {
-//     const pagosCredito = this.pagos
-//       .filter(p => p.credito_id === creditoId)
-//       .sort((a, b) => new Date(b.fecha_operacion).getTime() - new Date(a.fecha_operacion).getTime());
-    
-//     return pagosCredito.length > 0 ? new Date(pagosCredito[0].fecha_operacion) : null;
-//   }
-
-//   calcularIngresosPeriodo(): void {
-//     const fechaInicio = this.obtenerFechaInicioPeriodo();
-    
-//     const pagosPeriodo = this.pagos.filter(pago => {
-//       const fechaPago = new Date(pago.fecha_operacion);
-//       return fechaPago >= fechaInicio;
-//     });
-
-//     this.ingresosPeriodo = pagosPeriodo.reduce((sum, pago) => sum + (pago.total_pago || 0), 0);
-//     this.ingresosCapital = pagosPeriodo.reduce((sum, pago) => sum + (pago.capital || 0), 0);
-//     this.ingresosIntereses = pagosPeriodo.reduce((sum, pago) => sum + (pago.intereses || 0), 0);
-//     this.ingresosMoratorios = pagosPeriodo.reduce((sum, pago) => sum + (pago.moratorios || 0), 0);
-//   }
-
-//   obtenerFechaInicioPeriodo(): Date {
-//     const hoy = new Date();
-//     const fechaInicio = new Date(hoy);
-
-//     switch (this.periodoDashboard) {
-//       case 'hoy':
-//         fechaInicio.setHours(0, 0, 0, 0);
-//         break;
-//       case 'semana':
-//         fechaInicio.setDate(fechaInicio.getDate() - 7);
-//         break;
-//       case 'mes':
-//         fechaInicio.setMonth(fechaInicio.getMonth() - 1);
-//         break;
-//       case 'trimestre':
-//         fechaInicio.setMonth(fechaInicio.getMonth() - 3);
-//         break;
-//       case 'anual':
-//         fechaInicio.setFullYear(fechaInicio.getFullYear() - 1);
-//         break;
-//     }
-
-//     return fechaInicio;
-//   }
-
-//   generarProximosVencimientos(): void {
-//     const hoy = new Date();
-//     const fechaLimite = new Date(hoy);
-//     fechaLimite.setDate(fechaLimite.getDate() + 30);
-
-//     this.proximosVencimientos = this.creditos
-//       .filter(credito => {
-//         const proximoPago = this.calcularProximaFechaPago(credito);
-//         if (!proximoPago) return false;
-        
-//         return proximoPago >= hoy && proximoPago <= fechaLimite;
-//       })
-//       .map(credito => {
-//         const proximoPago = this.calcularProximaFechaPago(credito)!;
-//         const dias = Math.ceil((proximoPago.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-        
-//         return {
-//           cliente: this.getNombreCliente(credito),
-//           credito_id: credito.id_credito,
-//           monto: this.calcularPagoSemanal(credito),
-//           fecha: proximoPago,
-//           dias: dias
-//         };
-//       })
-//       .sort((a, b) => a.dias - b.dias)
-//       .slice(0, 10); // Mostrar solo los próximos 10
-//   }
-
-//   generarTopAliados(): void {
-//     const aliadosMap = new Map();
-
-//     this.creditos.forEach(credito => {
-//       if (!aliadosMap.has(credito.aliado_id)) {
-//         aliadosMap.set(credito.aliado_id, {
-//           id: credito.aliado_id,
-//           nombre: this.getNombreAliado(credito.aliado_id),
-//           cartera: 0,
-//           creditos: 0
-//         });
-//       }
-
-//       const aliado = aliadosMap.get(credito.aliado_id);
-//       aliado.cartera += this.calcularSaldoPendiente(credito);
-//       aliado.creditos++;
-//     });
-
-//     this.topAliados = Array.from(aliadosMap.values())
-//       .sort((a, b) => b.cartera - a.cartera)
-//       .slice(0, 5); // Top 5 aliados
-
-//     this.maxCarteraAliado = this.topAliados.length > 0 ? 
-//       Math.max(...this.topAliados.map(a => a.cartera)) : 0;
-//   }
-
-//   generarAlertasMora(): void {
-//     const hoy = new Date();
-    
-//     this.alertasMora = this.creditos
-//       .filter(credito => {
-//         const estado = this.determinarEstadoCredito(credito, hoy);
-//         return estado === 'mora';
-//       })
-//       .map(credito => {
-//         const diasMora = this.calcularDiasMora(credito, hoy);
-//         const montoVencido = this.calcularMontoVencido(credito, hoy);
-//         const ultimoPago = this.obtenerFechaUltimoPago(credito.id_credito);
-
-//         return {
-//           cliente: this.getNombreCliente(credito),
-//           credito_id: credito.id_credito,
-//           dias_mora: diasMora,
-//           monto_vencido: montoVencido,
-//           ultimo_pago: ultimoPago
-//         };
-//       })
-//       .sort((a, b) => b.dias_mora - a.dias_mora)
-//       .slice(0, 20); // Mostrar hasta 20 alertas
-//   }
-
-//   calcularMontoVencido(credito: any, fechaReferencia: Date): number {
-//     const proximoPago = this.calcularProximaFechaPago(credito);
-//     if (!proximoPago) return 0;
-
-//     const diasMora = this.calcularDiasMora(credito, fechaReferencia);
-//     const pagosVencidos = Math.floor(diasMora / 7) + 1;
-    
-//     return this.calcularPagoSemanal(credito) * pagosVencidos;
-//   }
-
-//   calcularEstadisticasAdicionales(): void {
-//     // Pago promedio por crédito activo
-//     const creditosActivos = this.creditos.filter(c => 
-//       this.calcularSaldoPendiente(c) > 0
-//     );
-    
-//     this.pagoPromedio = creditosActivos.length > 0 ?
-//       creditosActivos.reduce((sum, credito) => 
-//         sum + this.calcularPagoSemanal(credito), 0
-//       ) / creditosActivos.length : 0;
-
-//     // Antigüedad promedio
-//     const hoy = new Date();
-//     let totalDias = 0;
-//     let count = 0;
-
-//     creditosActivos.forEach(credito => {
-//       if (credito.fecha_creacion) {
-//         const fechaCreacion = new Date(credito.fecha_creacion);
-//         const dias = Math.floor((hoy.getTime() - fechaCreacion.getTime()) / (1000 * 60 * 60 * 24));
-//         totalDias += dias;
-//         count++;
-//       }
-//     });
-
-//     this.antiguedadPromedio = count > 0 ? Math.round(totalDias / count) : 0;
-
-//     // Tasa de cumplimiento (pagos a tiempo)
-//     const totalPagos = this.pagos.length;
-//     const pagosATiempo = this.pagos.filter(pago => {
-//       // Aquí necesitarías lógica para determinar si el pago fue a tiempo
-//       // Por ahora, asumiremos que todos los pagos con moratorio = 0 son a tiempo
-//       return !pago.moratorios || pago.moratorios === 0;
-//     }).length;
-
-//     this.tasaCumplimiento = totalPagos > 0 ?
-//       Math.round((pagosATiempo / totalPagos) * 100) : 100;
-//   }
-
-//   inicializarGrafico(): void {
-//     if (this.distribucionChart) {
-//       this.distribucionChart.destroy();
-//     }
-
-//     const ctx = this.distribucionChartRef.nativeElement.getContext('2d');
-    
-//     this.distribucionChart = new Chart(ctx, {
-//       type: 'doughnut',
-//       data: {
-//         labels: ['Vigente', 'Vencida', 'En Mora'],
-//         datasets: [{
-//           data: [this.carteraVigente, this.carteraVencida, this.carteraMora],
-//           backgroundColor: [
-//             'rgba(75, 192, 192, 0.8)',
-//             'rgba(255, 206, 86, 0.8)',
-//             'rgba(255, 99, 132, 0.8)'
-//           ],
-//           borderColor: [
-//             'rgba(75, 192, 192, 1)',
-//             'rgba(255, 206, 86, 1)',
-//             'rgba(255, 99, 132, 1)'
-//           ],
-//           borderWidth: 1
-//         }]
-//       },
-//       options: {
-//         responsive: true,
-//         maintainAspectRatio: false,
-//         plugins: {
-//           legend: {
-//             display: false
-//           },
-//           tooltip: {
-//             callbacks: {
-//               label: (context) => {
-//                 const value = context.raw as number;
-//                 const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-//                 const percentage = Math.round((value / total) * 100);
-//                 return `${context.label}: ${this.formatearMoneda(value)} (${percentage}%)`;
-//               }
-//             }
-//           }
-//         }
-//       }
-//     });
-//   }
-
-//   // Métodos auxiliares (copiados de tu componente anterior)
-//   getNombreCliente(credito: any): string {
-//     const cliente = this.clientes.find(c => c.id_cliente === credito.cliente_id);
-//     return cliente ? `${cliente.nombre} ${cliente.apellido_paterno}`.trim() : 'Cliente no encontrado';
-//   }
-
-//   getNombreAliado(aliadoId: number): string {
-//     const aliado = this.aliados.find(a => a.id_aliado === aliadoId);
-//     return aliado ? aliado.nom_aliado.trim() : 'Aliado no encontrado';
-//   }
-
-//   calcularPagoSemanal(credito: any): number {
-//     if (credito.pago_semanal) return credito.pago_semanal;
-//     if (credito.total_a_pagar) return credito.total_a_pagar / 16;
-//     return 0;
-//   }
-
-//   formatearMoneda(monto: number): string {
-//     if (!monto) return '$0.00';
-//     return new Intl.NumberFormat('es-MX', {
-//       style: 'currency',
-//       currency: 'MXN'
-//     }).format(monto);
-//   }
-
-//   formatearFecha(fecha: Date | null): string {
-//     if (!fecha) return 'Sin pagos';
-//     return fecha.toLocaleDateString('es-MX');
-//   }
-
-//   getPeriodoTexto(): string {
-//     const textos: any = {
-//       hoy: 'Hoy',
-//       semana: 'Esta Semana',
-//       mes: 'Este Mes',
-//       trimestre: 'Este Trimestre',
-//       anual: 'Este Año'
-//     };
-//     return textos[this.periodoDashboard] || 'Este Período';
-//   }
-
-//   getClaseMora(dias: number): string {
-//     if (dias <= 7) return 'warning';
-//     if (dias <= 30) return 'danger';
-//     return 'critical';
-//   }
-
-//   get tendenciaMorosidad(): { clase: string, icono: string, valor: number } {
-//     // En una implementación real, compararías con el período anterior
-//     const variacion = 2.5; // Ejemplo
-//     return {
-//       clase: variacion > 0 ? 'negative' : 'positive',
-//       icono: variacion > 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down',
-//       valor: Math.abs(variacion)
-//     };
-//   }
-
-//   actualizarDashboard(): void {
-//     this.cargarDatosDashboard();
-//   }
-
-//   contactarCliente(alerta: any): void {
-//     // Implementar lógica de contacto
-//     console.log('Contactando cliente:', alerta.cliente);
-//     alert(`Se contactará al cliente ${alerta.cliente} sobre su crédito vencido.`);
-//   }
-// }
 
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -621,6 +34,7 @@ throw new Error('Method not implemented.');
   carteraCorriente: number = 0; // Créditos actuales al día
   carteraVencida: number = 0;   // Créditos que pasaron su fecha de último pago
   carteraMora: number = 0;      // Créditos con pagos atrasados
+  creditosDia: any[] = [];
   
   // Ingresos (PERÍODO ACTUAL)
   ingresosPeriodo: number = 0;
@@ -670,6 +84,11 @@ throw new Error('Method not implemented.');
   // Gráficos
   private distribucionChart: any;
   private ingresosChart: any;
+  private num(valor: any): number {
+    const n = Number(valor);
+    return isNaN(n) ? 0 : n;
+  }
+
   
   // Datos crudos
   creditos: any[] = [];
@@ -691,7 +110,7 @@ throw new Error('Method not implemented.');
   }
 
   ngAfterViewInit(): void {
-    // Los gráficos se inicializarán después de cargar los datos
+    
   }
 
   // ============================================
@@ -754,9 +173,13 @@ throw new Error('Method not implemented.');
     this.generarProximosVencimientos();
     this.generarTopAliados();
     this.generarAlertasMora();
+
+    // 10. Calcular créditos del día - AGREGAR ESTA LÍNEA
+    this.calcularCreditosDia();
     
-    // 10. Inicializar gráficos
+    // 11. Inicializar gráficos
     this.inicializarGraficos();
+
   }
 
   // ============================================
@@ -803,7 +226,6 @@ throw new Error('Method not implemented.');
           break;
           
         default:
-          // Para créditos liquidados no sumamos a la cartera
           break;
       }
     });
@@ -833,15 +255,27 @@ throw new Error('Method not implemented.');
     return 'mora';                                        // Más de 7 días
   }
 
+  calcularCreditosDia(): void {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0); // Establecer a inicio del día
+  
+  this.creditosDia = this.creditos.filter(credito => {
+    if (!credito.fecha_creacion) return false;
+    
+    const fechaCredito = new Date(credito.fecha_creacion);
+    fechaCredito.setHours(0, 0, 0, 0);
+    
+    // Comparar solo la fecha (sin hora)
+    return fechaCredito.getTime() === hoy.getTime();
+  });
+}
+
   calcularSaldoPendiente(credito: any): number {
     const pagosCredito = this.pagos.filter(p => p.credito_id === credito.id_credito);
     const totalPagado = pagosCredito.reduce((sum, pago) => {
-      // Sumamos el capital pagado para calcular el saldo pendiente
       return sum + (pago.capital || 0);
     }, 0);
     
-    // El saldo pendiente es el monto aprobado menos el capital pagado
-    // (asumiendo que total_a_pagar incluye intereses)
     return (credito.monto_aprobado || 0) - totalPagado;
   }
 
@@ -861,69 +295,88 @@ throw new Error('Method not implemented.');
   // MÉTODOS DE CÁLCULO DE INGRESOS (PAGOS)
   // ============================================
 
-  calcularIngresosPeriodo(): void {
-    const fechaInicio = this.obtenerFechaInicioPeriodo();
-    
-    // Filtrar pagos del período
-    const pagosPeriodo = this.pagos.filter(pago => {
-      const fechaPago = new Date(pago.fecha_operacion);
-      return fechaPago >= fechaInicio;
-    });
 
-    // SUMAR TODOS LOS PAGOS DEL PERÍODO
-    this.ingresosPeriodo = pagosPeriodo.reduce((sum, pago) => 
-      sum + (pago.pago_registrado || 0), 0);
-    
-    this.ingresosCapitalPeriodo = pagosPeriodo.reduce((sum, pago) => 
-      sum + (pago.capital || 0), 0);
-    
-    this.ingresosInteresesPeriodo = pagosPeriodo.reduce((sum, pago) => 
-      sum + (pago.intereses || 0), 0);
-    
-    this.ingresosMoratoriosPeriodo = pagosPeriodo.reduce((sum, pago) => 
-      sum + (pago.moratorios || 0), 0);
-  }
+    calcularIngresosPeriodo(): void {
+      const fechaInicio = this.obtenerFechaInicioPeriodo();
+
+      const pagosPeriodo = this.pagos.filter(pago => {
+        if (!pago.fecha_operacion) return false;
+        const fechaPago = new Date(pago.fecha_operacion);
+        return fechaPago >= fechaInicio;
+      });
+
+      this.ingresosPeriodo = pagosPeriodo.reduce(
+        (sum, pago) => sum + this.num(pago.pago_registrado),
+        0
+      );
+
+      this.ingresosCapitalPeriodo = pagosPeriodo.reduce(
+        (sum, pago) => sum + this.num(pago.capital),
+        0
+      );
+
+      this.ingresosInteresesPeriodo = pagosPeriodo.reduce(
+        (sum, pago) => sum + this.num(pago.intereses),
+        0
+      );
+
+      this.ingresosMoratoriosPeriodo = pagosPeriodo.reduce(
+        (sum, pago) => sum + this.num(pago.moratorios),
+        0
+      );
+    }
+
 
   calcularIngresosTotales(): void {
-    // SUMAR TODOS LOS PAGOS HISTÓRICOS
-    this.ingresosCapitalTotal = this.pagos.reduce((sum, pago) => 
-      sum + (pago.capital || 0), 0);
-    
-    this.ingresosInteresesTotal = this.pagos.reduce((sum, pago) => 
-      sum + (pago.intereses || 0), 0);
-    
-    this.ingresosMoratoriosTotal = this.pagos.reduce((sum, pago) => 
-      sum + (pago.moratorios || 0), 0);
-    
-    this.ingresosTotalGeneral = this.pagos.reduce((sum, pago) => 
-      sum + (pago.pago_registrado || 0), 0);
-  }
+
+  this.ingresosCapitalTotal = this.pagos.reduce(
+    (sum, pago) => sum + this.num(pago.capital),
+    0
+  );
+
+  this.ingresosInteresesTotal = this.pagos.reduce(
+    (sum, pago) => sum + this.num(pago.intereses),
+    0
+  );
+
+  this.ingresosMoratoriosTotal = this.pagos.reduce(
+    (sum, pago) => sum + this.num(pago.moratorios),
+    0
+  );
+
+  this.ingresosTotalGeneral = this.pagos.reduce(
+    (sum, pago) => sum + this.num(pago.pago_registrado),
+    0
+  );
+}
+
 
   // ============================================
   // MÉTODOS DE CÁLCULO DE MINISTRACIONES
   // ============================================
 
+
   calcularMinistraciones(): void {
-    const fechaInicio = this.obtenerFechaInicioPeriodo();
-    
-    // Filtrar créditos del período
-    const creditosPeriodo = this.creditos.filter(credito => {
-      const fechaCredito = new Date(credito.fecha_creacion);
-      return fechaCredito >= fechaInicio;
-    });
+  const fechaInicio = this.obtenerFechaInicioPeriodo();
 
-    // SUMAR MINISTRACIONES ENTREGADAS (estado_credito = 'ENTREGADO')
-    this.ministracionesEntregados = creditosPeriodo
-      .filter(c => c.estado_credito === 'ENTREGADO')
-      .reduce((sum, credito) => sum + (credito.monto_aprobado || 0), 0);
+  const creditosPeriodo = this.creditos.filter(credito => {
+    if (!credito.fecha_creacion) return false;
+    const fechaCredito = new Date(credito.fecha_creacion);
+    return fechaCredito >= fechaInicio;
+  });
 
-    // SUMAR MINISTRACIONES DEVUELTAS (estado_credito = 'DEVOLUCION')
-    this.ministracionesDevolucion = creditosPeriodo
-      .filter(c => c.estado_credito === 'DEVOLUCION')
-      .reduce((sum, credito) => sum + (credito.monto_aprobado || 0), 0);
-    
-    this.ministracionesTotal = this.ministracionesEntregados - this.ministracionesDevolucion;
-  }
+  this.ministracionesEntregados = creditosPeriodo
+    .filter(c => c.estado_credito === 'ENTREGADO')
+    .reduce((sum, credito) => sum + this.num(credito.monto_aprobado), 0);
+
+  this.ministracionesDevolucion = creditosPeriodo
+    .filter(c => c.estado_credito === 'DEVOLUCION')
+    .reduce((sum, credito) => sum + this.num(credito.monto_aprobado), 0);
+
+  this.ministracionesTotal =
+    this.ministracionesEntregados - this.ministracionesDevolucion;
+}
+
 
   // ============================================
   // MÉTODOS DE CÁLCULO POR ALIADO
@@ -1461,4 +914,20 @@ throw new Error('Method not implemented.');
     if (!fecha) return 'Sin fecha';
     return this.formatearFecha(fecha);
   }
+
+  get creditosEntregados() {
+    // Verificar que creditosDia exista antes de usar filter
+    if (!this.creditosDia) {
+      return [];
+    }
+    
+    // Filtrar créditos entregados - ajusta 'estado' según tu modelo de datos
+    return this.creditosDia.filter((c: any) => {
+      // Verifica cuál es la propiedad correcta para el estado
+      return c.estado_credito === 'ENTREGADO' || 
+            c.estado === 'ENTREGADO' || 
+            c.estado_entrega === 'ENTREGADO';
+    });
+  }
+
 }

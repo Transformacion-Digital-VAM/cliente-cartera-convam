@@ -52,21 +52,34 @@
 // -----------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
+import { AuthService } from './auth.service';
+import { from } from 'rxjs/internal/observable/from';
+import { switchMap } from 'rxjs/internal/operators/switchMap';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SolicitudService {
+  actualizarSolicitud: any;
+  actualizarSolicitudDomicilio(datosActualizacion: { id_solicitud: any; estado: string; horario_entrega: string; persona_confirma: string; fecha_domiciliada: string; }) {
+    throw new Error('Method not implemented.');
+  }
   private apiUrl = 'http://localhost:3000/solicitud';
   
   // Rutas actualizadas
   private aliadosUrl = 'http://localhost:3000/aliado'; 
   private avalesUrl = ' http://localhost:3000/cliente/avales'; 
 
-  constructor(private http: HttpClient) { }
+  // constructor(private http: HttpClient) { 
+
+  // }
+    constructor(
+    private http: HttpClient,
+    private authService: AuthService 
+  ) { }
 
   // Manejo de errores mejorado
   private handleError(error: HttpErrorResponse) {
@@ -135,8 +148,12 @@ export class SolicitudService {
   // Agregar nombres a múltiples solicitudes
   private agregarNombresASolicitudes(solicitudes: any[], aliados: any[], avales: any[]): any[] {
     return solicitudes.map(solicitud => {
+      
       return this.agregarNombresASolicitud(solicitud, aliados, avales);
+
     });
+
+    
   }
 
   // Agregar nombres a una sola solicitud
@@ -160,6 +177,27 @@ export class SolicitudService {
     } else {
       resultado.nombre_aval = 'Sin aval';
     }
+
+        // Normalizar estado domiciliación: soporta varias propiedades booleanas/valores
+    const domiciliacionValor = solicitud.estado_domiciliacion ??
+                               solicitud.domiciliado ??
+                               solicitud.domiciliacion ??
+                               solicitud.domiciliada ??
+                               false;
+    resultado.estado_domiciliacion = Boolean(domiciliacionValor);
+
+    // Normalizar fecha de domiciliación si existe
+    resultado.fecha_domiciliada = solicitud.fecha_domiciliada ||
+                                  solicitud.fecha_domiciliacion ||
+                                  solicitud.fecha_domicilio || null;
+
+    // Normalizar quien confirmó/hora si vienen con nombres distintos
+    resultado.persona_confirma = solicitud.persona_confirma ||
+                                 solicitud.persona_confirmo ||
+                                 solicitud.confirmado_por || null;
+    resultado.horario_entrega = solicitud.horario_entrega ||
+                                solicitud.horario_domicilio || null;
+
 
     return resultado;
   }
@@ -202,6 +240,8 @@ export class SolicitudService {
 
     return partes.join(' ').trim() || 'Aval sin nombre';
   }
+
+  
 
   // ============================================
   // MÉTODOS PARA OBTENER DATOS EXTERNOS
@@ -291,4 +331,38 @@ export class SolicitudService {
       catchError(this.handleError)
     );
   }
+
+
+actualizarDomiciliacion(id: number, datos: any): Observable<any> {
+  return from(this.authService.getFirebaseToken()).pipe(
+    switchMap((token: string) => {
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      });
+
+      return this.http.put<any>(
+        `${this.apiUrl}/${id}/domiciliar`,
+        datos,
+        { headers }
+      );
+    }),
+    catchError(error => {
+      console.error('Error en actualizarDomiciliacion:', error);
+      return throwError(() => error);
+    })
+  );
 }
+
+
+  // Método para obtener solicitudes pendientes de domiciliación
+  obtenerSolicitudesPendientesDomiciliacion(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/pendientes/domiciliacion`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+
+}
+
+

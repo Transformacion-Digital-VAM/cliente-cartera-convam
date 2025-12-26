@@ -49,11 +49,6 @@
             <h4>{{ user.nombre }}</h4>
             <p class="user-email">{{ user.usuario }}</p>
           </div>
-          <!-- <div class="user-details">
-            <span class="user-role" [class.admin]="user.rol_id === 1 || user.rol_id === 4">
-              {{ (user.rol_id) }}
-            </span>
-          </div> -->
         </div>
         
         <div class="user-actions">
@@ -85,9 +80,6 @@
           <div class="detail-item">
             <strong>Email:</strong> {{ selectedUser.usuario }}
           </div>
-          <!-- <div class="detail-item">
-            <strong>Rol:</strong> {{ selectedUser.rol_id }}
-          </div> -->
           <div class="detail-item">
             <strong>Firebase UID:</strong> {{ selectedUser.firebase_uid }}
           </div>

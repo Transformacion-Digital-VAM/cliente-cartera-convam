@@ -49,4 +49,10 @@ export class CreditoService {
   actualizarEstadoCredito(id: number, estado: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/${id}/estado`, { estado_credito: estado });
   }
+
+
+    // Obtener solicitudes por estado (MÉTODO NUEVO)
+  obtenerSolicitudesPorEstado(estado: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/solicitudes?estado=${estado}`);
+  }
 }

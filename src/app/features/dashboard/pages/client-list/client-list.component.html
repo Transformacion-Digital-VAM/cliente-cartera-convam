@@ -92,6 +92,7 @@
               <th scope="col">APELLIDO MATERNO</th>
               <th scope="col" class="text-center">CURP</th>
               <th scope="col" class="text-center">TELÉFONO</th>
+              <th scope="col" class="text-center">ESTADO CLIENTE</th>
               <th scope="col" class="text-center">GENERAR SOLICITUD</th>
             </tr>
           </thead>
@@ -105,6 +106,24 @@
               <td class="apellido-cell">{{ cliente.apm_cliente || 'N/A' }}</td>
               <td class="curp-cell text-center">{{ cliente.curp || 'N/A' }}</td>
               <td class="curp-cell text-center">{{ cliente.telefono || 'N/A' }}</td>
+              <td class="estadocliente text-center">
+                <span [class]="getEstadoClienteClass(cliente)" class="text-success bold">
+                  {{ getEstadoCliente(cliente) }}
+                </span>
+              </td>
+             
+              <!-- <td>
+                <div class="btn-group" role="group">
+                  <button class="btn btn-primary btn-sm" (click)="abrirModalSolicitud(cliente)"
+                    [disabled]="!puedeGenerarSolicitud(cliente)"
+                    title="{{ puedeGenerarSolicitud(cliente) ? 'Generar nueva solicitud' : getEstadoCliente(cliente) }}">
+                    <i class="fas fa-file-contract"></i> Solicitud
+                  </button>
+                  <button class="btn btn-info btn-sm" (click)="seleccionarCliente(cliente)">
+                    <i class="fas fa-eye"></i> Ver
+                  </button>
+                </div>
+              </td> -->
               <td class="actions-cell">
                 <button class="btn btn-outline-primary btn-sm"
                   (click)="abrirModalSolicitud(cliente); $event.stopPropagation()">
@@ -263,9 +282,9 @@
               </div>
             </div>
           </div> -->
-            <div class="alert alert-info mb-3">
+          <div class="alert alert-info mb-3">
             <small>
-              <strong>Ejecutivo responsable:</strong> 
+              <strong>Ejecutivo responsable:</strong>
               {{usuarioActual?.nombre || usuarioActual?.usuario || 'No identificado'}}
               <br>
               <strong>ID de ejecutivo:</strong> {{usuarioActual?.id_usuario || 'N/A'}}
@@ -284,114 +303,114 @@
 
           <!-- Formulario de Solicitud -->
           <div class="solicitud-form-container mb-2">
-          <form [formGroup]="solicitudForm">
-            <div class="row">
-              <div class="col-md-3">
-                <div class="mb-3">
-                  <label for="montoSolicitado" class="form-label">MONTO SOLICITADO *</label>
-                  <input type="number" class="form-control" id="montoSolicitado" formControlName="monto_solicitado"
-                    min="5000" step="100">
-                  <div
-                    *ngIf="solicitudForm.get('monto_solicitado')?.invalid && solicitudForm.get('monto_solicitado')?.touched"
-                    class="text-danger small">
-                    El monto es requerido (mínimo $5000)
+            <form [formGroup]="solicitudForm">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="montoSolicitado" class="form-label">MONTO SOLICITADO *</label>
+                    <input type="number" class="form-control" id="montoSolicitado" formControlName="monto_solicitado"
+                      min="5000" step="100">
+                    <div
+                      *ngIf="solicitudForm.get('monto_solicitado')?.invalid && solicitudForm.get('monto_solicitado')?.touched"
+                      class="text-danger small">
+                      El monto es requerido (mínimo $5000)
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="col-md-3">
-                <div class="mb-3">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <div class="form-group">
+                      <label class="form-label" for="plazo">PlAZO DE MESES</label>
+                      <input type="number" class="form-control" formControlName="plazo_meses" id="plazo" min="1"
+                        max="60" required>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="tipoVencimiento" class="form-label">TIPO DE VENCIMIENTO</label>
+                    <select class="form-select" id="tipoVencimiento" formControlName="tipo_vencimiento">
+                      <option *ngFor="let tipo of tiposVencimiento" [value]="tipo.value">
+                        {{ tipo.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
                   <div class="form-group">
-                    <label class="form-label" for="plazo">PlAZO DE MESES</label>
-                    <input type="number" class="form-control" formControlName="plazo_meses" id="plazo" min="1" max="60"
-                      required>
+                    <label for="tipoSolicitud" class="form-label">TIPO DE SOLICITUD *</label>
+                    <select class="form-select" id="tipoSolicitud" formControlName="tipo_credito" required>
+                      <option *ngFor="let tipo of tiposSolicitud" [value]="tipo.value">
+                        {{ tipo.label }}
+                      </option>
+                    </select>
                   </div>
                 </div>
               </div>
-              <div class="col-md-3">
-                <div class="mb-3">
-                  <label for="tipoVencimiento" class="form-label">TIPO DE VENCIMIENTO</label>
-                  <select class="form-select" id="tipoVencimiento" formControlName="tipo_vencimiento">
-                    <option *ngFor="let tipo of tiposVencimiento" [value]="tipo.value">
-                      {{ tipo.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="form-group">
-                  <label for="tipoSolicitud" class="form-label">TIPO DE SOLICITUD *</label>
-                  <select class="form-select" id="tipoSolicitud" formControlName="tipo_credito" required>
-                    <option *ngFor="let tipo of tiposSolicitud" [value]="tipo.value">
-                      {{ tipo.label }}
-                    </option>
-                  </select>
-                </div>
-              </div>
-            </div>
 
-            <div class="row">
-              <div class="col-md-3">
-                <div class="form-group">
-                  <label for="aliado" class="form-label">ALIADO *</label>
-                  <select class="form-select" id="aliado" formControlName="aliado_id" required>
-                    <option value="">SELECCIONA UN ALIADO</option>
-                    <option *ngFor="let aliado of aliados" [value]="aliado.id_aliado">
-                      {{ aliado.nom_aliado }}
-                    </option>
-                  </select>
-                  <div *ngIf="solicitudForm.get('aliado_id')?.invalid && solicitudForm.get('aliado_id')?.touched"
-                    class="text-danger small">
-                    Debes seleccionar un aliado
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label for="aliado" class="form-label">ALIADO *</label>
+                    <select class="form-select" id="aliado" formControlName="aliado_id" required>
+                      <option value="">SELECCIONA UN ALIADO</option>
+                      <option *ngFor="let aliado of aliados" [value]="aliado.id_aliado">
+                        {{ aliado.nom_aliado }}
+                      </option>
+                    </select>
+                    <div *ngIf="solicitudForm.get('aliado_id')?.invalid && solicitudForm.get('aliado_id')?.touched"
+                      class="text-danger small">
+                      Debes seleccionar un aliado
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <div class="mb-3">
+                    <label for="noPagos" class="form-label">PAGOS</label>
+                    <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1" readonly>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="aval" class="form-label">AVAL *</label>
+                    <select class="form-select" id="aval" formControlName="aval_id" required>
+                      <option value="">Seleccionar Aval</option>
+                      <option *ngFor="let aval of avales" [value]="aval.id_aval">
+                        {{ getNombreCompletoAval(aval) }}
+                      </option>
+                    </select>
+                    <div *ngIf="solicitudForm.get('aval_id')?.invalid && solicitudForm.get('aval_id')?.touched"
+                      class="text-danger small">
+                      Debes seleccionar un aval
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="diaPago" class="form-label">Día de Pago *</label>
+                    <select class="form-select" id="diaPago" formControlName="dia_pago" required>
+                      <option *ngFor="let dia of diasPago" [value]="dia.value">
+                        {{ dia.label }}
+                      </option>
+                    </select>
+                    <div *ngIf="solicitudForm.get('dia_pago')?.invalid && solicitudForm.get('dia_pago')?.touched"
+                      class="text-danger small">
+                      Debes seleccionar un día de pago
+                    </div>
                   </div>
                 </div>
               </div>
-              <div class="col-md-2">
-                <div class="mb-3">
-                  <label for="noPagos" class="form-label">PAGOS</label>
-                  <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1" readonly>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label for="aval" class="form-label">AVAL *</label>
-                  <select class="form-select" id="aval" formControlName="aval_id" required>
-                    <option value="">Seleccionar Aval</option>
-                    <option *ngFor="let aval of avales" [value]="aval.id_aval">
-                      {{ getNombreCompletoAval(aval) }}
-                    </option>
-                  </select>
-                  <div *ngIf="solicitudForm.get('aval_id')?.invalid && solicitudForm.get('aval_id')?.touched"
-                    class="text-danger small">
-                    Debes seleccionar un aval
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="mb-3">
-                  <label for="diaPago" class="form-label">Día de Pago *</label>
-                  <select class="form-select" id="diaPago" formControlName="dia_pago" required>
-                    <option *ngFor="let dia of diasPago" [value]="dia.value">
-                      {{ dia.label }}
-                    </option>
-                  </select>
-                  <div *ngIf="solicitudForm.get('dia_pago')?.invalid && solicitudForm.get('dia_pago')?.touched"
-                    class="text-danger small">
-                    Debes seleccionar un día de pago
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            <div class="row">
-              <div class="col-12">
-                <div class="mb-3">
-                  <label for="observaciones" class="form-label">OBSERVACIONES</label>
-                  <textarea class="form-control" id="observaciones" rows="3" formControlName="observaciones"
-                    placeholder="Observaciones adicionales..."></textarea>
+              <div class="row">
+                <div class="col-12">
+                  <div class="mb-3">
+                    <label for="observaciones" class="form-label">OBSERVACIONES</label>
+                    <textarea class="form-control" id="observaciones" rows="3" formControlName="observaciones"
+                      placeholder="Observaciones adicionales..."></textarea>
+                  </div>
                 </div>
               </div>
-            </div>
-          </form>
+            </form>
           </div>
         </div>
 

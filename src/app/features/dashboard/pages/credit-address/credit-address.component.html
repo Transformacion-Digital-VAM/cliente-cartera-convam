@@ -1,0 +1,230 @@
+<div class="client-list-container solicitudes-container">
+  <!-- Migas de pan -->
+  <nav class="breadcrumb-nav">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="/" class="breadcrumb-link">Inicio</a>
+      </li>
+      <li class="breadcrumb-item">
+        <a href="/domiciliacion" class="breadcrumb-link">Panel Coordinador</a>
+      </li>
+      <li class="breadcrumb-item active">Solicitudes Domicilio</li>
+    </ol>
+  </nav>
+
+  <!-- Encabezado -->
+  <header class="admin-header">
+    <h1 class="reset-title">Gestión de Solicitudes de Domicilio</h1>
+    <p class="subtitle">Administre las solicitudes enviadas y pendientes de domicilio</p>
+  </header>
+
+  <!-- Filtros -->
+  <section class="filtros-section">
+    <div class="filtros-card">
+      <h3>Filtrar Solicitudes</h3>
+      <div class="filtros-form">
+        <div class="form-group">
+          <label>Estado</label>
+          <select class="form-control" [(ngModel)]="filtroEstado" (change)="cargarSolicitudes()">
+            <option *ngFor="let estado of estados" [value]="estado.valor">
+              {{estado.texto}}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Aliado</label>
+          <select class="form-control" [(ngModel)]="filtroAliado">
+            <option value="">Todos los aliados</option>
+            <option *ngFor="let aliado of aliados" [value]="aliado">{{aliado}}</option>
+          </select>
+        </div>
+
+        <div class="botones-filtros">
+          <button class="btn btn-outline" (click)="limpiarFiltros()">
+            <i class="fas fa-filter"></i> Limpiar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabla de solicitudes -->
+  <section class="tabla-section-vertical">
+    <div class="tabla-header">
+      <h3>
+        <i class="fas fa-list"></i> Solicitudes
+        <span class="badge badge-contador">{{solicitudesFiltradas.length}} registros</span>
+      </h3>
+      <div>
+        <button class="btn btn-sm btn-outline" (click)="actualizarDatos()" [disabled]="loading">
+          <i class="fas fa-sync-alt"></i> Actualizar
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando solicitudes...</p>
+    </div>
+
+    <div *ngIf="!loading" class="table-container-vertical">
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="id_solicitud">ID</th>
+            <th>Cliente</th>
+            <th>Teléfono</th>
+            <th>Aliado</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let solicitud of solicitudesFiltradas"
+            [class.selected]="solicitudSeleccionada?.id_solicitud === solicitud.id_solicitud"
+            (click)="seleccionarSolicitud(solicitud)">
+            <td class="id-cell">{{solicitud.id_solicitud}}</td>
+            <td class="nombre-cell">
+              <strong>{{getNombreCompleto(solicitud)}}</strong>
+              <small class="text-muted d-block">{{getDireccionCompleta(solicitud)}}</small>
+            </td>
+            <td class="telefono-cell">{{getTelefonoFormateado(solicitud)}}</td>
+            <td class="aliado-cell">{{getNombreAliado(solicitud)}}</td>
+            <td class="monto-cell">{{formatearMoneda(solicitud.monto_solicitado)}}</td>
+            <td>
+              <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
+                {{getEstadoText(solicitud.estado)}}
+              </span>
+            </td>
+            <td class="fecha-cell">{{formatearFecha(solicitud.fecha_creacion)}}</td>
+            <td class="actions-cell">
+              <div class="btn-group">
+                <button *ngIf="solicitud.estado === 'PENDIENTE'" class="btn btn-sm btn-primary"
+                  (click)="seleccionarSolicitud(solicitud); $event.stopPropagation()" title="Marcar como domiciliada">
+                  <i class="fas fa-home"></i><i class="fas fa-check"></i> Domiciliar
+                </button>
+              </div>
+            </td>
+            <!-- <td class="actions-cell">
+              <div class="btn-group">
+                <button *ngIf="solicitud.estado === 'PENDIENTE'" class="btn btn-sm btn-primary"
+                  (click)="seleccionarSolicitud(solicitud); $event.stopPropagation()" title="Marcar como domiciliada">
+                  <i class="fas fa-home"></i><i class="fas fa-check"></i> Domiciliar
+                </button>
+              </div>
+            </td> -->
+          </tr>
+
+          <tr *ngIf="solicitudesFiltradas.length === 0 && !loading">
+            <td colspan="8" class="no-data">
+              <i class="fas fa-inbox"></i>
+              No hay solicitudes que coincidan con los filtros seleccionados.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Modal para domiciliar solicitud -->
+  <div *ngIf="modalVisible && solicitudSeleccionada" class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="fas fa-home"></i>
+          Completar Domiciliación
+        </h3>
+        <button class="modal-close" (click)="cerrarModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Información de la solicitud -->
+        <div class="info-grid">
+          <div class="info-item">
+            <label><i class="fas fa-user"></i> Cliente:</label>
+            <span>{{getNombreCompleto(solicitudSeleccionada)}}</span>
+          </div>
+          <div class="info-item">
+            <label><i class="fas fa-phone"></i> Teléfono:</label>
+            <span>{{getTelefonoFormateado(solicitudSeleccionada)}}</span>
+          </div>
+          <div class="info-item full-width">
+            <label><i class="fas fa-map-marker-alt"></i> Dirección:</label>
+            <span>{{getDireccionCompleta(solicitudSeleccionada)}}</span>
+          </div>
+          <div class="info-item">
+            <label><i class="fas fa-handshake"></i> Aliado:</label>
+            <span>{{getNombreAliado(solicitudSeleccionada)}}</span>
+          </div>
+          <div class="info-item">
+            <label><i class="fas fa-dollar-sign"></i> Monto Aprobado:</label>
+            <span>{{formatearMoneda(solicitudSeleccionada.monto_aprobado || 0)}}</span>
+          </div>
+        </div>
+
+        <!-- Sección de domiciliación CORREGIDA -->
+        <div class="aprobacion-section">
+          <h4>
+            <i class="fas fa-clock"></i> Datos de Domiciliación
+          </h4>
+
+          <div class="form-group">
+            <label>Fecha de Domiciliación:</label>
+            <input type="date" class="form-control" [(ngModel)]="fechaDomiciliacion">
+            <small>Fecha en que se realizó la domiciliación</small>
+          </div>
+
+          <div class="form-group">
+            <label>Horario de Visita:</label>
+            <input
+              type="time"
+              class="form-control"
+              [(ngModel)]="horario"
+            />
+            <small>Hora exacta de la visita</small>
+          </div>
+
+          <div class="form-group">
+            <label>Persona que Recibió:</label>
+            <textarea class="form-control" rows="2"
+              placeholder="Nombre completo de la persona que recibió en el domicilio" [(ngModel)]="personaRecibio">
+          </textarea>
+            <small>Nombre completo de quien recibió el pedido</small>
+          </div>
+
+          <div class="acciones-aprobacion">
+            <div class="botones-accion">
+              <button class="btn-action btn-success" (click)="marcarDomiciliada()"
+                [disabled]="!horario.trim() || !personaRecibio.trim()">
+                <i class="fas fa-check-circle"></i> Confirmar Domiciliación
+              </button>
+              <button class="btn-action btn-secondary" (click)="cerrarModal()">
+                <i class="fas fa-times-circle"></i> Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leyenda de estados -->
+  <!-- <div class="leyenda-estados">
+    <div class="leyenda-item">
+      <span class="badge estado-pendiente">Pendiente</span>
+      <span>Solicitud recibida, en espera de revisión</span>
+    </div>
+    <div class="leyenda-item">
+      <span class="badge estado-aprobada">Aprobada</span>
+      <span>Solicitud aprobada para proceso</span>
+    </div>
+    <div class="badge estado-rechazada">Rechazada
+      <span>Solicitud rechazada</span>
+    </div>
+  </div> -->
+</div>

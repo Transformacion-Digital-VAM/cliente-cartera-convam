@@ -4,6 +4,13 @@
   margin-top: auto;
 }
 
+.logo-brand img {
+  width: 150px;
+  height: auto;
+  max-height: 150px;
+  object-fit: contain;
+}
+
 .footer-content {
   max-width: 1200px;
   margin: 0 auto;

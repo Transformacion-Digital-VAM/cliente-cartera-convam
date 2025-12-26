@@ -964,3 +964,27 @@
         padding: 0;
     }
 }
+
+.btn-warning-custom {
+  background-color: #ffc107; /* amarillo warning */
+  border-color: #ffc107;
+  color: #fff; /* icono blanco */
+}
+
+.btn-warning-custom i {
+  color: #fff; /* icono blanco */
+}
+
+.btn-warning-custom:hover {
+  background-color: #ffc107; /* sigue amarillo */
+  border-color: #ffc107;
+}
+
+.btn-warning-custom:hover i {
+  color: #000; /* icono negro al hover */
+}
+
+.estadocliente{
+  color: #000;
+}
+

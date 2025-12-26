@@ -23,7 +23,7 @@
         <h3>Listado de solicitudes nuevas</h3>
         <div class="botones-filtros">
           <button class="btn btn-outline btn-sm" (click)="cargarSolicitudesPendientes()" [disabled]="cargando">
-            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i> 
+            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
             {{ cargando ? 'Cargando...' : 'Actualizar' }}
           </button>
         </div>
@@ -40,6 +40,7 @@
               <th>Aliada</th>
               <th>Nombre del Aval</th>
               <th>Observaciones</th>
+              <th>Domiciliación</th>
               <th class="actions-cell">Acción</th>
             </tr>
           </thead>
@@ -50,14 +51,14 @@
                 <i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...
               </td>
             </tr>
-            
+
             <!-- Sin solicitudes -->
             <tr *ngIf="!cargando && solicitudesPendientes.length === 0">
               <td colspan="7" class="text-center">
                 No hay solicitudes pendientes
               </td>
             </tr>
-            
+
             <!-- Lista de solicitudes -->
             <tr *ngFor="let solicitud of solicitudesPendientes">
               <td>{{ solicitud.id_solicitud }}</td>
@@ -71,6 +72,12 @@
                 {{ getNombreAval(solicitud) }}
               </td>
               <td>{{ solicitud.observaciones || 'N/A'}}</td>
+              <td>
+                <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitud)">
+                  {{ getTextoDomiciliacion(solicitud) }}
+                </span>
+              </td>
+
               <td class="actions-cell text-center">
                 <button class="btn btn-primary btn-sm" (click)="abrirModal(solicitud)">
                   Ver
@@ -128,6 +135,19 @@
           </div>
         </div>
 
+        <!-- Domiciliacion -->
+        <div class="info-item">
+          <label>Domiciliación:</label>
+          <span>
+            <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
+              {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+            </span>
+            <div class="text-muted small" *ngIf="!cargandoAprobacion" style="margin-top:6px;">
+              {{ getDetalleDomiciliacion(solicitudSeleccionada) }}
+            </div>
+          </span>
+        </div>
+
         <!-- Aprobación y Monto -->
         <div class="md-6">
           <div class="info-section aprobacion-section">
@@ -136,14 +156,8 @@
               <div class="monto-centrado">
                 <div class="monto-input-container">
                   <span class="currency-symbol">$</span>
-                  <input 
-                    type="number" 
-                    class="form-control monto-input" 
-                    placeholder="0.00" 
-                    min="0" 
-                    step="0.01"
-                    max="{{ solicitudSeleccionada?.monto_solicitado }}"
-                    [(ngModel)]="montoAprobado"
+                  <input type="number" class="form-control monto-input" placeholder="0.00" min="0" step="0.01"
+                    max="{{ solicitudSeleccionada?.monto_solicitado }}" [(ngModel)]="montoAprobado"
                     [disabled]="cargandoAprobacion">
                 </div>
                 <small class="text-muted">
@@ -152,16 +166,12 @@
               </div>
               <div class="acciones-aprobacion">
                 <span class="botones-accion">
-                  <button 
-                    class="btn btn-success btn-action" 
-                    (click)="aprobarSolicitud()"
+                  <button class="btn btn-success btn-action" (click)="aprobarSolicitud()"
                     [disabled]="!montoAprobado || montoAprobado <= 0 || cargandoAprobacion">
-                    <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i> 
+                    <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i>
                     {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar Solicitud' }}
                   </button>
-                  <button 
-                    class="btn btn-rechazar btn-action"
-                    (click)="rechazarSolicitud()"
+                  <button class="btn btn-rechazar btn-action" (click)="rechazarSolicitud()"
                     [disabled]="cargandoAprobacion">
                     <i class="fas fa-times"></i> Rechazar
                   </button>
@@ -173,10 +183,7 @@
       </div>
 
       <div class="modal-footer">
-        <button 
-          class="btn btn-secondary" 
-          (click)="cerrarModal()"
-          [disabled]="cargandoAprobacion">
+        <button class="btn btn-secondary" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
           <i class="fas fa-times"></i> Cerrar
         </button>
       </div>
