@@ -105,6 +105,7 @@ export class CreditRequestComponent implements OnInit {
   abrirModal(solicitud: any): void {
     this.solicitudSeleccionada = solicitud;
     this.montoAprobado = solicitud.monto_solicitado;
+    this.modalAbierto = true; 
   }
 
   // Cerrar modal
