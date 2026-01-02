@@ -540,25 +540,26 @@ export class HomeComponent implements OnInit, AfterViewInit {
     return credito.cliente || 'Cliente no disponible';
   }
 
-  exportarDashboard(format: string): void {
-    this.dashboardService.exportDashboardToBackend(format, this.periodoDashboard)
-      .subscribe({
-        next: (response: any) => {
-          const blob = new Blob([response], { type: 'application/octet-stream' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `dashboard-${format}-${this.periodoDashboard}.xlsx`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        },
-        error: (error) => {
-          console.error('Error al exportar dashboard:', error);
-        }
+  exportarDashboard(tipo: 'pdf' | 'excel' | 'csv') {
+    const params: any = {
+      tipo,
+      periodo: this.periodoDashboard,
+      fechaInicio: this.fechaInicio,
+      fechaFin: this.fechaFin,
+      diasVencimiento: this.diasVencimiento
+    };
+
+    this.dashboardService.exportarDashboard(params)
+      .subscribe((blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_dashboard_${new Date().toISOString().slice(0, 10)}.${tipo === 'excel' ? 'xlsx' : tipo}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
       });
   }
+
 
 
 }

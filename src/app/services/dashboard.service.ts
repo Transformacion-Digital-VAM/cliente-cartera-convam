@@ -644,14 +644,14 @@ export class DashboardService {
     return periodos[periodo] || 'Periodo no especificado';
   }
 
-  exportDashboardToBackend(format: string, periodo: string): Observable<any> {
-    const params = new HttpParams()
-      .set('format', format)
-      .set('periodo', periodo);
-
-    return this.http.get(`${this.baseUrl}/exportar-dashboard`, {
-      params,
-      responseType: 'blob'
-    });
+  exportarDashboard(params: any) {
+    return this.http.get(
+      `${environment.apiUrl}/dashboard/exportar`,
+      {
+        params,
+        responseType: 'blob'
+      }
+    );
   }
+
 }
