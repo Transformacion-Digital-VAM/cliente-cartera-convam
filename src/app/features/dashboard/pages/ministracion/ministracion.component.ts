@@ -720,12 +720,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Limpiar filtros
-  // limpiarFiltros(): void {
-  //   this.filtroNombre = '';
-  //   this.filtroApPaterno = '';
-  //   this.clientesFiltrados = [...this.solicitudesRecientes];
-  // }
   // Modifica el método limpiarFiltros:
   limpiarFiltros(): void {
     this.filtroNombre = '';
