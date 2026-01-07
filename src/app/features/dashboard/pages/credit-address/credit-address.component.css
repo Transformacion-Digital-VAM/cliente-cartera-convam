@@ -1,8 +1,14 @@
-/* CreditAddress.component.css - Estilos específicos */
-
 /* Contenedor específico */
-.solicitudes-container {
-    padding-bottom: 30px;
+.client-domicili-container {
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.575), rgba(255, 255, 255, 0.568)),
+        url('/assets/BackLogin.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    padding: 20px;
 }
 
 /* Subtítulo */

@@ -1632,3 +1632,8 @@
   background-color: #e2e3e5;
   color: #383d41;
 }
+
+.col-estado {
+  background-color: #18545f;
+  font-weight: 600;
+}

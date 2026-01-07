@@ -39,13 +39,13 @@
 //     return clientes.filter(cliente => {
 //       const nombreCompleto = `${cliente.nombre_cliente} ${cliente.app_cliente} ${cliente.apm_cliente || ''}`.toLowerCase();
 //       const buscaNombre = filtros.nombre?.toLowerCase() || '';
-      
+
 //       const coincideNombre = !filtros.nombre || 
 //         nombreCompleto.includes(buscaNombre);
-      
+
 //       const coincideIdentificacion = !filtros.identificacion || 
 //         cliente.curp?.includes(filtros.identificacion);
-      
+
 //       const coincideEstado = !filtros.estadoCredito;
 
 //       return coincideNombre && coincideIdentificacion && coincideEstado;
@@ -109,15 +109,11 @@
 //   }
 
 //   // ========== MÉTODO COMPLETO (backup) ==========
-  
+
 //   // Método original para crear cliente completo en una sola operación
 //   crearCliente(datosCompletos: any): Observable<any> {
 //     return this.http.post(`${this.apiUrl}/crear`, datosCompletos);
 //   }
-  
-
-
-  
 // }
 
 
@@ -153,27 +149,36 @@ export class ClienteService {
   // Resto de métodos existentes...
   buscarCliente(filtros: any): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/obtener`).pipe(
-      map(clientes => this.filtrarClientes(clientes, filtros))    );
+      map(clientes => this.filtrarClientes(clientes, filtros)));
   }
 
-  
+
   private filtrarClientes(clientes: any[], filtros: any): any[] {
     return clientes.filter(cliente => {
       const nombreCompleto = `${cliente.nombre_cliente} ${cliente.app_cliente} ${cliente.apm_cliente || ''}`.toLowerCase();
       const buscaNombre = filtros.nombre?.toLowerCase() || '';
-      
-      const coincideNombre = !filtros.nombre || 
+
+      const coincideNombre = !filtros.nombre ||
         nombreCompleto.includes(buscaNombre);
-      
-      const coincideIdentificacion = !filtros.identificacion || 
+
+      const coincideIdentificacion = !filtros.identificacion ||
         cliente.curp?.includes(filtros.identificacion);
-      
+
       const coincideEstado = !filtros.estadoCredito;
 
       return coincideNombre && coincideIdentificacion && coincideEstado;
     });
   }
 
+  // En tu ClienteService (client.service.ts)
+  obtenerCreditosActivos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/creditos-activos`);
+  }
+
+  // En tu PagoService
+  obtenerCalendarioPorCliente(clienteId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/calendario/cliente/${clienteId}`);
+  }
   // ========== MÉTODOS PARA EL PROCESO DE ALTA ==========
 
   // Guardar dirección (para cliente o aval)
@@ -231,7 +236,7 @@ export class ClienteService {
   }
 
   // ========== MÉTODO COMPLETO (backup) ==========
-  
+
   // Método original para crear cliente completo en una sola operación
   crearCliente(datosCompletos: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/crear`, datosCompletos);

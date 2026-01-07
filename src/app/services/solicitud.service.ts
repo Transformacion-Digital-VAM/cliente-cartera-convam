@@ -1,56 +1,3 @@
-// import { Injectable } from '@angular/core';
-// import { HttpClient } from '@angular/common/http';
-// import { Observable } from 'rxjs';
-
-// @Injectable({
-//   providedIn: 'root'
-// })
-// export class SolicitudService {
-//   private apiUrl = 'http://localhost:3000/solicitud';
-//   private aliadosUrl = 'http://localhost:3000/aliados'; 
-//   private avalesUrl = 'http://localhost:3000/avales';
-
-//   constructor(private http: HttpClient) { }
-
-//   // Crear nueva solicitud
-//   crearSolicitud(solicitud: any): Observable<any> {
-//     return this.http.post(`${this.apiUrl}/crear`, solicitud);
-//   }
-
-//   obtenerSolicitudes(): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}`);
-//   }
-
-//   obtenerSolicitudPorId(id: number): Observable<any> {
-//     return this.http.get<any>(`${this.apiUrl}/${id}`);
-//   }
-
-//   // Obtener solicitudes por estado
-//   obtenerSolicitudesPorEstado(estado: string): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}/estado/${estado}`);
-//   }
-
-//   // Aprobar solicitud
-//   aprobarSolicitud(id: number, montoAprobado: number): Observable<any> {
-//     return this.http.put(`${this.apiUrl}/aprobar/${id}`, { monto_aprobado: montoAprobado });
-//   }
-
-//   // Rechazar solicitud
-//   rechazarSolicitud(id: number, motivo: string): Observable<any> {
-//     return this.http.put(`${this.apiUrl}/rechazar/${id}`, { motivo });
-//   }
-
-//   // Obtener solicitudes por cliente
-//   obtenerSolicitudesPorCliente(clienteId: number): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}/cliente/${clienteId}`);
-//   }
-  
-// }
-
-
-// -----------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, forkJoin, of } from 'rxjs';
@@ -71,12 +18,9 @@ export class SolicitudService {
   
   // Rutas actualizadas
   private aliadosUrl = 'http://localhost:3000/aliado'; 
-  private avalesUrl = ' http://localhost:3000/cliente/avales'; 
+  private avalesUrl = 'http://localhost:3000/cliente/aval';
 
-  // constructor(private http: HttpClient) { 
-
-  // }
-    constructor(
+  constructor(
     private http: HttpClient,
     private authService: AuthService 
   ) { }
@@ -158,49 +102,41 @@ export class SolicitudService {
 
   // Agregar nombres a una sola solicitud
   private agregarNombresASolicitud(solicitud: any, aliados: any[], avales: any[]): any {
-    if (!solicitud) return solicitud;
+  if (!solicitud) return solicitud;
 
-    const resultado = { ...solicitud };
+  const resultado = { ...solicitud };
 
-    // Agregar nombre del aliado
-    if (solicitud.aliado_id) {
-      const aliado = aliados.find(a => a.id_aliado == solicitud.aliado_id);
-      resultado.nombre_aliado = this.extraerNombreAliado(aliado);
-    } else {
-      resultado.nombre_aliado = 'No asignado';
-    }
-
-    // Agregar nombre del aval
-    if (solicitud.aval_id) {
-      const aval = avales.find(a => a.id_aval == solicitud.aval_id);
-      resultado.nombre_aval = this.extraerNombreAval(aval);
-    } else {
-      resultado.nombre_aval = 'Sin aval';
-    }
-
-        // Normalizar estado domiciliación: soporta varias propiedades booleanas/valores
-    const domiciliacionValor = solicitud.estado_domiciliacion ??
-                               solicitud.domiciliado ??
-                               solicitud.domiciliacion ??
-                               solicitud.domiciliada ??
-                               false;
-    resultado.estado_domiciliacion = Boolean(domiciliacionValor);
-
-    // Normalizar fecha de domiciliación si existe
-    resultado.fecha_domiciliada = solicitud.fecha_domiciliada ||
-                                  solicitud.fecha_domiciliacion ||
-                                  solicitud.fecha_domicilio || null;
-
-    // Normalizar quien confirmó/hora si vienen con nombres distintos
-    resultado.persona_confirma = solicitud.persona_confirma ||
-                                 solicitud.persona_confirmo ||
-                                 solicitud.confirmado_por || null;
-    resultado.horario_entrega = solicitud.horario_entrega ||
-                                solicitud.horario_domicilio || null;
-
-
-    return resultado;
+  // Agregar nombre del aliado (solo si no viene del backend)
+  if (!resultado.nombre_aliado && solicitud.aliado_id) {
+    const aliado = aliados.find(a => a.id_aliado == solicitud.aliado_id);
+    resultado.nombre_aliado = this.extraerNombreAliado(aliado) || 'No asignado';
+  } else if (!resultado.nombre_aliado) {
+    resultado.nombre_aliado = 'No asignado';
   }
+
+  // Agregar nombre del aval (solo si no viene del backend)
+  if (!resultado.nombre_aval && solicitud.aval_id) {
+    const aval = avales.find(a => a.id_aval == solicitud.aval_id);
+    // Solo asignar si extraerNombreAval devuelve algo válido
+    const nombreAvalExtraido = this.extraerNombreAval(aval);
+    if (nombreAvalExtraido && nombreAvalExtraido !== 'Aval no encontrado') {
+      resultado.nombre_aval = nombreAvalExtraido;
+    }
+  }
+  
+  // Si después de todo no hay nombre_aval, asignar uno por defecto
+  if (!resultado.nombre_aval || resultado.nombre_aval === 'Aval no encontrado') {
+    // Intentar construir con los campos que sí vienen
+    const nombre = solicitud.nombre_aval || '';
+    const app = solicitud.app_aval || '';
+    const apm = solicitud.apm_aval || '';
+    const nombreCompleto = `${nombre} ${app} ${apm}`.trim();
+    
+    resultado.nombre_aval = nombreCompleto || 'Sin aval';
+  }
+
+  return resultado;
+}
 
   // Extraer nombre del aliado (con múltiples formatos posibles)
   private extraerNombreAliado(aliado: any): string {
@@ -224,22 +160,22 @@ export class SolicitudService {
   }
 
   // Extraer nombre del aval (con múltiples formatos posibles)
-  private extraerNombreAval(aval: any): string {
-    if (!aval) return 'Aval no encontrado';
+ private extraerNombreAval(aval: any): string {
+  if (!aval) return ''; // Cambia a cadena vacía
 
-    // Intentar construir nombre completo
-    const nombre = aval.nombre || aval.nombre_aval || '';
-    const apellidoPaterno = aval.apellido_paterno || aval.app_aval || '';
-    const apellidoMaterno = aval.apellido_materno || aval.apm_aval || '';
+  // Intentar construir nombre completo
+  const nombre = aval.nombre || aval.nombre_aval || '';
+  const apellidoPaterno = aval.apellido_paterno || aval.app_aval || '';
+  const apellidoMaterno = aval.apellido_materno || aval.apm_aval || '';
 
-    const partes = [
-      nombre,
-      apellidoPaterno,
-      apellidoMaterno
-    ].filter(p => p && p.trim());
+  const partes = [
+    nombre,
+    apellidoPaterno,
+    apellidoMaterno
+  ].filter(p => p && p.trim());
 
-    return partes.join(' ').trim() || 'Aval sin nombre';
-  }
+  return partes.join(' ').trim(); // Devuelve cadena vacía si no hay partes
+}
 
   
 
@@ -258,14 +194,68 @@ export class SolicitudService {
   }
 
   // Obtener todos los avales con manejo de errores
-  obtenerTodosAvales(): Observable<any[]> {
-    return this.http.get<any[]>(this.avalesUrl).pipe(
-      catchError(error => {
-        console.warn('No se pudieron cargar avales:', error.message);
-        return of([]); // Retornar array vacío si falla
-      })
-    );
-  }
+  // obtenerTodosAvales(): Observable<any[]> {
+  //   return this.http.get<any[]>(this.avalesUrl).pipe(
+  //     catchError(error => {
+  //       console.warn('No se pudieron cargar avales:', error.message);
+  //       return of([]); // Retornar array vacío si falla
+  //     })
+  //   );
+  // }
+
+  // REEMPLAZA el método obtenerTodosAvales() en tu SolicitudService
+
+// Obtener todos los avales con manejo de errores y normalización
+obtenerTodosAvales(): Observable<any[]> {
+  return this.http.get<any>(this.avalesUrl).pipe(
+    map(response => {
+      console.log('=== RESPUESTA DE AVALES (RAW) ===');
+      console.log('Tipo:', typeof response);
+      console.log('Es array?:', Array.isArray(response));
+      console.log('Contenido:', response);
+
+      // NORMALIZACIÓN: Convertir diferentes formatos a array
+      let avalesArray: any[] = [];
+
+      if (Array.isArray(response)) {
+        // Caso 1: Ya es un array directamente
+        avalesArray = response;
+        console.log('✓ Formato: Array directo');
+      } else if (response && typeof response === 'object') {
+        // Caso 2: Es un objeto que contiene un array
+        if (response.avales && Array.isArray(response.avales)) {
+          avalesArray = response.avales;
+          console.log('✓ Formato: { avales: [...] }');
+        } else if (response.data && Array.isArray(response.data)) {
+          avalesArray = response.data;
+          console.log('✓ Formato: { data: [...] }');
+        } else if (response.rows && Array.isArray(response.rows)) {
+          avalesArray = response.rows;
+          console.log('✓ Formato: { rows: [...] }');
+        } else {
+          // Caso 3: Es un objeto único, convertir a array de 1 elemento
+          avalesArray = [response];
+          console.log('✓ Formato: Objeto único convertido a array');
+        }
+      }
+
+      console.log('Array normalizado:', avalesArray);
+      console.log('Total de avales:', avalesArray.length);
+      
+      if (avalesArray.length > 0) {
+        console.log('Primer aval:', avalesArray[0]);
+      }
+
+      return avalesArray;
+    }),
+    catchError(error => {
+      console.error('Error al cargar avales:', error);
+      console.error('Status:', error.status);
+      console.error('Message:', error.message);
+      return of([]); 
+    })
+  );
+}
 
   // Obtener aliado específico
   obtenerAliadoPorId(id: number): Observable<any> {

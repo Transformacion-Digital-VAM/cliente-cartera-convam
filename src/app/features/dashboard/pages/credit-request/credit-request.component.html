@@ -98,95 +98,222 @@
           <i class="fas fa-file-alt"></i>
           Detalles de la Solicitud #{{ solicitudSeleccionada?.id_solicitud }}
         </h3>
+        <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
+            {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+          </span>
         <button class="modal-close" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
           <i class="fas fa-times"></i>
         </button>
       </div>
 
       <div class="modal-body">
-        <!-- Información de la solicitud -->
-        <div class="info-section">
-          <h4>Información de la Solicitud</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <label>Cliente:</label>
-              <span>{{ getNombreCompleto(solicitudSeleccionada) }}</span>
-            </div>
-            <div class="info-item">
-              <label>Monto Solicitado:</label>
-              <span>{{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}</span>
-            </div>
-            <div class="info-item">
-              <label>Plazo:</label>
-              <span>{{ solicitudSeleccionada?.plazo_meses }} meses</span>
-            </div>
-            <div class="info-item">
-              <label>Número de Pagos:</label>
-              <span>{{ solicitudSeleccionada?.no_pagos }}</span>
-            </div>
-            <div class="info-item">
-              <label>Tipo de Crédito:</label>
-              <span>{{ solicitudSeleccionada?.tipo_credito }}</span>
-            </div>
-            <div class="info-item">
-              <label>Fecha de Creación:</label>
-              <span>{{ solicitudSeleccionada?.fecha_creacion | date:'dd/MM/yyyy' }}</span>
+        <!-- Primera fila: Información de Solicitud y Domiciliación -->
+        <div class="modal-row">
+          <!-- Información de la Solicitud -->
+          <div class="info-section">
+            <h4><i class="fas fa-info-circle me-2"></i>Información de la Solicitud</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Cliente:</label>
+                <span>{{ getNombreCompleto(solicitudSeleccionada) }}</span>
+              </div>
+              <div class="info-item">
+                <label>Monto Solicitado:</label>
+                <span class="highlight">{{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}</span>
+              </div>
+              <div class="info-item">
+                <label>Plazo:</label>
+                <span>{{ solicitudSeleccionada?.plazo_meses }} meses</span>
+              </div>
+              <div class="info-item">
+                <label>No. Pagos:</label>
+                <span>{{ solicitudSeleccionada?.no_pagos }}</span>
+              </div>
+              <div class="info-item">
+                <label>Tipo de Crédito:</label>
+                <span>{{ solicitudSeleccionada?.tipo_credito }}</span>
+              </div>
+              <div class="info-item">
+                <label>Fecha de Solicitud:</label>
+                <span>{{ formatearFecha(solicitudSeleccionada?.fecha_creacion) }}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Domiciliacion -->
-        <div class="info-item">
-          <label>Domiciliación:</label>
-          <span>
-            <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
-              {{ getTextoDomiciliacion(solicitudSeleccionada) }}
-            </span>
-            <div class="text-muted small" *ngIf="!cargandoAprobacion" style="margin-top:6px;">
-              {{ getDetalleDomiciliacion(solicitudSeleccionada) }}
-            </div>
-          </span>
-        </div>
-
-        <!-- Aprobación y Monto -->
-        <div class="md-6">
-          <div class="info-section aprobacion-section">
-            <h4>Monto aprobado</h4>
-            <div class="info-grid-detalle">
-              <div class="monto-centrado">
-                <div class="monto-input-container">
-                  <span class="currency-symbol">$</span>
-                  <input type="number" class="form-control monto-input" placeholder="0.00" min="0" step="0.01"
-                    max="{{ solicitudSeleccionada?.monto_solicitado }}" [(ngModel)]="montoAprobado"
-                    [disabled]="cargandoAprobacion">
+          <!-- Domiciliación -->
+          <!-- <div class="info-section">
+            <h4><i class="fas fa-home me-2"></i>Domiciliación</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="domiciliacion-status">
+                  <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
+                    {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+                  </span>
+                  <div class="domiciliacion-details"
+                    *ngIf="getDetalleDomiciliacion(solicitudSeleccionada) !== 'Sin detalles'">
+                    <small class="text-muted">{{ getDetalleDomiciliacion(solicitudSeleccionada) }}</small>
+                  </div>
                 </div>
-                <small class="text-muted">
-                  Máximo: {{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}
-                </small>
               </div>
-              <div class="acciones-aprobacion">
-                <span class="botones-accion">
-                  <button class="btn btn-success btn-action" (click)="aprobarSolicitud()"
+            </div>
+          </div> -->
+        </div>
+
+        <!-- Segunda fila: Cálculo de Garantía -->
+        <div class="modal-row" *ngIf="!cargandoGarantia">
+          <div class="info-section garantia-section">
+            <h4><i class="fas fa-balance-scale me-2"></i>Cálculo de Garantía</h4>
+
+            <!-- Cuando NO hay historial de créditos anteriores -->
+            <div *ngIf="!mostrarValidacionGarantia" class="garantia-sin-historial">
+              <div class="garantia-grid">
+                <!-- Solo mostrar la nueva garantía -->
+                <div class="garantia-item">
+                  <div class="garantia-card">
+                    <div class="garantia-header">
+                      <i class="fas fa-calculator me-2"></i>
+                      <strong>Garantía Requerida</strong>
+                    </div>
+                    <div class="garantia-body">
+                      <div class="garantia-monto">{{ formatearMoneda(getNuevaGarantia()) }}</div>
+                      <div class="garantia-info">
+                        <small class="text-muted">
+                          10% de {{ formatearMoneda(montoAprobado || solicitudSeleccionada?.monto_solicitado || 0) }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cuando SÍ hay historial de créditos anteriores -->
+            <div *ngIf="mostrarValidacionGarantia">
+              <div class="garantia-grid">
+                <!-- Columna 1: Garantía anterior -->
+                <div class="garantia-item">
+                  <div class="garantia-card">
+                    <div class="garantia-header">
+                      <i class="fas fa-history me-2"></i>
+                      <strong>Garantía Anterior</strong>
+                    </div>
+                    <div class="garantia-body">
+                      <div class="garantia-monto">{{ formatearMoneda(garantiaAnterior) }}</div>
+                      <div class="garantia-info">
+                        <small class="text-muted">
+                          Crédito #{{ creditoAnterior?.id_credito || 'N/A' }}<br>
+                          Estado: {{ creditoAnterior?.estado_credito || 'No especificado' }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Columna 2: Nueva garantía -->
+                <div class="garantia-item">
+                  <div class="garantia-card">
+                    <div class="garantia-header">
+                      <i class="fas fa-calculator me-2"></i>
+                      <strong>Nueva Garantía (10%)</strong>
+                    </div>
+                    <div class="garantia-body">
+                      <div class="garantia-monto">{{ formatearMoneda(getNuevaGarantia()) }}</div>
+                      <div class="garantia-info">
+                        <small class="text-muted">
+                          10% de {{ formatearMoneda(montoAprobado || solicitudSeleccionada?.monto_solicitado || 0) }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Columna 3: Diferencia -->
+                <div class="garantia-item">
+                  <div class="garantia-card">
+                    <div class="garantia-header">
+                      <i class="fas fa-exchange-alt me-2"></i>
+                      <strong>Ajuste de Garantías</strong>
+                    </div>
+                    <div class="garantia-body">
+                      <div class="garantia-monto" [ngClass]="getEstadoGarantiaClass()">
+                        {{ diferenciaGarantia > 0 ? '+' : diferenciaGarantia < 0 ? '-' : 'SIN CAMBIO' }} {{
+                          getDiferenciaGarantiaTexto() }} </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mensajes informativos -->
+                <div class="garantia-messages" *ngIf="garantiaAnterior > 0">
+                  <div class="alert alert-info" *ngIf="diferenciaGarantia > 0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    El cliente requiere garantía adicional de <strong>{{ formatearMoneda(diferenciaGarantia) }}</strong>
+                  </div>
+
+                  <div class="alert alert-success" *ngIf="diferenciaGarantia === 0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>¡No requiere garantía adicional!</strong> El 10% del monto solicitado es igual a la garantía
+                    anterior.
+                  </div>
+
+                  <div class="alert alert-warning mt-2"
+                    *ngIf="creditoAnterior && (creditoAnterior.estado_credito || '').toUpperCase() === 'PENDIENTE'">
+                    <i class="fas fa-clock me-2"></i>
+                    <strong>Nota:</strong> El crédito anterior está en estado <strong>PENDIENTE</strong>.
+                    Se está usando su garantía como referencia.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tercera fila: Aprobación -->
+          <div class="modal-row">
+            <div class="info-section aprobacion-section">
+              <h4><i class="fas fa-check-circle me-2"></i>Decisión de Aprobación</h4>
+              <div class="aprobacion-content">
+                <!-- Input de monto aprobado -->
+                <div class="monto-aprobacion">
+                  <label for="montoAprobado">Monto a Aprobar:</label>
+                  <div class="monto-input-group">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="montoAprobado" class="form-control monto-input" placeholder="0.00" min="0"
+                      step="0.01" max="{{ solicitudSeleccionada?.monto_solicitado }}" [(ngModel)]="montoAprobado"
+                      (ngModelChange)="onMontoAprobadoChange()" [disabled]="cargandoAprobacion">
+                  </div>
+                  <div class="monto-info">
+                    <!-- <small class="text-muted">
+                      Máximo aprobable: {{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}
+                    </small> -->
+                    <small class="text-muted">
+                      • Nueva garantía: {{ formatearMoneda(getNuevaGarantia()) }}
+                    </small>
+                  </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="acciones-botones">
+                  <button class="btn btn-success btn-lg btn-accion" (click)="aprobarSolicitud()"
                     [disabled]="!montoAprobado || montoAprobado <= 0 || cargandoAprobacion">
                     <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i>
-                    {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar Solicitud' }}
+                    {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar' }}
                   </button>
-                  <button class="btn btn-rechazar btn-action" (click)="rechazarSolicitud()"
+
+                  <button class="btn btn-danger btn-lg btn-accion" (click)="rechazarSolicitud()"
                     [disabled]="cargandoAprobacion">
                     <i class="fas fa-times"></i> Rechazar
                   </button>
-                </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
-          <i class="fas fa-times"></i> Cerrar
-        </button>
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
+            <i class="fas fa-times"></i> Cerrar
+          </button>
+        </div>
       </div>
     </div>
   </div>
-</div>

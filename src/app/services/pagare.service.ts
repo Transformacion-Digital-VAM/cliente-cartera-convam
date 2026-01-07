@@ -10,39 +10,21 @@
 
 //   constructor(private http: HttpClient) { }
 
-//   // CORRECCIÓN: Tu backend usa GET, no POST
+//   // Generar pagaré - DEVUELVE UN BLOB (PDF)
 //   generarPagare(creditoId: number): Observable<Blob> {
 //     return this.http.get(`${this.apiUrl}/${creditoId}`, {
-//       responseType: 'blob' // Importante: especifica que esperas un blob (PDF)
+//       responseType: 'blob'
 //     });
 //   }
 
-//   // CORRECCIÓN: Tu backend usa GET, no POST
+//   // Generar hoja de control - DEVUELVE UN BLOB (PDF)
 //   generarHojaControl(creditoId: number): Observable<Blob> {
 //     return this.http.get(`${this.apiUrl}/hoja-control/${creditoId}`, {
-//       responseType: 'blob' // Importante: especifica que esperas un blob (PDF)
+//       responseType: 'blob'
 //     });
-//   }
-
-//   // NOTA: No necesitas métodos separados para "descargar" porque
-//   // el backend ya devuelve el PDF directamente al generarlo
-  
-//   // Método auxiliar para manejar la descarga (opcional)
-//   descargarArchivo(blob: Blob, nombreArchivo: string): void {
-//     const url = window.URL.createObjectURL(blob);
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = nombreArchivo;
-//     document.body.appendChild(a);
-//     a.click();
-//     document.body.removeChild(a);
-//     window.URL.revokeObjectURL(url);
 //   }
 // }
 
-
-
-// pagare.service.ts - VERSIÓN FINAL CORREGIDA
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -67,5 +49,20 @@ export class PagareService {
     return this.http.get(`${this.apiUrl}/hoja-control/${creditoId}`, {
       responseType: 'blob'
     });
+  }
+
+  // Obtener calendario por pagaré
+  obtenerCalendarioPorPagare(pagareId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/calendario/pagare/${pagareId}`);
+  }
+
+  // Obtener calendario por cliente
+  obtenerCalendarioPorCliente(clienteId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/calendario/cliente/${clienteId}`);
+  }
+
+  // Obtener calendario por crédito
+  obtenerCalendarioPorCredito(creditoId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/calendario/credito/${creditoId}`);
   }
 }

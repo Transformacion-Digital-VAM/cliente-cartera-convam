@@ -113,21 +113,29 @@
 
 /* Formulario de filtros */
 .filtros-form {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    align-items: end;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  align-items: start;
 }
 
+
+
 .form-group {
-    margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
 }
+
+.label-fantasma {
+  height: 18px;
+}
+
 
 .form-group label {
     display: block;
     margin-bottom: 6px;
     color: #34495e;
-    font-weight: 600;
+    font-weight: 400;
     font-size: 0.9rem;
 }
 
@@ -138,6 +146,7 @@
     border-radius: 4px;
     font-size: 0.9rem;
     transition: all 0.3s ease;
+    
 }
 
 .form-control:focus {
@@ -151,7 +160,15 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    justify-content: flex-start;
+    height: 100%;
 }
+
+.botones-filtros .acciones {
+  display: flex;
+  gap: 10px;
+}
+
 
 .btn {
     padding: 8px 16px;
@@ -501,31 +518,6 @@
     font-weight: 600;
 }
 
-.estado-activo {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.estado-vencido {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.estado-cancelado {
-    background-color: #e2e3e5;
-    color: #383d41;
-}
-
-.estado-bloqueado {
-    background-color: #fff3cd;
-    color: #856404;
-}
-
-.estado-desconocido {
-    background-color: #f8f9fa;
-    color: #6c757d;
-}
-
 /* ===== ESTILOS PARA EL MODAL DE SOLICITUD ===== */
 .modal-content {
     border: none;
@@ -577,35 +569,6 @@
     border-radius: 0 0 8px 8px;
 }
 
-/* Cards dentro del modal */
-/* .modal-body .card {
-    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 20px;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    border: 1px solid #e6e8ff;
-}
-
-.modal-body .card-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-    padding: 0.75rem 1rem;
-    border-radius: 6px 6px 0 0;
-}
-
-.modal-body .card-header h6 {
-    color: #2c3e50;
-    font-weight: 600;
-    margin: 0;
-    font-size: 0.95rem;
-}
-
-.modal-body .card-body {
-    padding: 1rem;
-} */
  /* Resumen financiero compacto */
 .resumen-compacto {
     background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
@@ -965,26 +928,57 @@
     }
 }
 
-.btn-warning-custom {
-  background-color: #ffc107; /* amarillo warning */
-  border-color: #ffc107;
-  color: #fff; /* icono blanco */
+/* Estados de clientes */
+.estado-nuevo {
+  background-color: #447ac0;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
 }
 
-.btn-warning-custom i {
-  color: #fff; /* icono blanco */
+.estado-disponible {
+  background-color: #25a521;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
 }
 
-.btn-warning-custom:hover {
-  background-color: #ffc107; /* sigue amarillo */
-  border-color: #ffc107;
-}
-
-.btn-warning-custom:hover i {
-  color: #000; /* icono negro al hover */
-}
-
-.estadocliente{
+.estado-en-ciclo {
+  background-color: #ff9307;
   color: #000;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
 }
 
+.estado-mora {
+  background-color: #dc3545;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
+}
+
+.estado-desconocido {
+  background-color: #d8dee2;
+  color: #000;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
+}
+
+.estado-cerrado{
+  background-color: #ad85bd;
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 0.85em;
+}

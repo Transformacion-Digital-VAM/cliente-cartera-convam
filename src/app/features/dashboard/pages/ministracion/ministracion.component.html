@@ -104,7 +104,7 @@
                   <th>TASA DE INTERES</th>
                   <th>ALIADA</th>
                   <th class="text-center">FECHA DE APROBACIÓN</th>
-                  <th class="actions-cell">ACCIÓN</th>
+                  <th class="actions-cell">ACCIONES</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,18 +123,56 @@
                 </tr>
 
                 <!-- Lista de solicitudes aprobadas (máximo 6) -->
-                <tr *ngFor="let solicitud of clientesFiltrados" >
-                  <td class="id_solicitud text-center">{{ solicitud.id_solicitud }}</td>                  
+                <tr *ngFor="let solicitud of clientesFiltrados">
+                  <td class="id_solicitud text-center">{{ solicitud.id_solicitud }}</td>
                   <td class="id_solicitud text-center">{{ solicitud.cliente_id || 'N/A' }}</td>
                   <td>{{ getNombreCompleto(solicitud) }}</td>
                   <td>{{ formatearMoneda(solicitud.monto_aprobado) }}</td>
-                  <td>{{ solicitud.tasa_fija_formateada || (solicitud.tasa_fija ? (parseInt((solicitud.tasa_fija * 100).toString(), 10)) + '%' : '0%')}}</td>
+                  <!-- <td>{{ solicitud.tasa_fija_formateada || formatearTasaFija(solicitud.tasa_fija) }}</td> -->
+                  <td>{{ convertirTasaAporcentaje(solicitud.tasa_fija) }}</td>
                   <td>{{ solicitud.aliado_nombre || 'Sin asignar' }}</td>
                   <td class="text-center">{{ formatearFecha(solicitud.fecha_aprobacion) }}</td>
                   <td class="actions-cell">
-                    <button class="btn btn-success btn-sm" (click)="abrirModalPagare(solicitud)">
-                      <i class="fas fa-hand-holding-usd"></i> Pagaré
-                    </button>
+                    <div class="d-flex flex-column gap-1">
+
+                      <!-- Botón Principal con estado condicional -->
+                      <button [class]="getClaseBotonGenerarCredito(solicitud)"
+                        [title]="getTooltipGenerarCredito(solicitud)" (click)="abrirModalPagare(solicitud)"
+                        [disabled]="!solicitud.domiciliado || !puedeGenerarCredito(solicitud)" class="btn-action-main">
+                        <i [class]="getIconoBotonGenerarCredito(solicitud)"></i>
+                        {{ getTextoBotonGenerarCredito(solicitud) }}
+                      </button>
+
+                      <!-- Grupo de elementos secundarios -->
+                      <div class="secondary-elements" *ngIf="!puedeGenerarCredito(solicitud)">
+
+                        <!-- Botón Secundario: Ver Detalles -->
+                        <button class="btn-action-secondary" (click)="verDetallesCreditoExistente(solicitud)"
+                          title="Ver detalles completos del crédito existente">
+                          <i class="fas fa-eye me-1"></i>
+                          <span class="btn-text">Detalles</span>
+                        </button>
+
+                        <!-- Badge de Estado -->
+                        <!-- <div class="status-badge">
+                          <span class="badge"
+                            [ngClass]="'badge-' + getBadgeColor(obtenerEstadoCreditoExistente(solicitud))">
+                            <i class="fas fa-file-invoice-dollar me-1"></i>
+                            #{{ obtenerIdCreditoExistente(solicitud) }} - {{ obtenerEstadoCreditoExistente(solicitud) }}
+                          </span>
+                        </div> -->
+
+                      </div>
+
+                      <!-- Badge: No Domiciliado -->
+                      <div class="no-domiciliado-badge" *ngIf="!solicitud.domiciliado">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-exclamation-circle me-1"></i>
+                          Pendiente Domiciliación
+                        </span>
+                      </div>
+
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -157,111 +195,111 @@
       </div>
 
       <!-- Pestaña 2: Créditos Pendientes -->
-<!-- En la pestaña de CRÉDITOS PENDIENTES, actualiza la tabla: -->
-<div class="tab-pane fade" id="pendientes" role="tabpanel" aria-labelledby="pendientes-tab">
-  <div class="table-container-vertical">
-    <div class="tabla-header">
-      <h3>CRÉDITOS PENDIENTES DE ENTREGA</h3>
-      <div class="botones-filtros">
-        <button class="btn btn-outline btn-sm" (click)="cargarCreditos()" [disabled]="cargandoCreditos">
-          <i class="fas fa-sync-alt" [class.fa-spin]="cargandoCreditos"></i>
-          {{ cargandoCreditos ? 'Cargando...' : 'Actualizar' }}
-        </button>
-      </div>
-    </div>
+      <div class="tab-pane fade" id="pendientes" role="tabpanel" aria-labelledby="pendientes-tab">
+        <div class="table-container-vertical">
+          <div class="tabla-header">
+            <h3>CRÉDITOS PENDIENTES DE ENTREGA</h3>
+            <div class="botones-filtros">
+              <button class="btn btn-outline btn-sm" (click)="cargarCreditos()" [disabled]="cargandoCreditos">
+                <i class="fas fa-sync-alt" [class.fa-spin]="cargandoCreditos"></i>
+                {{ cargandoCreditos ? 'Cargando...' : 'Actualizar' }}
+              </button>
+            </div>
+          </div>
 
-    <div class="table-container-vertical">
-      <table class="table">
-        <thead>
-          <tr>
-            <th class="text-center">ID CRÉDITO</th>
-            <th class="text-center">ID CLIENTE</th>
-            <th>NOMBRE COMPLETO</th>
-            <th class="text-center">MONTO TOTAL</th>
-            <th class="text-center">FECHA MINISTRACIÓN</th>
-            <th class="text-center">TIEMPO RESTANTE</th>
-            <th class="text-center">ACCIONES</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Estado de carga -->
-          <tr *ngIf="cargandoCreditos">
-            <td colspan="7" class="text-center">
-              <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
-            </td>
-          </tr>
+          <div class="table-container-vertical">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="text-center">ID CRÉDITO</th>
+                  <th class="text-center">ID CLIENTE</th>
+                  <th>NOMBRE COMPLETO</th>
+                  <th class="text-center">MONTO TOTAL</th>
+                  <th class="text-center">FECHA MINISTRACIÓN</th>
+                  <th class="text-center">TIEMPO RESTANTE</th>
+                  <th class="text-center">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Estado de carga -->
+                <tr *ngIf="cargandoCreditos">
+                  <td colspan="7" class="text-center">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
+                  </td>
+                </tr>
 
-          <!-- Sin créditos pendientes -->
-          <tr *ngIf="!cargandoCreditos && getCreditosPorEstado('PENDIENTE').length === 0">
-            <td colspan="7" class="text-center">
-              No hay créditos pendientes
-            </td>
-          </tr>
+                <!-- Sin créditos pendientes -->
+                <tr *ngIf="!cargandoCreditos && getCreditosPorEstado('PENDIENTE').length === 0">
+                  <td colspan="7" class="text-center">
+                    No hay créditos pendientes
+                  </td>
+                </tr>
 
-          <!-- Lista de créditos pendientes -->
-          <tr *ngFor="let credito of getCreditosPorEstado('PENDIENTE')" 
-              [class.tiempo-critico]="getTiempoRestante(credito).esCritico"
-              [class.tiempo-advertencia]="getTiempoRestante(credito).esAdvertencia">
-            <td class="text-center fw-bold">{{ credito.id_credito }}</td>
-            <td class="text-center">
-              <span class="id_solicitud">{{ credito.cliente_id || 'N/A' }}</span>
-            </td>
-            <td>
-              <strong>{{ getNombreCompletoCredito(credito) }}</strong><br>
-              <small class="text-muted">
-                <i class="fas fa-id-card"></i> Solicitud: {{ credito.solicitud_id }}
-              </small>
-            </td>
-            <td class="text-center">
-              <span class="badge badge-primary">
-                {{ formatearMoneda(credito.total_a_pagar) }}
-              </span>
-            </td>
-            <td class="text-center">{{ formatearFecha(credito.fecha_ministracion) }}</td>
-            <td class="text-center">
-              <div class="temporizador-container" *ngIf="getTiempoRestante(credito).hayFecha">
-                <div class="temporizador" [ngClass]="{
+                <!-- Lista de créditos pendientes -->
+                <tr *ngFor="let credito of getCreditosPorEstado('PENDIENTE')"
+                  [class.tiempo-critico]="getTiempoRestante(credito).esCritico"
+                  [class.tiempo-advertencia]="getTiempoRestante(credito).esAdvertencia">
+                  <td class="text-center fw-bold">{{ credito.id_credito }}</td>
+                  <td class="text-center">
+                    <span class="id_solicitud">{{ credito.cliente_id || 'N/A' }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ getNombreCompletoCredito(credito) }}</strong><br>
+                    <small class="text-muted">
+                      <i class="fas fa-id-card"></i> Solicitud: {{ credito.solicitud_id }}
+                    </small>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge badge-primary">
+                      {{ formatearMoneda(credito.total_a_pagar) }}
+                    </span>
+                  </td>
+                  <td class="text-center">{{ formatearFecha(credito.fecha_ministracion) }}</td>
+                  <td class="text-center">
+                    <div class="temporizador-container" *ngIf="getTiempoRestante(credito).hayFecha">
+                      <div class="temporizador" [ngClass]="{
                   'temporizador-normal': !getTiempoRestante(credito).esCritico && !getTiempoRestante(credito).esAdvertencia,
                   'temporizador-advertencia': getTiempoRestante(credito).esAdvertencia,
                   'temporizador-critico': getTiempoRestante(credito).esCritico
                 }">
-                  <i class="fas fa-clock"></i>
-                  <span class="temporizador-texto">{{ getTiempoRestante(credito).texto }}</span>
-                </div>
-                <!-- <small class="text-muted d-block mt-1">
-                  {{ getTiempoRestante(credito).porcentaje }}% transcurrido
-                </small> -->
-                <div class="progress" style="height: 4px;">
-                  <div class="progress-bar" 
-                       [ngClass]="{
+                        <i class="fas fa-clock"></i>
+                        <span class="temporizador-texto">{{ getTiempoRestante(credito).texto }}</span>
+                      </div>
+                      <div class="progress" style="height: 4px;">
+                        <div class="progress-bar" [ngClass]="{
                          'bg-success': getTiempoRestante(credito).porcentaje < 50,
                          'bg-warning': getTiempoRestante(credito).porcentaje >= 50 && getTiempoRestante(credito).porcentaje < 75,
                          'bg-danger': getTiempoRestante(credito).porcentaje >= 75
-                       }"
-                       [style.width.%]="getTiempoRestante(credito).porcentaje">
-                  </div>
-                </div>
-              </div>
-              <span *ngIf="!getTiempoRestante(credito).hayFecha" class="text-muted">
-                Sin fecha de ministración
-              </span>
-            </td>
-            <td class="text-center">
-              <div class="btn-group-vertical btn-group-sm" role="group">
-                <button class="btn btn-success btn-sm mb-1" (click)="marcarComoEntregado(credito)">
-                  <i class="fas fa-check-circle"></i> Entregar
-                </button>
-                <button class="btn btn-danger btn-sm" (click)="marcarComoDevolucion(credito)">
-                  <i class="fas fa-undo"></i> Devolución
-                </button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>  
+                       }" [style.width.%]="getTiempoRestante(credito).porcentaje">
+                        </div>
+                      </div>
+                    </div>
+                    <span *ngIf="!getTiempoRestante(credito).hayFecha" class="text-muted">
+                      Sin fecha de ministración
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group-vertical btn-group-sm text-center" role="group">
+                      <!-- BOTÓN PARA GENERAR PAGARÉ EN CRÉDITOS PENDIENTES -->
+                      <button class="btn btn-primary btn-sm mb-1 text-center"
+                        (click)="abrirModalGenerarPagareDesdeCredito(credito)">
+                        <i class="fas fa-file-contract"></i> Pagaré
+                      </button>
+                      <button class="btn btn-success btn-sm mb-1 text-center" (click)="marcarComoEntregado(credito)">
+                        <i class="fas fa-check-circle"></i> Entregar
+                      </button>
+                      <button class="btn btn-danger btn-sm mb-1 text-center" (click)="marcarComoDevolucion(credito)">
+                        <i class="fas fa-undo"></i> Devolución
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
 
       <!-- Pestaña 3: Créditos Entregados -->
       <div class="tab-pane fade" id="entregados" role="tabpanel" aria-labelledby="entregados-tab">
@@ -305,7 +343,7 @@
                 </tr>
 
                 <!-- Lista de créditos entregados -->
-                <tr *ngFor="let credito of getCreditosPorEstado('ENTREGADO')" >
+                <tr *ngFor="let credito of getCreditosPorEstado('ENTREGADO')">
                   <td class="text-center fw-bold">{{ credito.id_credito }}</td>
                   <td class="text-center">
                     <span class="id_solicitud">{{ credito.cliente_id || 'N/A' }}</span>
@@ -355,7 +393,6 @@
                   <th class="text-center">CLIENTE</th>
                   <th>NOMBRE COMPLETO</th>
                   <th class="text-center">MONTO TOTAL</th>
-                  <!-- <th class="text-center">FECHA MINISTRACIÓN</th> -->
                   <th class="text-center">ALIADO</th>
                   <th class="text-center">ACCIONES</th>
                 </tr>
@@ -376,7 +413,7 @@
                 </tr>
 
                 <!-- Lista de créditos en devolución -->
-                <tr *ngFor="let credito of getCreditosPorEstado('DEVOLUCION')" >
+                <tr *ngFor="let credito of getCreditosPorEstado('DEVOLUCION')">
                   <td class="text-center fw-bold">{{ credito.id_credito }}</td>
                   <td class="text-center">
                     <span class="id_solicitud">{{ credito.cliente_id || 'N/A' }}</span>
@@ -392,13 +429,18 @@
                       {{ formatearMoneda(credito.total_a_pagar) }}
                     </span>
                   </td>
-                  <!-- <td class="text-center">{{ formatearFecha(credito.fecha_ministracion) }}</td> -->
                   <td class="text-center">
                     <span class="badge badge-secondary">{{ credito.nom_aliado || 'Sin aliado' }}</span>
                   </td>
                   <td class="text-center">
-                    <button class="btn btn-success btn-sm" (click)="marcarComoPendiente(credito)">
-                      <i class="fas fa-check-circle"></i> Re-entregar
+                    <!-- NUEVO BOTÓN PARA EDITAR FECHAS -->
+                    <button class="btn btn-warning btn-sm me-2" (click)="editarFechasCredito(credito)"
+                      title="Editar fechas antes de marcar como pendiente">
+                      <i class="fas fa-calendar-edit"></i> Editar Fechas
+                    </button>
+
+                    <button class="btn btn-success btn-sm" (click)="marcarComoPendienteConFecha(credito)">
+                      <i class="fas fa-check-circle"></i> Marcar como Pendiente
                     </button>
                   </td>
                 </tr>
@@ -411,197 +453,274 @@
   </div>
 </div>
 
-
-<!-- Modal para Generar Pagaré -->
-<div class="modal-backdrop" *ngIf="modalPagareAbierto">
-  <div class="modal-container modal-lg">
+<!-- MODAL PARA GENERAR CRÉDITO -->
+<div class="modal-backdrop" *ngIf="modalGenerarCreditoAbierto">
+  <div class="modal-container modal-md">
     <div class="modal-header">
-      <h3>GENERAR PAGARÉ - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
-      <button class="btn-close" (click)="cerrarModalPagare()">&times;</button>
+      <h3>GENERAR CRÉDITO - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
+      <button class="btn-close" (click)="cerrarModalGenerarCredito()">&times;</button>
     </div>
 
     <div class="modal-body">
-      <!-- Formulario de datos del crédito (si no se ha creado el crédito) -->
-      <div *ngIf="!creditoRecienCreado">
-        <div class="form-section">
-          <h4>Completar Datos del Crédito</h4>
-          <p class="text-muted">Complete los datos faltantes para crear el crédito y generar los documentos.</p>
+      <div class="form-section">
+        <h4>Configurar Fechas del Crédito</h4>
 
-          <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><strong>Fecha de Ministración *</strong></label>
-                <input type="date" class="form-control" [(ngModel)]="fechaMinistracion" (change)="onValorCambiado()"
-                  required>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="form-group">
-                <label><strong>Fecha Primer Pago *</strong></label>
-                <input type="date" class="form-control" [(ngModel)]="fechaPrimerPago" (change)="onValorCambiado()"
-                  required>
-              </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><strong>Fecha de Ministración *</strong></label>
+              <input type="date" class="form-control" [(ngModel)]="fechaMinistracion" required>
             </div>
           </div>
 
-          <!-- <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Referencia Bancaria</label>
-                <input type="text" class="form-control" [(ngModel)]="referenciaBancaria"
-                  placeholder="Ingrese referencia bancaria">
-              </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label><strong>Fecha Primer Pago *</strong></label>
+              <input type="date" class="form-control" [(ngModel)]="fechaPrimerPago" required>
+              <small class="text-muted">Día de pago: {{solicitudSeleccionada?.dia_pago}}</small>
             </div>
-
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Cuenta Bancaria</label>
-                <input type="text" class="form-control" [(ngModel)]="cuentaBancaria"
-                  placeholder="Ingrese cuenta bancaria">
-              </div>
-            </div>
-          </div> -->
-
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="seguro" (change)="onValorCambiado()">
-              <strong>Incluir Seguro ($80.00)</strong>
-            </label>
-          </div>
-
-          <!-- Información de la solicitud (solo lectura) -->
-          <div class="info-solicitud">
-            <h5>Información de la Solicitud</h5>
-            <div class="row">
-              <div class="col-md-6">
-                <p><strong>Cliente:</strong> {{ getNombreCompleto(solicitudSeleccionada) }}</p>
-                <p><strong>Monto Aprobado:</strong> {{ formatearMoneda(solicitudSeleccionada?.monto_aprobado) }}</p>
-                <p><strong>Aliado:</strong> {{ solicitudSeleccionada?.aliado_nombre }}</p>
-              </div>
-              <div class="col-md-6">
-                <p><strong>Tasa de Interés:</strong> {{ solicitudSeleccionada?.tasa_fija_formateada || '0%' }}</p>
-                <p><strong>Tipo de Crédito:</strong> {{ solicitudSeleccionada?.tipo_credito }}</p>
-                <p><strong>ID Solicitud:</strong> {{ solicitudSeleccionada?.id_solicitud }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Resumen del crédito -->
-          <div class="resumen-credito">
-            <h5>Resumen del Crédito</h5>
-            <table class="table table-sm table-bordered">
-              <tr>
-                <td class="resumen-credito">Capital:</td>
-                <td class="text-right">{{ formatearMoneda(totalCapital) }}</td>
-              </tr>
-              <tr>
-                <!-- <td>Interés ({{ solicitudSeleccionada?.tasa_fija || 0 }}%):</td> -->
-                <td>{{ solicitudSeleccionada.tasa_fija_formateada || (solicitudSeleccionada.tasa_fija ? ((solicitudSeleccionada.tasa_fija * 100).toFixed(0)) + '%' : '0%')}}</td>
-                <td class="text-right">{{ formatearMoneda(totalInteres) }}</td>
-              </tr>
-              <tr *ngIf="seguro">
-                <td>Seguro:</td>
-                <td class="text-right">{{ formatearMoneda(totalSeguro) }}</td>
-              </tr>
-              <tr>
-                <td>Garantía (10%):</td>
-                <td class="text-right">{{ formatearMoneda(totalGarantia) }}</td>
-              </tr>
-              <tr class="total-row">
-                <td>TOTAL A PAGAR:</td>
-                <td class="text-right">{{ formatearMoneda(totalAPagar) }}</td>
-              </tr>
-              <tr>
-                <td>Pago Semanal (16 semanas):</td>
-                <td class="text-right">{{ formatearMoneda(pagoSemanal) }}</td>
-              </tr>
-            </table>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="cerrarModalPagare()">Cancelar</button>
-          <button class="btn btn-primary" (click)="crearCredito()"
-            [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoEntrega">
-            <i class="fas fa-save" *ngIf="!procesandoEntrega"></i>
-            <i class="fas fa-spinner fa-spin" *ngIf="procesandoEntrega"></i>
-            {{ procesandoEntrega ? 'Creando Crédito...' : 'Crear Crédito' }}
+        <!-- Resumen del crédito -->
+        <div class="resumen-credito mt-3">
+          <h5>Resumen del Crédito</h5>
+          <!-- <table class="table table-sm table-borderless">
+            <tbody>
+              <tr>
+                <td>Cliente:</td>
+                <td class="text-end">{{ getNombreCompleto(solicitudSeleccionada) }}</td>
+              </tr>
+              <tr>
+                <td>Monto Aprobado:</td>
+                <td class="text-end">{{ formatearMoneda(solicitudSeleccionada?.monto_aprobado) }}</td>
+              </tr>
+              <tr>
+                <td>Tasa de Interés:</td>
+                <td class="text-end">{{ solicitudSeleccionada?.tasa_fija_formateada || '0%' }}</td>
+              </tr>
+              <tr class="fw-bold">
+                <td>Total a Pagar:</td>
+                <td class="text-end">{{ formatearMoneda(totalAPagar) }}</td>
+              </tr>
+            </tbody>
+          </table> -->
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Cliente:</strong> {{ getNombreCompleto(solicitudSeleccionada) }}</p>
+              <p><strong>Monto Aprobado:</strong> {{ formatearMoneda(solicitudSeleccionada?.monto_aprobado) }}</p>
+              <p><strong>Aliado:</strong> {{ solicitudSeleccionada?.aliado_nombre }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Tasa de Interés:</strong> {{ convertirTasaAporcentaje(solicitudSeleccionada?.tasa_fija)}}</p>
+              <p><strong>Tipo de Crédito:</strong> {{ solicitudSeleccionada?.tipo_credito }}</p>
+              <p><strong>ID Solicitud:</strong> {{ solicitudSeleccionada?.id_solicitud }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="resumen-credito">
+        <h5>Resumen del Crédito</h5>
+        <table class="table table-sm table-bordered">
+          <tr>
+            <td class="resumen-credito">Capital:</td>
+            <td class="text-right">{{ formatearMoneda(totalCapital) }}</td>
+          </tr>
+          <tr>
+            <td>Interés ({{ convertirTasaAporcentaje(solicitudSeleccionada?.tasa_fija || 0) }}):</td>
+            <!-- <td>{{ solicitudSeleccionada.tasa_fija_formateada || (solicitudSeleccionada.tasa_fija ? ((solicitudSeleccionada.tasa_fija * 100).toFixed(0)) + '%' : '0%')}}</td> -->
+            <td class="text-right">{{ formatearMoneda(totalInteres) }}</td>
+            <!-- <td>{{ convertirTasaAporcentaje(solicitud.tasa_fija) }}</td> -->
+          </tr>
+          <tr class="total-row">
+            <td>TOTAL A PAGAR:</td>
+            <td class="text-right">{{ formatearMoneda(totalAPagar) }}</td>
+          </tr>
+          <tr>
+            <td class="pago_semanal">Pago Semanal (16 semanas):</td>
+            <td class="text-right">{{ formatearMoneda(pagoSemanal) }}</td>
+          </tr>
+          <!-- Pago inicial -->
+          <tr *ngIf="seguro">
+            <td>Seguro:</td>
+            <td class="text-right">{{ formatearMoneda(totalSeguro) }}</td>
+          </tr>
+          <tr>
+            <td>Garantía (10%):</td>
+            <td class="text-right">{{ formatearMoneda(totalGarantia) }}</td>
+          </tr>
+          <tr class="total-row">
+            <td>PAGO INICIAL:</td>
+            <td class="text-right">{{ formatearMoneda(pagoInicial) }}</td>
+          </tr>
+        </table>
+      </div>
+
+    </div>
+
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="cerrarModalGenerarCredito()">Cancelar</button>
+      <button class="btn btn-primary" (click)="crearCredito()"
+        [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoGeneracion">
+        <i class="fas" [ngClass]="procesandoGeneracion ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+        {{ procesandoGeneracion ? 'Creando...' : 'Generar Crédito' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PARA GENERAR PAGARÉ -->
+<div class="modal-backdrop" *ngIf="modalGenerarPagareAbierto">
+  <div class="modal-container modal-lg">
+    <div class="modal-header">
+      <h3>GENERAR DOCUMENTOS - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
+      <button class="btn-close" (click)="cerrarModalGenerarPagare()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="alert alert-success mb-3">
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Crédito generado exitosamente!</strong> ID: {{ creditoRecienCreado?.id_credito }}
+      </div>
+
+      <div class="documentos-tabs">
+        <button class="tab-btn" [class.active]="documentoActual === 'pagare'" (click)="cambiarDocumento('pagare')">
+          <i class="fas fa-file-contract"></i> Pagaré
+        </button>
+        <button class="tab-btn" [class.active]="documentoActual === 'hojaControl'"
+          (click)="cambiarDocumento('hojaControl')">
+          <i class="fas fa-clipboard-list"></i> Hoja de Control
+        </button>
+      </div>
+
+      <div class="documento-viewer mt-3">
+        <!-- Vista previa del pagaré -->
+        <div *ngIf="documentoActual === 'pagare' && pdfPagareUrl" class="text-center">
+          <iframe [src]="pdfPagareUrl" width="800px" height="400px"></iframe>
+          <div class="documento-actions mt-3">
+            <button class="btn btn-success" (click)="descargarPagare()">
+              <i class="fas fa-download"></i> Descargar Pagaré
+            </button>
+          </div>
+        </div>
+
+        <!-- Vista previa de la hoja de control -->
+        <div *ngIf="documentoActual === 'hojaControl' && pdfHojaControlUrl" class="text-center">
+          <iframe [src]="pdfHojaControlUrl" width="800px" height="500px"></iframe>
+          <div class="documento-actions mt-3">
+            <button class="btn btn-success" (click)="descargarHojaControl()">
+              <i class="fas fa-download"></i> Descargar Hoja
+            </button>
+          </div>
+        </div>
+
+        <!-- Si no se ha generado documento -->
+        <div *ngIf="!pdfPagareUrl && documentoActual === 'pagare'" class="generate-prompt">
+          <i class="fas fa-file-pdf fa-2x mb-2"></i>
+          <h6>Generar Pagaré</h6>
+          <p class="mb-3">Haga clic para generar el pagaré</p>
+          <button class="btn btn-primary" (click)="generarVistaPreviaPagare()">
+            <i class="fas fa-file-pdf"></i> Generar Pagaré
+          </button>
+        </div>
+
+        <div *ngIf="!pdfHojaControlUrl && documentoActual === 'hojaControl'" class="generate-prompt">
+          <i class="fas fa-file-alt fa-2x mb-2"></i>
+          <h6>Generar Hoja de Control</h6>
+          <p class="mb-3">Haga clic para generar la hoja de control</p>
+          <button class="btn btn-primary" (click)="generarVistaPreviaHojaControl()">
+            <i class="fas fa-file-alt"></i> Generar Hoja
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- Vista de documentos (después de crear el crédito) -->
-      <div *ngIf="creditoRecienCreado">
-        <div class="alert alert-success">
-          <i class="fas fa-check-circle"></i>
-          <strong>Crédito creado exitosamente!</strong> ID: {{ creditoRecienCreado.id_credito }}
+    <div class="modal-footer">
+      <button class="btn btn-outline" (click)="cerrarModalGenerarPagare()">Cerrar</button>
+      <button class="btn btn-success" (click)="descargarAmbosDocumentos()" *ngIf="documentosGenerados">
+        <i class="fas fa-download"></i> Descargar Ambos Documentos
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- MODAL PARA VER DETALLES DEL CRÉDITO EXISTENTE -->
+<!-- Modal para Editar Fechas -->
+<div *ngIf="modalEditarFechasAbierto" class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-calendar-edit me-2"></i>
+          Editar Fechas del Crédito
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalEditarFechas()"></button>
+      </div>
+      
+      <div class="modal-body">
+        <div *ngIf="creditoSeleccionado">
+          <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Editando fechas para el crédito <strong>#{{creditoSeleccionado.id_credito}}</strong> 
+            del cliente <strong>{{getNombreCompletoCredito(creditoSeleccionado)}}</strong>
+          </div>
+          
+          <div class="mb-3">
+            <label for="fechaMinistracion" class="form-label">
+              <i class="fas fa-calendar-plus me-1"></i>
+              Fecha de Ministración
+            </label>
+            <input type="date" 
+                   id="fechaMinistracion" 
+                   class="form-control"
+                   [(ngModel)]="nuevaFechaMinistracion"
+                   [min]="getFechaMinima()">
+            <small class="text-muted">
+              Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_ministracion)}}
+            </small>
+          </div>
+          
+          <div class="mb-3">
+            <label for="fechaPrimerPago" class="form-label">
+              <i class="fas fa-calendar-check me-1"></i>
+              Fecha de Primer Pago
+            </label>
+            <input type="date" 
+                   id="fechaPrimerPago" 
+                   class="form-control"
+                   [(ngModel)]="nuevaFechaPrimerPago"
+                   [min]="nuevaFechaMinistracion || getFechaMinima()">
+            <small class="text-muted">
+              Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_primer_pago)}}
+            </small>
+          </div>
+          
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Importante:</strong> Al actualizar las fechas, el temporizador de 48 horas se reiniciará desde la nueva fecha de ministración.
+          </div>
         </div>
-
-        <div class="documentos-tabs">
-          <button class="tab-btn" [class.active]="documentoActual === 'pagare'" (click)="cambiarDocumento('pagare')">
-            <i class="fas fa-file-contract"></i> Pagaré
-          </button>
-          <button class="tab-btn" [class.active]="documentoActual === 'hojaControl'"
-            (click)="cambiarDocumento('hojaControl')">
-            <i class="fas fa-clipboard-list"></i> Hoja de Control
-          </button>
-        </div>
-
-        <div class="documento-viewer">
-          <!-- Cargando -->
-          <div *ngIf="documentoCargando" class="loading-doc">
-            <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p>Generando documento...</p>
-          </div>
-
-          <!-- Vista previa del pagaré -->
-          <div *ngIf="documentoActual === 'pagare' && pdfPagareUrl && !documentoCargando">
-            <iframe [src]="pdfPagareUrl" width="800px" height="800px"></iframe>
-            <div class="documento-actions">
-              <button class="btn btn-success" (click)="descargarPagare()">
-                <i class="fas fa-download"></i> Descargar Pagaré
-              </button>
-            </div>
-          </div>
-
-          <!-- Vista previa de la hoja de control -->
-          <div *ngIf="documentoActual === 'hojaControl' && pdfHojaControlUrl && !documentoCargando">
-            <iframe [src]="pdfHojaControlUrl" width="800px" height="800px"></iframe>
-            <div class="documento-actions">
-              <button class="btn btn-success" (click)="descargarHojaControl()">
-                <i class="fas fa-download"></i> Descargar Hoja de Control
-              </button>
-            </div>
-          </div>
-
-          <!-- Mensaje si no se ha generado documento -->
-          <div *ngIf="!pdfPagareUrl && documentoActual === 'pagare' && !documentoCargando" class="generate-prompt">
-            <i class="fas fa-file-pdf fa-3x mb-3"></i>
-            <h5>Generar Pagaré</h5>
-            <p>Haga clic en el botón para generar el pagaré</p>
-            <button class="btn btn-primary" (click)="generarVistaPreviaPagare()">
-              <i class="fas fa-file-pdf"></i> Generar Pagaré
-            </button>
-          </div>
-
-          <div *ngIf="!pdfHojaControlUrl && documentoActual === 'hojaControl' && !documentoCargando"
-            class="generate-prompt">
-            <i class="fas fa-file-alt fa-3x mb-3"></i>
-            <h5>Generar Hoja de Control</h5>
-            <p>Haga clic en el botón para generar la hoja de control</p>
-            <button class="btn btn-primary" (click)="generarVistaPreviaHojaControl()">
-              <i class="fas fa-file-alt"></i> Generar Hoja de Control
-            </button>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="cerrarModalPagare()">Cerrar</button>
-          <button class="btn btn-success" (click)="descargarAmbosDocumentos()" *ngIf="documentosGenerados">
-            <i class="fas fa-download"></i> Descargar Ambos Documentos
-          </button>
-        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" 
+                class="btn btn-secondary" 
+                (click)="cerrarModalEditarFechas()"
+                [disabled]="procesandoEntrega">
+          Cancelar
+        </button>
+        
+        <button type="button" 
+                class="btn btn-success" 
+                (click)="guardarFechasCredito()"
+                [disabled]="procesandoEntrega || !nuevaFechaMinistracion || !nuevaFechaPrimerPago">
+          <i class="fas fa-save me-1"></i>
+          {{procesandoEntrega ? 'Guardando...' : 'Guardar Cambios'}}
+        </button>
       </div>
     </div>
   </div>
