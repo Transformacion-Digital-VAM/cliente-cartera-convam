@@ -847,50 +847,100 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   // Método para verificar si el cliente puede generar solicitud
+  // puedeGenerarSolicitud(cliente: any): boolean {
+  //   if (!cliente) return false;
+
+  //   // Obtener ciclo actual y mora
+  //   const cicloActual = cliente.ciclo_actual || 0;
+  //   const mora = cliente.mora || 0;
+  //   const moraDecimal = parseFloat(mora) || 0;
+
+  //   console.log(`Validación cliente ${cliente.nombre_cliente}: Ciclo=${cicloActual}, Mora=${moraDecimal}`);
+
+  //   // Validaciones según requerimientos
+  //   if (cicloActual >= 15 && moraDecimal === 0) {
+  //     return true; // Puede generar solicitud
+  //   }
+
+  //   return false; // No puede generar solicitud
+  // }
   puedeGenerarSolicitud(cliente: any): boolean {
-    if (!cliente) return false;
+  if (!cliente) return false;
 
-    // Obtener ciclo actual y mora
-    const cicloActual = cliente.ciclo_actual || 0;
-    const mora = cliente.mora || 0;
-    const moraDecimal = parseFloat(mora) || 0;
+  // Obtener ciclo actual y mora
+  const cicloActual = cliente.ciclo_actual || 0;
+  const mora = cliente.mora || 0;
+  const moraDecimal = parseFloat(mora) || 0;
 
-    console.log(`Validación cliente ${cliente.nombre_cliente}: Ciclo=${cicloActual}, Mora=${moraDecimal}`);
+  console.log(`Validación cliente ${cliente.nombre_cliente}: Ciclo=${cicloActual}, Mora=${moraDecimal}`);
 
-    // Validaciones según requerimientos
-    if (cicloActual >= 15 && moraDecimal === 0) {
-      return true; // Puede generar solicitud
-    }
-
-    return false; // No puede generar solicitud
+  // Si el cliente no tiene crédito activo (ciclo_actual = 0), puede solicitar
+  if (cicloActual === 0 && moraDecimal === 0) {
+    return true;
   }
+
+  // Si el cliente tiene crédito activo:
+  // 1. Debe estar en el pago/semana 15 o mayor
+  // 2. No debe tener mora
+  if (cicloActual >= 15 && moraDecimal === 0) {
+    return true;
+  }
+
+  return false;
+}
+
 
   // Método para obtener el estado del cliente (para mostrar en tabla)
+  // getEstadoCliente(cliente: any): string {
+  //   if (!cliente) return 'SIN DATOS';
+
+  //   const cicloActual = cliente.ciclo_actual || 0;
+  //   const mora = cliente.mora || 0;
+  //   const moraDecimal = parseFloat(mora) || 0;
+
+  //   if (cicloActual === 0) {
+  //     return 'SIN CRÉDITO ACTIVO';
+  //   }
+
+  //   if (cicloActual < 15) {
+  //     return `CA (S-${cicloActual})`;
+  //   }
+
+  //   if (moraDecimal > 0) {
+  //     return `CON MORA ($${moraDecimal})`;
+  //   }
+
+  //   if (cicloActual >= 15 && moraDecimal === 0) {
+  //     return 'DISPONIBLE PARA NUEVO CRÉDITO';
+  //   }
+
+  //   return 'ESTADO DESCONOCIDO';
+  // }
   getEstadoCliente(cliente: any): string {
-    if (!cliente) return 'SIN DATOS';
+  if (!cliente) return 'SIN DATOS';
 
-    const cicloActual = cliente.ciclo_actual || 0;
-    const mora = cliente.mora || 0;
-    const moraDecimal = parseFloat(mora) || 0;
+  const cicloActual = cliente.ciclo_actual || 0;
+  const mora = cliente.mora || 0;
+  const moraDecimal = parseFloat(mora) || 0;
 
-    if (cicloActual === 0) {
-      return 'SIN CRÉDITO ACTIVO';
-    }
-
-    if (cicloActual < 15) {
-      return `CA (S-${cicloActual})`;
-    }
-
-    if (moraDecimal > 0) {
-      return `CON MORA ($${moraDecimal})`;
-    }
-
-    if (cicloActual >= 15 && moraDecimal === 0) {
-      return 'DISPONIBLE PARA NUEVO CRÉDITO';
-    }
-
-    return 'ESTADO DESCONOCIDO';
+  if (cicloActual === 0) {
+    return 'SIN CRÉDITO ACTIVO';
   }
+
+  if (cicloActual > 0 && cicloActual < 15) {
+    return `CA (${cicloActual}/16)`;
+  }
+
+  if (moraDecimal > 0) {
+    return `CON MORA ($${moraDecimal})`;
+  }
+
+  if (cicloActual >= 15 && moraDecimal === 0) {
+    return 'DISPONIBLE PARA NUEVO CRÉDITO';
+  }
+
+  return 'ESTADO DESCONOCIDO';
+}
 
   // Método para obtener la clase CSS según estado
   getEstadoClienteClass(cliente: any): string {
