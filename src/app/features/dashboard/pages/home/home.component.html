@@ -404,7 +404,7 @@
       </div>
     </div>
     <div class="subsection">
-      <h3><i class="fas fa-calendar-day text-success"></i> Al Día - {{ formatearFecha(fechaActual) }}</h3>
+      <h3><i class="fas fa-calendar-day text-success"></i> {{ getPeriodoSeleccionado() }} (Resumen de Entregas)</h3>
       <div class="cards-grid">
         <div class="card">
           <div class="card-header">
@@ -459,9 +459,9 @@
             <h4>Clientes Nuevos</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">5</div>
+            <div class="card-value">{{ dashboardData.clientesDia || 0 }}</div>
             <div class="card-details">
-              Clientes registrados hoy
+              Clientes registrados {{ getPeriodoSeleccionado() }}
             </div>
           </div>
         </div>

@@ -46,6 +46,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
   ingresosChart!: Chart;
   moraAliadoChart!: Chart;
 
+  private refreshInterval: any;
+
   constructor(private dashboardService: DashboardService) {
     this.inicializarDatosVacios();
     this.inicializarFechasPorDefecto();
@@ -53,6 +55,20 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.actualizarDashboard();
+
+    // Configurar actualización automática cada 1 minuto
+    this.refreshInterval = setInterval(() => {
+      console.log('Actualizando dashboard automáticamente...');
+      this.actualizarDashboard();
+    }, 60000); // 60,000 ms = 1 minuto
+  }
+
+
+  ngOnDestroy(): void {
+    // Limpiar el intervalo al destruir el componente
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 
   ngAfterViewInit(): void {

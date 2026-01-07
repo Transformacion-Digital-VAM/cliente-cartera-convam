@@ -197,7 +197,12 @@ export class DashboardService {
     const capitalRows = capitalData?.data || [];
 
     // Transformar datos de ministraciones
-    const ministraciones = ministracionesData?.data?.data || { entregados: [], devolucion: [] };
+    const ministraciones = ministracionesData?.data?.data || { entregados: [], devolucion: [], pendientes: [] };
+    const todosCreditosPeriodo = [
+      ...(ministraciones.entregados || []),
+      ...(ministraciones.devolucion || []),
+      ...(ministraciones.pendientes || [])
+    ];
 
     // Transformar datos de resumen (aquí está el total de créditos)
     const resumenRows = resumenData?.data || [];
@@ -261,7 +266,7 @@ export class DashboardService {
       proximosVencimientos: this.getProximosVencimientos(pagos),
       alertasMora: this.getAlertasMora(pagos),
       creditosEntregados: this.getCreditosEntregadosHoy(ministraciones.entregados),
-      creditosDia: this.getCreditosDelDia(ministraciones.entregados),
+      creditosDia: this.getCreditosDelDia(todosCreditosPeriodo),
 
       // Estadísticas
       tasaMorosidad: this.calculateTasaMorosidad(
@@ -277,7 +282,7 @@ export class DashboardService {
 
       // Totales generales
       totalPagosCount: pagos.length || 0,
-      clientesDia: 0
+      clientesDia: this.getUniqueClients(todosCreditosPeriodo)
     };
 
     return dashboardData;
@@ -484,9 +489,7 @@ export class DashboardService {
   }
 
   private getCreditosEntregadosHoy(entregados: any[]): any[] {
-    const hoy = new Date().toISOString().split('T')[0];
     return entregados
-      .filter(e => e.fecha_ministracion && e.fecha_ministracion.startsWith(hoy))
       .map(e => ({
         cliente: e.cliente_nombre,
         monto_aprobado: parseFloat(e.total_a_pagar || 0),
@@ -496,9 +499,7 @@ export class DashboardService {
   }
 
   private getCreditosDelDia(entregados: any[]): any[] {
-    const hoy = new Date().toISOString().split('T')[0];
     return entregados
-      .filter(e => e.fecha_ministracion && e.fecha_ministracion.startsWith(hoy))
       .map(e => ({
         id: e.id_credito,
         cliente: e.cliente_nombre,
