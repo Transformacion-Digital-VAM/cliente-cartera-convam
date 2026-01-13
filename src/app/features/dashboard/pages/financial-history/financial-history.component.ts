@@ -62,6 +62,14 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   usuarioActual: any = null;
   registradoPor: number = 0;
 
+  // CONTADOR DE SEMANAS DEL AÑO
+    semanaActual: number = 0;
+    fechaInicioSemana: Date = new Date();
+    fechaFinSemana: Date = new Date();
+    private intervaloActualizacion: any;
+    private fechaBaseAjustada: Date = new Date(); // 29 de diciembre del año base
+
+
   private usuarioSubscription: Subscription = new Subscription();
   private timerSubscription: Subscription = new Subscription();
   private usuarioCargado: boolean = false;
@@ -76,17 +84,53 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarUsuarioLogueado();
-    this.cargarDatosIniciales();
+    this.cargarDatosIniciales();    
+    this.inicializarContadorSemanas();
   }
 
   ngOnDestroy(): void {
     this.usuarioSubscription.unsubscribe();
     this.timerSubscription.unsubscribe();
+    
+    // LIMPIAR INTERVALO DE ACTUALIZACIÓN
+    if (this.intervaloActualizacion) {
+      clearInterval(this.intervaloActualizacion);
+    }
   }
 
   // ============================================
   // MÉTODOS NUEVOS AGREGADOS
   // ============================================
+
+  calcularSemanaActualCliente(credito: any): number {
+    if (!credito || !credito.fecha_primer_pago) return 1;
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    let fechaPrimerPago: Date;
+    
+    // Manejo robusto de la fecha para evitar desfases por zona horaria
+    if (typeof credito.fecha_primer_pago === 'string') {
+      const fechaStr = credito.fecha_primer_pago.split('T')[0];
+      const [year, month, day] = fechaStr.split('-').map(Number);
+      fechaPrimerPago = new Date(year, month - 1, day);
+    } else {
+      fechaPrimerPago = new Date(credito.fecha_primer_pago);
+    }
+    fechaPrimerPago.setHours(0, 0, 0, 0);
+
+    // Si hoy es antes del primer pago, estamos en semana 1
+    if (hoy < fechaPrimerPago) return 1;
+
+    const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
+    const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
+
+    // Calcular semana: (días transcurridos / 7) + 1
+    const semana = Math.floor(diffDias / 7) + 1;
+
+    return Math.min(semana, 16);
+  }
 
   calcularFechaSemana(credito: any, numeroSemana: number): Date {
     if (!credito || !credito.fecha_primer_pago) return new Date();
@@ -147,7 +191,6 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
     return semanas;
   }
-
 
   getEstadoSemana(numeroSemana: number): { texto: string, clase: string, disabled: boolean } {
     if (!this.creditoSeleccionado) {
@@ -278,58 +321,6 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // ============================================
 
 
-  // async registrarPago(): Promise<void> {
-  //   if (!this.registradoPor || this.registradoPor <= 0) {
-  //     this.mostrarError('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
-  //     return;
-  //   }
-
-  //   if (!await this.validarPago()) {
-  //     return;
-  //   }
-
-  //   this.procesandoPago = true;
-
-  //   // Para ADELANTO, asegurar que tiene el número de pago correcto
-  //   if (this.tipoPago === 'ADELANTO') {
-  //     this.numeroPagoSeleccionado = this.calcularProximoNumeroPago(this.creditoSeleccionado);
-  //   }
-
-  //   const pagoData = {
-  //     credito_id: this.creditoSeleccionado.id_credito,
-  //     numero_pago: this.numeroPagoSeleccionado,
-  //     moratorios: Number(this.moratorios) || 0,
-  //     pago_registrado: Number(this.montoPago),
-  //     tipo_pago: `${this.tipoPago} - ${this.metodoPago}`.toUpperCase(),
-  //     registrado_por: this.registradoPor
-  //   };
-
-  //   console.log(' Enviando pago:', pagoData);
-
-  //   this.pagoService.registrarPago(pagoData).subscribe({
-  //     next: (response) => {
-  //       console.log(' Pago registrado:', response);
-
-  //       const mensaje = this.tipoPago === 'PAGO'
-  //         ? ` Pago registrado exitosamente para la semana ${this.numeroPagoSeleccionado}`
-  //         : ` Adelanto registrado exitosamente para la semana ${this.numeroPagoSeleccionado}`;
-
-  //       this.mostrarExito(mensaje);
-  //       this.procesandoPago = false;
-  //       this.cerrarModalPago();
-
-  //       // Recargar datos después de un breve delay
-  //       setTimeout(() => {
-  //         this.cargarCreditos();
-  //       }, 1000);
-  //     },
-  //     error: (error) => {
-  //       console.error(' Error al registrar pago:', error);
-  //       this.mostrarError('Error al registrar el pago: ' + (error.error?.error || error.message));
-  //       this.procesandoPago = false;
-  //     }
-  //   });
-  // }
   async registrarPago(): Promise<void> {
   if (!this.registradoPor || this.registradoPor <= 0) {
     this.mostrarError('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
@@ -828,41 +819,6 @@ private mostrarMensajeExito(): void {
     return this.formatearFecha(fecha.toISOString());
   }
 
-  // getEstadoPago(credito: any): { texto: string, clase: string, filaClase: string } {
-  //   const diasAtraso = this.calcularDiasAtraso(credito);
-  //   const moraPendiente = this.calcularMoraPendiente(credito);
-
-  //   if (diasAtraso === 0) {
-  //     return { 
-  //       texto: 'AL DÍA', 
-  //       clase: 'text-success font-weight-bold',
-  //       filaClase: 'fila-al-dia'
-  //     };
-  //   } else if (diasAtraso > 0 && moraPendiente > 0) {
-  //     return { 
-  //       texto: `${diasAtraso} DÍAS ATRASO`, 
-  //       clase: 'text-danger font-weight-bold',
-  //       filaClase: 'fila-con-mora'
-  //     };
-  //   } else if (diasAtraso > 0) {
-  //     return { 
-  //       texto: `${diasAtraso} DÍAS ATRASO`, 
-  //       clase: 'text-warning font-weight-bold',
-  //       filaClase: 'fila-atrasada'
-  //     };
-  //   } else {
-  //     return { 
-  //       texto: 'AL DÍA', 
-  //       clase: 'text-success font-weight-bold',
-  //       filaClase: 'fila-al-dia'
-  //     };
-  //   }
-  // }
-
-  // ============================================
-  // MÉTODOS PARA TABLA EXPANDIBLE
-  // ============================================
-
   getEstadoPago(credito: any): { texto: string, clase: string, filaClase: string } {
     const diasAtraso = this.calcularDiasAtraso(credito);
     const moraPendiente = this.calcularMoraPendiente(credito);
@@ -1236,5 +1192,314 @@ verificarCreditosCompletados(): void {
       'N/A';
   }
 
+
+  calcularTotalCartera(): number {
+    if (!this.creditosFiltrados || this.creditosFiltrados.length === 0) {
+      return 0;
+    }
+    
+    let total = 0;
+    
+    for (const credito of this.creditosFiltrados) {
+      // Convertir a número y manejar todos los casos posibles
+      const saldo = Number(credito.saldo_pendiente);
+      
+      // Verificar si es un número válido y no NaN
+      if (!isNaN(saldo) && typeof saldo === 'number' && isFinite(saldo)) {
+        total += saldo;
+      } else {
+        // Si no es válido, sumar 0 y opcionalmente loguear el error
+        console.warn(`Saldo pendiente inválido para crédito ${credito.id_credito}:`, credito.saldo_pendiente);
+      }
+    }
+    
+    return total;
+  }
+
+  // Función auxiliar para convertir cualquier valor a número seguro
+private convertirANumeroSeguro(valor: any): number {
+  // Si es null, undefined o vacío
+  if (valor === null || valor === undefined || valor === '') {
+    return 0;
+  }
+  
+  // Si ya es número y es válido
+  if (typeof valor === 'number' && !isNaN(valor) && isFinite(valor)) {
+    return valor;
+  }
+  
+  // Si es string, intentar limpiar
+  if (typeof valor === 'string') {
+    // Eliminar caracteres no numéricos excepto punto y signo negativo
+    const limpio = valor.replace(/[^\d.-]/g, '');
+    const numero = parseFloat(limpio);
+    
+    if (!isNaN(numero) && isFinite(numero)) {
+      return numero;
+    }
+    return 0;
+  }
+  
+  // Intentar convertir cualquier otro tipo
+  const numero = Number(valor);
+  return (!isNaN(numero) && isFinite(numero)) ? numero : 0;
+}
+
+  // Funciones para calcular otros totales si los necesitas
+calcularTotalAPagarGeneral(): number {
+  if (!this.creditosFiltrados) return 0;
+  
+  try {
+    return this.creditosFiltrados.reduce((total, credito) => {
+      const valor = this.convertirANumeroSeguro(credito.total_a_pagar);
+      const nuevoTotal = total + valor;
+      
+      // Verificar que no sea NaN (por si acaso)
+      if (isNaN(nuevoTotal)) {
+        console.warn('NaN encontrado en calcularTotalAPagarGeneral:', {
+          totalActual: total,
+          valorAgregado: valor,
+          creditoId: credito.id_credito
+        });
+        return total; // Mantener el total anterior
+      }
+      
+      return nuevoTotal;
+    }, 0);
+  } catch (error) {
+    console.error('Error en calcularTotalAPagarGeneral:', error);
+    return 0;
+  }
+}
+
+calcularTotalPagadoGeneral(): number {
+  if (!this.creditosFiltrados) return 0;
+  
+  try {
+    return this.creditosFiltrados.reduce((total, credito) => {
+      const valorPagado = this.calcularTotalPagado(credito);
+      const valor = this.convertirANumeroSeguro(valorPagado);
+      const nuevoTotal = total + valor;
+      
+      if (isNaN(nuevoTotal)) {
+        console.warn('NaN encontrado en calcularTotalPagadoGeneral:', {
+          totalActual: total,
+          valorAgregado: valor,
+          creditoId: credito.id_credito,
+          valorPagadoOriginal: valorPagado
+        });
+        return total;
+      }
+      
+      return nuevoTotal;
+    }, 0);
+  } catch (error) {
+    console.error('Error en calcularTotalPagadoGeneral:', error);
+    return 0;
+  }
+}
+
+
+// ============================================
+// MÉTODOS CORREGIDOS PARA EL CONTADOR DE SEMANAS
+// ============================================
+
+/**
+ * Inicializa el contador de semanas con el sistema específico
+ */
+inicializarContadorSemanas(): void {
+  // Calcular semana actual inmediatamente
+  this.calcularSemanaActualCorregida();
+  
+  // Configurar actualización cada minuto
+  this.intervaloActualizacion = setInterval(() => {
+    this.calcularSemanaActualCorregida();
+  }, 60000);
+  
+  // Programar actualización a medianoche
+  this.programarActualizacionMedianoche();
+}
+
+/**
+ * Método CORREGIDO para calcular la semana actual según el sistema:*/
+calcularSemanaActualCorregida(): void {
+  const hoy = new Date();
+  const añoActual = hoy.getFullYear();
+  
+  // Determinar el año base para el cálculo
+  // Si estamos después del 29 de diciembre, usar el año actual
+  // Si estamos antes del 29 de diciembre, usar el año anterior
+  let añoBase: number;
+  
+  if (hoy >= new Date(añoActual, 11, 29)) { // 29 de diciembre (mes 11 = diciembre)
+    añoBase = añoActual;
+  } else {
+    añoBase = añoActual - 1;
+  }
+  
+  // Fecha base: 29 de diciembre del año base
+  const fechaBase = new Date(añoBase, 11, 29);
+  this.fechaBaseAjustada = fechaBase;
+  
+  // Calcular diferencia en días entre hoy y la fecha base
+  const diffMs = hoy.getTime() - fechaBase.getTime();
+  const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  // Calcular semana: dividir días entre 7 (cada semana son 7 días)
+  // y ajustar porque la semana 1 comienza en el día 0
+  let semana = Math.floor(diffDias / 7) + 1;
+  
+  // Ajuste especial: si hoy es sábado (día 6 de la semana), 
+  // mostramos la semana que termina ese sábado
+  const diaSemana = hoy.getDay(); // 0=domingo, 1=lunes, ..., 6=sábado
+  if (diaSemana === 6 && hoy.getHours() < 12) {
+    // Si es sábado antes del mediodía, puede que aún estemos en la semana anterior
+    // Recalcular con ajuste de 1 día
+    semana = Math.floor((diffDias - 1) / 7) + 1;
+  }
+  
+  // Asegurar que no sea negativa
+  this.semanaActual = semana > 0 ? semana : 1;
+  
+  // Calcular fechas de inicio y fin de la semana actual
+  this.calcularRangoSemanaActual(this.semanaActual, fechaBase);
+  
+  // DEBUG: Mostrar información en consola
+  // console.log('Cálculo semana:', {
+  //   hoy: hoy.toISOString().split('T')[0],
+  //   fechaBase: fechaBase.toISOString().split('T')[0],
+  //   diffDias: diffDias,
+  //   semanaCalculada: semana,
+  //   fechaInicio: this.fechaInicioSemana.toISOString().split('T')[0],
+  //   fechaFin: this.fechaFinSemana.toISOString().split('T')[0]
+  // });
+}
+
+/**
+ * Calcula el rango de fechas para la semana actual
+ */
+calcularRangoSemanaActual(semana: number, fechaBase: Date): void {
+  // Calcular fecha de inicio
+  // Cada semana comienza 7 días después de la anterior
+  let fechaInicio = new Date(fechaBase);
+  fechaInicio.setDate(fechaBase.getDate() + ((semana - 1) * 7));
+  this.fechaInicioSemana = fechaInicio;
+  
+  // Calcular fecha de fin (6 días después del inicio)
+  let fechaFin = new Date(fechaInicio);
+  fechaFin.setDate(fechaInicio.getDate() + 5); 
+  this.fechaFinSemana = fechaFin;
+}
+
+/**
+ * Formatea la semana actual para mostrar
+ */
+formatearSemanaActual(): string {
+  if (this.semanaActual === 0) {
+    return 'SEMANA --';
+  }
+  
+  const opciones: Intl.DateTimeFormatOptions = { 
+    day: '2-digit', 
+    month: 'short' 
+  };
+  
+  // Asegurarse de que las fechas estén en formato español
+  const inicio = this.fechaInicioSemana.toLocaleDateString('es-ES', opciones);
+  const fin = this.fechaFinSemana.toLocaleDateString('es-ES', opciones);
+  
+  return `SEMANA ${this.semanaActual} (${inicio} - ${fin})`;
+}
+
+/**
+ * Formato simplificado solo con el número de semana
+ */
+formatearNumeroSemana(): string {
+  return this.semanaActual > 0 ? `SEMANA ${this.semanaActual}` : 'SEMANA --';
+}
+
+/**
+ * Método ALTERNATIVO - más preciso para el sistema específico
+ */
+calcularSemanaAlternativo(): number {
+  const hoy = new Date();
+  const añoActual = hoy.getFullYear();
+  
+  // Obtener el 29 de diciembre del año anterior como punto de inicio
+  const fechaInicioSistema = new Date(añoActual - 1, 11, 29);
+  
+  // Si hoy es antes del 29 de diciembre del año anterior
+  // (estamos en enero del año actual), ajustar
+  if (hoy < fechaInicioSistema) {
+    fechaInicioSistema.setFullYear(añoActual - 2);
+  }
+  
+  // Calcular días transcurridos
+  const diffMs = hoy.getTime() - fechaInicioSistema.getTime();
+  const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  // Calcular semana
+  let semana = Math.floor(diffDias / 7) + 1;
+  
+  // Ajuste para sábados
+  if (hoy.getDay() === 6) {
+    semana = Math.floor((diffDias - 1) / 7) + 1;
+  }
+  
+  return semana > 0 ? semana : 1;
+}
+
+/**
+ * Programa la actualización automática a medianoche
+ */
+private programarActualizacionMedianoche(): void {
+  const ahora = new Date();
+  
+  // Calcular cuánto falta para la próxima medianoche
+  const medianoche = new Date(ahora);
+  medianoche.setDate(ahora.getDate() + 1);
+  medianoche.setHours(0, 0, 0, 0);
+  
+  const tiempoHastaMedianoche = medianoche.getTime() - ahora.getTime();
+  
+  setTimeout(() => {
+    this.calcularSemanaActualCorregida();
+    this.programarActualizacionMedianoche(); // Reprogramar para el próximo día
+  }, tiempoHastaMedianoche);
+}
+
+/**
+ * VERIFICACIÓN RÁPIDA - Para debug
+ */
+verificarSemanasConocidas(): void {
+  console.log('=== VERIFICACIÓN DE SEMANAS ===');
+  
+  // Fechas de prueba
+  const pruebas = [
+    { fecha: '2025-01-26', esperado: 5 },
+    { fecha: '2025-01-19', esperado: 4 },
+    { fecha: '2025-01-12', esperado: 3 },
+    { fecha: '2025-01-05', esperado: 2 },
+    { fecha: '2024-12-29', esperado: 1 },
+  ];
+  
+  pruebas.forEach(prueba => {
+    const testDate = new Date(prueba.fecha);
+    const año = testDate.getFullYear();
+    
+    // Usar lógica del cálculo
+    let añoBase = año;
+    if (testDate < new Date(año, 11, 29)) {
+      añoBase = año - 1;
+    }
+    
+    const fechaBase = new Date(añoBase, 11, 29);
+    const diffMs = testDate.getTime() - fechaBase.getTime();
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const semana = Math.floor(diffDias / 7) + 1;
+    
+    console.log(`${prueba.fecha}: calculado=${semana}, esperado=${prueba.esperado}, ${semana === prueba.esperado ? '✓' : '✗'}`);
+  });
+}
 
 }

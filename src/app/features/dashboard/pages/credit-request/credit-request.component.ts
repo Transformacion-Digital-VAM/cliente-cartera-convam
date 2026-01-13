@@ -411,27 +411,6 @@ export class CreditRequestComponent implements OnInit {
   }
 
   // Cargar solicitudes con estado PENDIENTE
-  // cargarSolicitudesPendientes(): void {
-  //   this.cargando = true;
-
-  //   this.solicitudService.obtenerSolicitudesPorEstado('PENDIENTE').subscribe({
-  //     next: (solicitudes) => {
-  //       this.solicitudesPendientes = solicitudes;
-  //       this.calcularEstadisticas();
-  //       this.cargando = false;
-
-  //       // Debug: verificar estructura de datos
-  //       if (solicitudes.length > 0) {
-  //         console.log('Primera solicitud con datos:', solicitudes[0]);
-  //       }
-  //     },
-  //     error: (error) => {
-  //       console.error('Error al cargar solicitudes:', error);
-  //       this.mostrarError('No se pudieron cargar las solicitudes', error);
-  //       this.cargando = false;
-  //     }
-  //   });
-  // }
   cargarSolicitudesPendientes(): void {
     this.cargando = true;
 

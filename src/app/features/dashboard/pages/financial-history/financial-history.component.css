@@ -283,7 +283,7 @@
     letter-spacing: 0.3px;
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 1000;
 }
 
 .table td {
@@ -369,23 +369,26 @@
 
 /* Tabla de detalles interna */
 .table-detalle {
-    background-color: #ffffff; /* Fondo blanco puro */
+    background-color: #ffffff;
     margin-bottom: 15px;
-    border: 1px solid #e2e8f0; /* Borde más suave */
+    border: 1px solid #e2e8f0;
     border-radius: 6px;
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    position: relative;
+    z-index: 1;
 }
 
 .table-detalle thead th {
-    background-color: #edf2f7; /* Fondo gris muy claro para encabezados */
-    color: #2d3748; /* Texto gris oscuro */
+    background-color: #edf2f7;
+    color: #2d3748;
     border-bottom: 2px solid #e2e8f0;
     font-weight: 600;
     padding: 12px 10px;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.2px;
+    position: static; 
 }
 
 .table-detalle tbody td {
@@ -415,6 +418,55 @@
     background-color: transparent;
     font-style: italic;
     color: #a0aec0;
+}
+
+
+/* Contenedor de la tabla con scroll y footer fijo */
+.table-container-vertical {
+  position: relative;
+  max-height: 600px; /* Ajusta según necesidad */
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+/* Cabecera fija */
+.table-container-vertical thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #343a40; /* Color de fondo del thead */
+  color: white;
+}
+
+/* Footer fijo */
+.table-container-vertical .fixed-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background-color: #f8f9fa; /* Color de fondo del tfoot */
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+/* Estilos para el tfoot */
+.table-footer {
+  border-top: 2px solid #dee2e6;
+}
+
+.table-footer td {
+  padding: 12px 8px !important;
+  font-size: 14px;
+  border-top: 2px solid #495057 !important;
+}
+
+/* Asegurar que las filas expandidas no interfieran */
+.detalle-row {
+  background-color: #f8f9fa !important;
+}
+
+.text-foot{
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 /* ============================================ */
@@ -540,6 +592,8 @@
     border: 1px solid #dee2e6;
     border-radius: 8px;
     background-color: #ffffff;
+    position: relative;
+    z-index: 1;
 }
 
 .table-container-vertical::-webkit-scrollbar {
@@ -590,6 +644,8 @@
     background-color: #f8fafc;
     border-top: 2px solid #e2e8f0;
     border-bottom: 2px solid #e2e8f0;
+    position: relative;
+    z-index: 1;
 }
 
 /* ============================================ */
@@ -1078,7 +1134,49 @@
 .text-primary { color: #615afe !important; }
 .text-danger { color: #dc3545 !important; }
 .text-success { color: #28a745 !important; }
+.text-details { color: #252353 !important;   font-weight: bold; }
+.text-footer { color: #2c4864 !important;   font-weight: bold; }
 
+
+/* ========================================== */
+/* ESTILOS PARA LABEL DE SEMANAS */
+/* Estilos para el contador de semanas */
+.contador-semanas-container {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #3498db;
+}
+
+.contador-semanas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.semana-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.semana-detalles {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.semana-actual {
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #2c3e50;
+  padding: 8px 12px;
+  background-color: #e8f4fc;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 15px;
+}
 
 /* Estilos para modales de selección */
 .modal-seleccion {
@@ -1302,6 +1400,9 @@
 
 .table-responsive{
     background-color: #212529;
+    position: relative;
+    z-index: 1;
+    background-color: #ffffff;
 }
 
 
@@ -1636,4 +1737,10 @@
 .col-estado {
   background-color: #18545f;
   font-weight: 600;
+}
+
+.semanas{
+    font-weight: 600;
+    color: #2b23b3;
+    font-weight: bold;
 }

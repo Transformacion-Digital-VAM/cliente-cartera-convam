@@ -1249,3 +1249,60 @@ tr.tiempo-critico:hover {
 .progress-bar {
   transition: width 0.3s ease;
 }
+
+
+/* Estilos para los botones de regenerar */
+.regenerar-descargar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-group {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-warning {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+}
+
+/* Estilos para separar las secciones */
+.action-buttons {
+  margin-right: auto;
+  display: flex;
+  gap: 10px;
+}
+
+.modal-footer {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-buttons, 
+  .regenerar-descargar-buttons {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  
+  .btn-group {
+    justify-content: center;
+  }
+}

@@ -154,13 +154,13 @@
                         </button>
 
                         <!-- Badge de Estado -->
-                        <!-- <div class="status-badge">
+                        <div class="status-badge">
                           <span class="badge"
                             [ngClass]="'badge-' + getBadgeColor(obtenerEstadoCreditoExistente(solicitud))">
                             <i class="fas fa-file-invoice-dollar me-1"></i>
                             #{{ obtenerIdCreditoExistente(solicitud) }} - {{ obtenerEstadoCreditoExistente(solicitud) }}
                           </span>
-                        </div> -->
+                        </div>
 
                       </div>
 
@@ -442,6 +442,10 @@
                     <button class="btn btn-success btn-sm" (click)="marcarComoPendienteConFecha(credito)">
                       <i class="fas fa-check-circle"></i> Marcar como Pendiente
                     </button>
+
+                    <button class="btn btn-danger btn-sm ms-1" (click)="cancelarCredito(credito)">
+                      <i class="fas fa-ban"></i> Cancelar
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -485,27 +489,7 @@
         <!-- Resumen del crédito -->
         <div class="resumen-credito mt-3">
           <h5>Resumen del Crédito</h5>
-          <!-- <table class="table table-sm table-borderless">
-            <tbody>
-              <tr>
-                <td>Cliente:</td>
-                <td class="text-end">{{ getNombreCompleto(solicitudSeleccionada) }}</td>
-              </tr>
-              <tr>
-                <td>Monto Aprobado:</td>
-                <td class="text-end">{{ formatearMoneda(solicitudSeleccionada?.monto_aprobado) }}</td>
-              </tr>
-              <tr>
-                <td>Tasa de Interés:</td>
-                <td class="text-end">{{ solicitudSeleccionada?.tasa_fija_formateada || '0%' }}</td>
-              </tr>
-              <tr class="fw-bold">
-                <td>Total a Pagar:</td>
-                <td class="text-end">{{ formatearMoneda(totalAPagar) }}</td>
-              </tr>
-            </tbody>
-          </table> -->
-          <div class="row">
+           <div class="row">
             <div class="col-md-6">
               <p><strong>Cliente:</strong> {{ getNombreCompleto(solicitudSeleccionada) }}</p>
               <p><strong>Monto Aprobado:</strong> {{ formatearMoneda(solicitudSeleccionada?.monto_aprobado) }}</p>
@@ -570,86 +554,141 @@
   </div>
 </div>
 
+
 <!-- MODAL PARA GENERAR PAGARÉ -->
 <div class="modal-backdrop" *ngIf="modalGenerarPagareAbierto">
   <div class="modal-container modal-lg">
+    <!-- Cabecera del modal -->
     <div class="modal-header">
-      <h3>GENERAR DOCUMENTOS - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
-      <button class="btn-close" (click)="cerrarModalGenerarPagare()">&times;</button>
+      <h5 class="modal-title">
+        <i class="fas fa-file-contract me-2"></i>
+        Generar Documentos - {{getNombreCompleto(solicitudSeleccionada)}}
+      </h5>
+      <button type="button" class="btn-close" (click)="cerrarModalGenerarPagare()">&times;</button>
     </div>
 
+    <!-- Cuerpo del modal -->
     <div class="modal-body">
-      <div class="alert alert-success mb-3">
-        <i class="fas fa-check-circle me-2"></i>
-        <strong>Crédito generado exitosamente!</strong> ID: {{ creditoRecienCreado?.id_credito }}
+      <!-- Controles de navegación entre documentos -->
+      <div class="document-nav mb-4">
+        <div class="nav-buttons">
+          <button class="btn btn-outline-primary" 
+                  [class.active]="documentoActual === 'pagare'"
+                  (click)="cambiarDocumento('pagare')"
+                  [disabled]="generandoPagare">
+            <i class="fas fa-file-contract me-2"></i>
+            Pagaré
+          </button>
+          
+          <button class="btn btn-outline-primary" 
+                  [class.active]="documentoActual === 'hojaControl'"
+                  (click)="cambiarDocumento('hojaControl')"
+                  [disabled]="generandoHojaControl">
+            <i class="fas fa-clipboard-list me-2"></i>
+            Hoja de Control
+          </button>
+        </div>
       </div>
 
-      <div class="documentos-tabs">
-        <button class="tab-btn" [class.active]="documentoActual === 'pagare'" (click)="cambiarDocumento('pagare')">
-          <i class="fas fa-file-contract"></i> Pagaré
-        </button>
-        <button class="tab-btn" [class.active]="documentoActual === 'hojaControl'"
-          (click)="cambiarDocumento('hojaControl')">
-          <i class="fas fa-clipboard-list"></i> Hoja de Control
-        </button>
+      <!-- Área de vista previa -->
+      <div class="preview-area">
+        <!-- Loader general del documento -->
+        <div *ngIf="documentoCargando" class="loader-overlay">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2">Generando documento...</p>
+        </div>
+
+        <!-- Vista previa del PDF -->
+        <div *ngIf="!documentoCargando && (pdfPagareUrl || pdfHojaControlUrl)" class="pdf-preview">
+          <iframe 
+            [src]="documentoActual === 'pagare' ? pdfPagareUrl : pdfHojaControlUrl" 
+            width="100%" 
+            height="500px"
+            style="border: 1px solid #dee2e6; border-radius: 4px;">
+          </iframe>
+        </div>
+
+        <!-- Mensaje cuando no hay documentos generados -->
+        <div *ngIf="!documentoCargando && !pdfPagareUrl && !pdfHojaControlUrl" class="no-document">
+          <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
+          <p>Presiona "Generar" para crear el documento</p>
+        </div>
       </div>
 
-      <div class="documento-viewer mt-3">
-        <!-- Vista previa del pagaré -->
-        <div *ngIf="documentoActual === 'pagare' && pdfPagareUrl" class="text-center">
-          <iframe [src]="pdfPagareUrl" width="800px" height="400px"></iframe>
-          <div class="documento-actions mt-3">
-            <button class="btn btn-success" (click)="descargarPagare()">
-              <i class="fas fa-download"></i> Descargar Pagaré
+      <!-- Botones de acción -->
+      <div class="modal-footer">
+        <!-- BOTONES DE GENERACIÓN INICIAL -->
+        <div class="action-buttons" *ngIf="!documentosGenerados">
+          <button class="btn btn-primary" 
+                  (click)="generarVistaPreviaPagare()"
+                  [disabled]="generandoPagare || !creditoRecienCreado">
+            <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoPagare" class="fas fa-file-contract me-2"></i>
+            {{ generandoPagare ? 'Generando...' : 'Generar Pagaré' }}
+          </button>
+
+          <button class="btn btn-success" 
+                  (click)="generarVistaPreviaHojaControl()"
+                  [disabled]="generandoHojaControl || !creditoRecienCreado">
+            <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoHojaControl" class="fas fa-clipboard-list me-2"></i>
+            {{ generandoHojaControl ? 'Generando...' : 'Generar Hoja Control' }}
+          </button>
+        </div>
+
+        <!-- BOTONES DE RE-GENERACIÓN Y DESCARGA -->
+        <div class="regenerar-descargar-buttons" *ngIf="documentosGenerados">
+          <!-- Botón para Volver a Generar Todo -->
+          <button class="btn btn-warning me-2" 
+                  (click)="regenerarTodosDocumentos()"
+                  [disabled]="generandoPagare || generandoHojaControl">
+            <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-redo me-2"></i>
+            {{ (generandoPagare || generandoHojaControl) ? 'Regenerando...' : 'Volver a Generar Todo' }}
+          </button>
+
+          <!-- Botones de Descarga -->
+          <div class="btn-group me-2">
+            <button class="btn btn-outline-primary" 
+                    (click)="descargarPagare()"
+                    [disabled]="generandoPagare">
+              <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoPagare" class="fas fa-download me-2"></i>
+              Pagaré
+            </button>
+
+            <button class="btn btn-outline-success" 
+                    (click)="descargarHojaControl()"
+                    [disabled]="generandoHojaControl">
+              <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoHojaControl" class="fas fa-download me-2"></i>
+              Hoja Control
+            </button>
+
+            <button class="btn btn-info" 
+                    (click)="descargarAmbosDocumentos()"
+                    [disabled]="generandoPagare || generandoHojaControl">
+              <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-file-archive me-2"></i>
+              Ambos
             </button>
           </div>
         </div>
 
-        <!-- Vista previa de la hoja de control -->
-        <div *ngIf="documentoActual === 'hojaControl' && pdfHojaControlUrl" class="text-center">
-          <iframe [src]="pdfHojaControlUrl" width="800px" height="500px"></iframe>
-          <div class="documento-actions mt-3">
-            <button class="btn btn-success" (click)="descargarHojaControl()">
-              <i class="fas fa-download"></i> Descargar Hoja
-            </button>
-          </div>
-        </div>
-
-        <!-- Si no se ha generado documento -->
-        <div *ngIf="!pdfPagareUrl && documentoActual === 'pagare'" class="generate-prompt">
-          <i class="fas fa-file-pdf fa-2x mb-2"></i>
-          <h6>Generar Pagaré</h6>
-          <p class="mb-3">Haga clic para generar el pagaré</p>
-          <button class="btn btn-primary" (click)="generarVistaPreviaPagare()">
-            <i class="fas fa-file-pdf"></i> Generar Pagaré
-          </button>
-        </div>
-
-        <div *ngIf="!pdfHojaControlUrl && documentoActual === 'hojaControl'" class="generate-prompt">
-          <i class="fas fa-file-alt fa-2x mb-2"></i>
-          <h6>Generar Hoja de Control</h6>
-          <p class="mb-3">Haga clic para generar la hoja de control</p>
-          <button class="btn btn-primary" (click)="generarVistaPreviaHojaControl()">
-            <i class="fas fa-file-alt"></i> Generar Hoja
-          </button>
-        </div>
+        <!-- Botón Cerrar -->
+        <button class="btn btn-secondary" (click)="cerrarModalGenerarPagare()">
+          <i class="fas fa-times me-2"></i>
+          Cerrar
+        </button>
       </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" (click)="cerrarModalGenerarPagare()">Cerrar</button>
-      <button class="btn btn-success" (click)="descargarAmbosDocumentos()" *ngIf="documentosGenerados">
-        <i class="fas fa-download"></i> Descargar Ambos Documentos
-      </button>
     </div>
   </div>
 </div>
 
 
-
-
 <!-- MODAL PARA VER DETALLES DEL CRÉDITO EXISTENTE -->
-<!-- Modal para Editar Fechas -->
 <div *ngIf="modalEditarFechasAbierto" class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">

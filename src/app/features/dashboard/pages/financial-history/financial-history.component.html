@@ -34,8 +34,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">NOMBRE DEL CLIENTE</label>
-            <input type="text" class="form-control" placeholder="Buscar por nombre..." 
-                   [(ngModel)]="filtroCliente">
+            <input type="text" class="form-control" placeholder="Buscar por nombre..." [(ngModel)]="filtroCliente">
           </div>
           <div class="botones-filtros">
             <button class="btn btn-primary" (click)="buscar()">
@@ -55,17 +54,19 @@
         <h3>ESTADO DE PAGOS</h3>
         <div class="botones-filtros">
           <button class="btn btn-outline btn-sm" (click)="cargarCreditos()" [disabled]="cargando">
-            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i> 
+            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
             {{ cargando ? 'Cargando...' : 'ACTUALIZAR' }}
           </button>
         </div>
       </div>
 
+      <label for="" class="semana-actual">{{ formatearSemanaActual() }}</label>
       <div class="table-container-vertical">
         <table class="table">
           <thead>
             <tr>
               <th></th>
+              <th class="text-center">SEMANA</th>
               <th class="text-center">CLIENTE</th>
               <th class="text-center">ID CRÉDITO</th>
               <th class="text-center">ALIADO</th>
@@ -77,7 +78,6 @@
               <th class="text-center">TOTAL PAGADO</th>
               <th class="text-center">SALDO PENDIENTE</th>
               <th class="text-center">PRÓXIMO PAGO</th>
-              <!-- <th>ESTADO</th> -->
               <th class="text-center">DÍAS ATRASO</th>
               <th class="text-center">SEMANAS ATRASO</th>
               <th class="text-center">TOTAL ATRASADO</th>
@@ -90,22 +90,23 @@
                 <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
               </td>
             </tr>
-            
+
             <tr *ngIf="!cargando && !hayCreditos">
               <td colspan="20" class="text-center">
                 No hay créditos entregados
               </td>
             </tr>
-            
+
             <ng-container *ngFor="let credito of creditosFiltrados">
               <!-- Fila principal con color según estado -->
-              <tr class="clickable-row" 
-                  [ngClass]="getEstadoPago(credito).filaClase"
-                  (click)="toggleFilaDetalle(credito.id_credito)">
+              <tr class="clickable-row" [ngClass]="getEstadoPago(credito).filaClase"
+                (click)="toggleFilaDetalle(credito.id_credito)">
                 <td>
-                  <i class="fas icon-detalles" 
-                     [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
-                     [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
+                  <i class="fas icon-detalles" [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
+                    [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
+                </td>
+                <td class="text-center semanas">
+                  {{ calcularSemanaActualCliente(credito) }}
                 </td>
                 <td>{{ getNombreCliente(credito) }}</td>
                 <td>{{ getCreditoId(credito) }}</td>
@@ -121,36 +122,39 @@
                 <td class="col-estado">{{ formatearMoneda(calcularTotalPagado(credito)) }}</td> <!-- Total Pagado-->
                 <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente) }}</td>
                 <td class="text-center">{{ calcularProximoNumeroPago(credito) }}</td>
-                <td class="text-center" [ngClass]="{'text-danger': calcularDiasAtraso(credito) > 0}">{{ calcularDiasAtraso(credito) }}</td>
-                <td class="text-center" [ngClass]="{'text-danger': calcularSemanasAtraso(credito) > 0}">{{ calcularSemanasAtraso(credito) }}</td>
+                <td class="text-center" [ngClass]="{'text-danger': calcularDiasAtraso(credito) > 0}">{{
+                  calcularDiasAtraso(credito) }}</td>
+                <td class="text-center" [ngClass]="{'text-danger': calcularSemanasAtraso(credito) > 0}">{{
+                  calcularSemanasAtraso(credito) }}</td>
                 <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
                   {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
                 </td>
                 <td class="actions-cell">
-                  <button class="btn btn-success btn-sm" (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
+                  <button class="btn btn-success btn-sm"
+                    (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
                     <i class="fas fa-money-bill-wave"></i> PAGO
                   </button>
                 </td>
               </tr>
-              
+
               <!-- Fila expandible con detalles de pagos -->
               <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
                 <td colspan="20">
                   <div class="detalle-pagos-container">
                     <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
-                    
+
                     <div class="table-responsive">
                       <table class="table table-sm table-detalle">
                         <thead>
                           <tr>
                             <th>No. PAGO</th>
-                            <th>FECHA</th>
-                            <th>TOTAL PAGADO</th>
-                            <th>CAPITAL</th>
-                            <th>INTERESES</th>
-                            <th>MORA</th>
+                            <th class="text-center">TOTAL PAGADO</th>
+                            <th class="text-center">FECHA</th>
+                            <th class="text-center">CAPITAL</th>
+                            <th class="text-center">INTERESES</th>
+                            <th class="text-center">MORA</th>
                             <th class="text-center">TIPO</th>
-                            <th>GARANTÍA ACTUAL</th>
+                            <th class="text-center">GARANTÍA ACTUAL</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -160,20 +164,28 @@
                             </td>
                           </tr>
                           <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
-                            <td class="text-center">{{ detalle.numeroPago }}</td>
-                            <td>{{ formatearMoneda(detalle.montoTotal) }}</td>
-                            <td>{{ formatearFecha(detalle.fecha) }}</td>
-                            <td>{{ formatearMoneda(detalle.capital) }}</td>
-                            <td>{{ formatearMoneda(detalle.intereses) }}</td>
-                            <td>{{ formatearMoneda(detalle.mora) }}</td>
-                            <td>
-                              <span class="badge" 
-                                    [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
-                                    [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
+                            <td class="font-bold">{{ detalle.numeroPago }}</td>
+                            <td class="text-center">{{ formatearMoneda(detalle.montoTotal) }}</td>
+                            <td class="text-center">{{ formatearFecha(detalle.fecha) }}</td>
+                            <td class="text-center">{{ formatearMoneda(detalle.capital) }}</td>
+                            <td class="text-center">{{ formatearMoneda(detalle.intereses) }}</td>
+                            <td class="text-center">{{ formatearMoneda(detalle.mora) }}</td>
+                            <td class="text-center">
+                              <span class="badge" [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
+                                [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
                                 {{ detalle.tipoPago }}
                               </span>
                             </td>
-                            <td>{{ detalle.garantiaActual }}</td>
+                            <td class="text-center">
+                              <!-- Mostrar el monto total de garantía -->
+                              <span class="badge bg-info" *ngIf="credito.total_garantia > 0">
+                                {{ formatearMoneda(credito.total_garantia) }}
+                              </span>
+                              <span class="badge bg-secondary"
+                                *ngIf="!credito.total_garantia || credito.total_garantia === 0">
+                                Sin garantía
+                              </span>
+                            </td>
                           </tr>
                         </tbody>
                       </table>
@@ -183,6 +195,24 @@
               </tr>
             </ng-container>
           </tbody>
+          <tfoot class="table-footer fixed-footer">
+            <tr>
+              <td colspan="9" class="text-right text-footer ">
+                TOTAL DE CRÉDITOS: {{ creditosFiltrados.length }}
+              </td>
+              <td class="text-center font-bold text-details">
+                {{ formatearMoneda(calcularTotalAPagarGeneral()) }}
+              </td>
+              <td class="text-center font-bold text-details">
+                {{ formatearMoneda(calcularTotalPagadoGeneral()) }}
+              </td>
+              <td class="text-center font-bold text-details bg-light">
+                {{ formatearMoneda(calcularTotalCartera()) }}
+              </td>
+              <td colspan="5"></td>
+              <td></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
 
@@ -300,10 +330,10 @@
         </div>
 
         <!-- Opción ADELANTO -->
-        <div class="opcion-pago" 
-             (click)="calcularMoraPendiente(creditoSeleccionado) === 0 ? abrirModalPago('ADELANTO') : null"
-             [ngClass]="{'disabled': calcularMoraPendiente(creditoSeleccionado) > 0}"
-             [title]="calcularMoraPendiente(creditoSeleccionado) > 0 ? 'No disponible con mora pendiente' : ''">
+        <div class="opcion-pago"
+          (click)="calcularMoraPendiente(creditoSeleccionado) === 0 ? abrirModalPago('ADELANTO') : null"
+          [ngClass]="{'disabled': calcularMoraPendiente(creditoSeleccionado) > 0}"
+          [title]="calcularMoraPendiente(creditoSeleccionado) > 0 ? 'No disponible con mora pendiente' : ''">
           <div class="opcion-icon">
             <i class="fas fa-forward"></i>
           </div>
@@ -334,7 +364,7 @@
   </div>
 </div>
 
-<!-- MODAL DE PAGO (Tipo: PAGO) -->
+<!-- MODAL DE PAGO -->
 <div class="modal-overlay" *ngIf="modalPagoAbierto && tipoPago === 'PAGO'">
   <div class="modal-content">
     <div class="modal-header">
@@ -394,13 +424,11 @@
             <label class="form-label">
               <i class="fas fa-calendar-alt"></i> SELECCIONE LA SEMANA *
             </label>
-            <select class="form-control" 
-                    [(ngModel)]="numeroPagoSeleccionado"
-                    [disabled]="procesandoPago">
-              <option *ngFor="let semana of obtenerSemanasDisponibles()" 
-                      [value]="semana.numero"
-                      [disabled]="semana.disabled">
-                Sem {{ semana.numero }}/16 - {{ getEstadoSemana(semana.numero).texto }} ({{ formatearFecha(calcularFechaSemana(creditoSeleccionado, semana.numero).toISOString()) }})
+            <select class="form-control" [(ngModel)]="numeroPagoSeleccionado" [disabled]="procesandoPago">
+              <option *ngFor="let semana of obtenerSemanasDisponibles()" [value]="semana.numero"
+                [disabled]="semana.disabled">
+                Sem {{ semana.numero }}/16 - {{ getEstadoSemana(semana.numero).texto }} ({{
+                formatearFecha(calcularFechaSemana(creditoSeleccionado, semana.numero).toISOString()) }})
               </option>
             </select>
             <small class="form-text text-info">
@@ -421,45 +449,38 @@
             <label class="form-label">MONTO DEL PAGO *</label>
             <div class="monto-input-container">
               <span class="currency-symbol">$</span>
-              <input type="number" class="form-control monto-input" 
-                     [(ngModel)]="montoPago" 
-                     step="0.01" min="0"
-                     [disabled]="procesandoPago">
+              <input type="number" class="form-control monto-input" [(ngModel)]="montoPago" step="0.01" min="0"
+                [disabled]="procesandoPago">
             </div>
             <small class="form-text">
               Sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
             </small>
           </div>
-        
+
           <div class="form-group">
-          <label class="form-label">MÉTODO DE PAGO *</label>
-          <select class="form-control" 
-                  [(ngModel)]="metodoPago"
-                  [disabled]="procesandoPago"
-                  required>
-            <option *ngIf="!metodoPago" value="" disabled selected>
-              Seleccione un método de pago
-            </option>
-            <option *ngFor="let metodo of metodosPago" [value]="metodo">
-              {{ metodo | titlecase }}
-            </option>
-          </select>
-          
-          <!-- Mensaje de validación -->
-          <div *ngIf="!metodoPago && procesandoPago" class="text-danger small">
-            Por favor seleccione un método de pago
+            <label class="form-label">MÉTODO DE PAGO *</label>
+            <select class="form-control" [(ngModel)]="metodoPago" [disabled]="procesandoPago" required>
+              <option *ngIf="!metodoPago" value="" disabled selected>
+                Seleccione un método de pago
+              </option>
+              <option *ngFor="let metodo of metodosPago" [value]="metodo">
+                {{ metodo | titlecase }}
+              </option>
+            </select>
+
+            <!-- Mensaje de validación -->
+            <div *ngIf="!metodoPago && procesandoPago" class="text-danger small">
+              Por favor seleccione un método de pago
+            </div>
           </div>
-        </div>
 
           <!-- Campo para moratorios solo si hay mora pendiente -->
           <div class="form-group full-width" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
             <label class="form-label">MORA A PAGAR</label>
             <div class="monto-input-container">
               <span class="currency-symbol">$</span>
-              <input type="number" class="form-control monto-input" 
-                     [(ngModel)]="moratorios" 
-                     step="0.01" min="0"
-                     [disabled]="procesandoPago">
+              <input type="number" class="form-control monto-input" [(ngModel)]="moratorios" step="0.01" min="0"
+                [disabled]="procesandoPago">
             </div>
             <small class="form-text">
               Moratoria pendiente: {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }}
@@ -490,9 +511,10 @@
           </div>
         </div>
 
-        <div class="alert alert-info mt-3" *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
+        <div class="alert alert-info mt-3"
+          *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
           <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> Este pago se aplicará a la semana {{ numeroPagoSeleccionado }}. 
+          <strong>Nota:</strong> Este pago se aplicará a la semana {{ numeroPagoSeleccionado }}.
           Si hay semanas atrasadas, primero se cubrirán las semanas en mora.
         </div>
       </div>
@@ -502,10 +524,9 @@
       <button class="btn btn-secondary" (click)="cerrarModalPago()" [disabled]="procesandoPago">
         <i class="fas fa-times"></i> CANCELAR
       </button>
-      <button class="btn btn-primary"
-              (click)="registrarPago()" 
-              [disabled]="!montoPago || montoPago <= 0 || !metodoPago || !numeroPagoSeleccionado || procesandoPago">
-        <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i> 
+      <button class="btn btn-primary" (click)="registrarPago()"
+        [disabled]="!montoPago || montoPago <= 0 || !metodoPago || !numeroPagoSeleccionado || procesandoPago">
+        <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i>
         {{ procesandoPago ? 'Procesando...' : 'REGISTRAR PAGO' }}
       </button>
     </div>
@@ -565,8 +586,6 @@
         <div class="alert alert-info">
           <i class="fas fa-info-circle"></i>
           <h5>Adelanto a semana futura</h5>
-          <!-- <p>Este pago se aplicará como adelanto. El sistema automáticamente lo asignará a la próxima semana pendiente según el calendario.</p>
-          <p><strong>No es necesario seleccionar semana.</strong></p> -->
         </div>
 
         <div class="form-grid">
@@ -574,11 +593,8 @@
             <label class="form-label">MONTO DEL ADELANTO *</label>
             <div class="monto-input-container">
               <span class="currency-symbol">$</span>
-              <input type="number" class="form-control monto-input" 
-                     [(ngModel)]="montoPago" 
-                     step="0.01" min="0"
-                     placeholder="Ej: {{ creditoSeleccionado.pago_semanal }}"
-                     [disabled]="procesandoPago">
+              <input type="number" class="form-control monto-input" [(ngModel)]="montoPago" step="0.01" min="0"
+                placeholder="Ej: {{ creditoSeleccionado.pago_semanal }}" [disabled]="procesandoPago">
             </div>
             <small class="form-text">
               Monto sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
@@ -587,9 +603,7 @@
 
           <div class="form-group">
             <label class="form-label">MÉTODO DE PAGO *</label>
-            <select class="form-control" 
-                    [(ngModel)]="metodoPago"
-                    [disabled]="procesandoPago">
+            <select class="form-control" [(ngModel)]="metodoPago" [disabled]="procesandoPago">
               <option value="">Seleccionar método</option>
               <option *ngFor="let metodo of metodosPago" [value]="metodo">
                 {{ metodo | titlecase }}
@@ -619,7 +633,8 @@
 
         <div class="alert alert-success mt-3">
           <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> El sistema asignará automáticamente este adelanto a la próxima semana pendiente en el calendario.
+          <strong>Nota:</strong> El sistema asignará automáticamente este adelanto a la próxima semana pendiente en el
+          calendario.
         </div>
       </div>
     </div>
@@ -628,10 +643,9 @@
       <button class="btn btn-secondary" (click)="cerrarModalPago()" [disabled]="procesandoPago">
         <i class="fas fa-times"></i> CANCELAR
       </button>
-      <button class="btn btn-success"
-              (click)="registrarPago()" 
-              [disabled]="!montoPago || montoPago <= 0 || !metodoPago || procesandoPago">
-        <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i> 
+      <button class="btn btn-success" (click)="registrarPago()"
+        [disabled]="!montoPago || montoPago <= 0 || !metodoPago || procesandoPago">
+        <i class="fas fa-check" [class.fa-spin]="procesandoPago"></i>
         {{ procesandoPago ? 'Procesando...' : 'REGISTRAR ADELANTO' }}
       </button>
     </div>
