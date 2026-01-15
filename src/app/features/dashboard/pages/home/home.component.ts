@@ -538,13 +538,22 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     const data = {
       labels: this.dashboardData.moraPorAliadoChart.labels,
-      datasets: [{
-        label: 'Mora por Aliado',
-        data: this.dashboardData.moraPorAliadoChart.data,
-        backgroundColor: 'rgba(255, 99, 132, 0.7)',
-        borderColor: 'rgb(255, 99, 132)',
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: 'Mora en Ciclo (Corriente)',
+          data: this.dashboardData.moraPorAliadoChart.moraCorriente,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgb(54, 162, 235)',
+          borderWidth: 1
+        },
+        {
+          label: 'Mora Fuera de Ciclo (Vencida)',
+          data: this.dashboardData.moraPorAliadoChart.moraVencida,
+          backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          borderColor: 'rgb(255, 99, 132)',
+          borderWidth: 1
+        }
+      ]
     };
 
     const config: ChartConfiguration = {
@@ -554,15 +563,16 @@ export class HomeComponent implements OnInit, AfterViewInit {
         responsive: true,
         plugins: {
           legend: {
-            display: false
-          },
-          title: {
             display: true,
-            text: 'Mora por Aliado'
+            position: 'bottom'
           }
         },
         scales: {
+          x: {
+            stacked: true
+          },
           y: {
+            stacked: true,
             beginAtZero: true,
             ticks: {
               callback: (value) => {

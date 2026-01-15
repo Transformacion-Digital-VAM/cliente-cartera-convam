@@ -427,10 +427,15 @@ export class DashboardService {
 
       if (idsVencidos.has(id) && saldo > 0) {
         if (!moraMap.has(aliado)) {
-          moraMap.set(aliado, { nombre: aliado, mora: 0, creditosSet: new Set() });
+          moraMap.set(aliado, {
+            nombre: aliado,
+            moraCorriente: 0,
+            moraVencida: 0,
+            creditosSet: new Set()
+          });
         }
         const data = moraMap.get(aliado);
-        data.mora += saldo;
+        data.moraVencida += saldo;
         data.creditosSet.add(id);
       }
     });
@@ -438,7 +443,7 @@ export class DashboardService {
     // 2. Agregar Mora Corriente (Arrears from Pagos)
     pagos.forEach(p => {
       const id = p.id_credito;
-      // Si es Vencida, ya contamos todo el saldo, ignorar pagos individuales
+      // Si el crédito ya es considerado Vencido, ya contamos todo su saldo en moraVencida
       if (idsVencidos.has(id)) return;
 
       if (!p.pagado && p.dias_atraso > 0) {
@@ -448,10 +453,15 @@ export class DashboardService {
 
         if (deuda > 0) {
           if (!moraMap.has(aliado)) {
-            moraMap.set(aliado, { nombre: aliado, mora: 0, creditosSet: new Set() });
+            moraMap.set(aliado, {
+              nombre: aliado,
+              moraCorriente: 0,
+              moraVencida: 0,
+              creditosSet: new Set()
+            });
           }
           const data = moraMap.get(aliado);
-          data.mora += deuda;
+          data.moraCorriente += deuda;
           data.creditosSet.add(id);
         }
       }
@@ -460,10 +470,12 @@ export class DashboardService {
     return Array.from(moraMap.values())
       .map((item: any) => ({
         nombre: item.nombre,
-        mora: item.mora,
+        moraCorriente: item.moraCorriente,
+        moraVencida: item.moraVencida,
+        moraTotal: item.moraCorriente + item.moraVencida,
         creditos: item.creditosSet.size
       }))
-      .sort((a, b) => b.mora - a.mora);
+      .sort((a, b) => b.moraTotal - a.moraTotal); // Ordenar por mora total
   }
 
   private getProximosVencimientos(pagos: any[]): any[] {
@@ -678,7 +690,8 @@ export class DashboardService {
     const moraPorAliado = this.getMoraPorAliado(creditos, pagos, idsVencidos);
     return {
       labels: moraPorAliado.map(a => a.nombre),
-      data: moraPorAliado.map(a => a.mora)
+      moraCorriente: moraPorAliado.map(a => a.moraCorriente),
+      moraVencida: moraPorAliado.map(a => a.moraVencida)
     };
   }
 
