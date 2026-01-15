@@ -18,11 +18,13 @@ export class HomeComponent implements OnInit, AfterViewInit {
   @ViewChild('distribucionChart') distribucionChartRef!: ElementRef;
   @ViewChild('ingresosChart') ingresosChartRef!: ElementRef;
   @ViewChild('moraAliadoChart') moraAliadoChartRef!: ElementRef;
+  @ViewChild('evolucionChart') evolucionChartRef!: ElementRef;
 
   // Variables del dashboard
-  periodoDashboard: string = 'mes';
+  periodoDashboard: string = 'sin-filtro';
   cargandoDashboard: boolean = false;
   fechaActual: Date = new Date();
+
 
   // Filtros de fecha
   fechaInicio: string = '';
@@ -45,6 +47,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
   distribucionChart!: Chart;
   ingresosChart!: Chart;
   moraAliadoChart!: Chart;
+  evolucionChart!: Chart;
+  tipoGraficoDistribucion: any = 'pie';
+  periodoIngresos: string = '6M';
+  periodoEvolucion: string = 'monthly';
 
   private refreshInterval: any;
 
@@ -77,11 +83,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   // Inicializar fechas por defecto
   private inicializarFechasPorDefecto(): void {
-    const hoy = new Date();
-    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-
-    this.fechaInicio = this.formatearFechaInput(inicioMes);
-    this.fechaFin = this.formatearFechaInput(hoy);
+    this.actualizarFechasPorPeriodo();
   }
 
   private formatearFechaInput(fecha: Date): string {
@@ -107,6 +109,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   // Actualizar fechas según el período seleccionado
   private actualizarFechasPorPeriodo(): void {
+    if (this.periodoDashboard === 'sin-filtro') {
+      this.fechaInicio = '';
+      this.fechaFin = '';
+      return;
+    }
+
     const hoy = new Date();
     let fechaInicio: Date;
 
@@ -168,7 +176,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   // Limpiar filtros
   limpiarFiltros(): void {
-    this.periodoDashboard = 'mes';
+    this.periodoDashboard = 'sin-filtro';
     this.mostrarFiltrosPersonalizados = false;
     this.actualizarFechasPorPeriodo();
     this.actualizarDashboard();
@@ -257,6 +265,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
   }
 
+  getStatusClass(estado: string): string {
+    if (!estado) return 'badge badge-secondary';
+    const s = estado.toUpperCase();
+    if (s === 'ACTIVO') return 'badge badge-success';
+    if (s === 'INACTIVO') return 'badge badge-danger';
+    if (s === 'PENDIENTE' || s === 'PROCESO') return 'badge badge-warning';
+    return 'badge badge-secondary';
+  }
+
   // Método para obtener el período seleccionado como texto
   getPeriodoSeleccionado(): string {
     if (this.periodoDashboard === 'personalizado') {
@@ -266,6 +283,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
 
     const periodos: { [key: string]: string } = {
+      'sin-filtro': 'Histórico Completo',
       hoy: 'Hoy',
       semana: 'Esta semana',
       mes: 'Este mes',
@@ -301,10 +319,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
       clientesMora: 0,
       porcentajeCarteraVencida: 0,
       porcentajeCarteraMora: 0,
+      porcentajeTotalDeudaAtrasada: 0,
       ingresosTotalGeneral: 0,
       ingresosCapitalTotal: 0,
       ingresosInteresesTotal: 0,
       ingresosMoratoriosTotal: 0,
+      totalDeudaAtrasada: 0,
       ministracionesEntregados: 0,
       ministracionesDevolucion: 0,
       ministracionesTotal: 0,
@@ -344,41 +364,45 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     // Crear gráfico de mora por aliado
     this.crearGraficoMoraPorAliado();
+
+    // Crear gráfico de evolución de cartera
+    this.crearGraficoEvolucionCartera();
   }
 
   private crearGraficoDistribucionCartera(): void {
+    if (!this.distribucionChartRef) return;
     const ctx = this.distribucionChartRef.nativeElement.getContext('2d');
-
     const data = {
-      labels: ['Cartera Vencida', 'Cartera Corriente', 'En Curso'],
+      labels: ['Cartera Corriente', 'Cartera Vencida', 'Cartera Mora'],
       datasets: [{
         data: [
-          this.dashboardData.distribucionCartera.vencida,
           this.dashboardData.distribucionCartera.corriente,
-          this.dashboardData.distribucionCartera.enCurso
+          this.dashboardData.distribucionCartera.vencida,
+          this.dashboardData.distribucionCartera.mora
         ],
         backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(255, 205, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)'
+          'rgba(86, 156, 255, 0.7)',
+          'rgba(255, 159, 99, 0.7)',
+          'rgba(255, 99, 99, 0.7)'
         ],
         borderColor: [
-          'rgb(255, 99, 132)',
-          'rgb(255, 205, 86)',
-          'rgb(75, 192, 192)'
+          'rgba(86, 168, 255, 1)',
+          'rgb(255, 159, 99)',
+          'rgb(255, 99, 99)'
         ],
         borderWidth: 1
       }]
     };
 
     const config: ChartConfiguration = {
-      type: 'doughnut',
+      type: this.tipoGraficoDistribucion,
       data: data,
       options: {
         responsive: true,
         plugins: {
           legend: {
             position: 'bottom',
+            display: this.tipoGraficoDistribucion !== 'bar'
           },
           title: {
             display: true,
@@ -395,54 +419,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
               }
             }
           }
-        }
-      }
-    };
-
-    this.distribucionChart = new Chart(ctx, config);
-  }
-
-  private crearGraficoDistribucionIngresos(): void {
-    const ctx = this.ingresosChartRef.nativeElement.getContext('2d');
-
-    const data = {
-      labels: ['Capital', 'Intereses', 'Moratorios'],
-      datasets: [{
-        label: 'Ingresos',
-        data: [
-          this.dashboardData.distribucionIngresos.capital,
-          this.dashboardData.distribucionIngresos.intereses,
-          this.dashboardData.distribucionIngresos.moratorios
-        ],
-        backgroundColor: [
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(255, 99, 132, 0.7)'
-        ],
-        borderColor: [
-          'rgb(54, 162, 235)',
-          'rgb(75, 192, 192)',
-          'rgb(255, 99, 132)'
-        ],
-        borderWidth: 1
-      }]
-    };
-
-    const config: ChartConfiguration = {
-      type: 'bar',
-      data: data,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            display: false
-          },
-          title: {
-            display: true,
-            text: 'Distribución de Ingresos'
-          }
         },
-        scales: {
+        scales: this.tipoGraficoDistribucion === 'bar' ? {
           y: {
             beginAtZero: true,
             ticks: {
@@ -454,11 +432,105 @@ export class HomeComponent implements OnInit, AfterViewInit {
               }
             }
           }
+        } : {}
+      }
+    };
+
+    this.distribucionChart = new Chart(ctx, config);
+  }
+
+  private crearGraficoDistribucionIngresos(): void {
+    if (!this.ingresosChartRef) return;
+    const ctx = this.ingresosChartRef.nativeElement.getContext('2d');
+
+    const dataTrend = this.getTrendIngresosData();
+
+    const data = {
+      labels: dataTrend.labels,
+      datasets: [{
+        label: 'Ingresos Mensuales',
+        data: dataTrend.data,
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgb(54, 162, 235)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+      }]
+    };
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: false,
+            text: 'Ingresos Mensuales'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => this.formatearMoneda(value as number)
+            }
+          }
         }
       }
     };
 
     this.ingresosChart = new Chart(ctx, config);
+  }
+
+  private getTrendIngresosData(): any {
+    const trend = this.dashboardData?.incomeTrend || [];
+
+    if (trend.length === 0) {
+      // Fallback a simulación si no hay datos (primera carga o bd vacía)
+      return this.getSimulatedIngresosData();
+    }
+
+    const labels = trend.map(t => {
+      const [year, month] = t.mes.split('-');
+      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    });
+
+    const data = trend.map(t => parseFloat(t.total || 0));
+
+    return { labels, data };
+  }
+
+  private getSimulatedIngresosData(): any {
+    const labels = [];
+    const data = [];
+    const hoy = new Date();
+    const numMeses = this.periodoIngresos === '3M' ? 3 : (this.periodoIngresos === '1Y' ? 12 : 6);
+
+    for (let i = numMeses - 1; i >= 0; i--) {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
+      const base = this.dashboardData?.ingresosPeriodo || 100000;
+      data.push(base * (0.8 + Math.random() * 0.4));
+    }
+    return { labels, data };
+  }
+
+  cambiarPeriodoIngresos(periodo: string): void {
+    this.periodoIngresos = periodo;
+    this.dashboardService.getDashboardTrends(periodo).subscribe({
+      next: (trends) => {
+        if (this.dashboardData) {
+          this.dashboardData.incomeTrend = trends.data.incomeTrend;
+          if (this.ingresosChart) {
+            this.ingresosChart.destroy();
+          }
+          this.crearGraficoDistribucionIngresos();
+        }
+      }
+    });
   }
 
   private crearGraficoMoraPorAliado(): void {
@@ -508,6 +580,136 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.moraAliadoChart = new Chart(ctx, config);
   }
 
+  private crearGraficoEvolucionCartera(): void {
+    if (!this.evolucionChartRef) return;
+    const ctx = this.evolucionChartRef.nativeElement.getContext('2d');
+
+    const dataTrend = this.getTrendEvolucionData();
+
+    const data = {
+      labels: dataTrend.labels,
+      datasets: [
+        {
+          label: 'Cartera Total',
+          data: dataTrend.carteraTotal,
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Mora',
+          data: dataTrend.mora,
+          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    };
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: false,
+            text: 'Evolución de Cartera'
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.raw as number;
+                return `${label}: ${this.formatearMoneda(value)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => this.formatearMoneda(value as number)
+            }
+          }
+        }
+      }
+    };
+
+    this.evolucionChart = new Chart(ctx, config);
+  }
+
+  private getTrendEvolucionData(): any {
+    const trend = this.dashboardData?.portfolioTrend || [];
+
+    if (trend.length === 0) {
+      return this.getSimulatedEvolucionData();
+    }
+
+    const labels = trend.map(t => {
+      const [year, month] = t.mes.split('-');
+      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    });
+
+    const carteraTotal = trend.map(t => parseFloat(t.cartera_total || 0));
+    const mora = trend.map(t => parseFloat(t.mora || 0));
+
+    return { labels, carteraTotal, mora };
+  }
+
+  private getSimulatedEvolucionData(): any {
+    const labels = [];
+    const carteraTotal = [];
+    const mora = [];
+    const hoy = new Date();
+    let steps = 12;
+    for (let i = steps - 1; i >= 0; i--) {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
+      const baseCartera = this.dashboardData?.carteraTotal || 5000000;
+      const baseMora = this.dashboardData?.carteraMora || 250000;
+      const factor = 1 - (i * 0.05);
+      carteraTotal.push(baseCartera * factor * (0.95 + Math.random() * 0.1));
+      mora.push(baseMora * factor * (0.8 + Math.random() * 0.4));
+    }
+    return { labels, carteraTotal, mora };
+  }
+
+  cambiarPeriodoEvolucion(periodo: string): void {
+    this.periodoEvolucion = periodo;
+    // Para evolución siempre traemos un año para tener buena perspectiva
+    this.dashboardService.getDashboardTrends('1Y').subscribe({
+      next: (trends) => {
+        if (this.dashboardData) {
+          this.dashboardData.portfolioTrend = trends.data.portfolioTrend;
+          if (this.evolucionChart) {
+            this.evolucionChart.destroy();
+          }
+          this.crearGraficoEvolucionCartera();
+        }
+      }
+    });
+  }
+
+  cambiarTipoGrafico(tipo: string): void {
+    this.tipoGraficoDistribucion = tipo;
+    if (this.distribucionChart) {
+      this.distribucionChart.destroy();
+    }
+    this.crearGraficoDistribucionCartera();
+  }
+
   // Métodos auxiliares para el template
   formatearMoneda(valor: number): string {
     return new Intl.NumberFormat('es-MX', {
@@ -546,10 +748,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   contactarCliente(alerta: any): void {
-    // Implementar lógica para contactar cliente
-    console.log('Contactando cliente:', alerta.cliente);
-    // Aquí podrías abrir un modal o redirigir a la página de contacto
-    alert(`Contactando a ${alerta.cliente}`);
+    if (alerta.telefono) {
+      window.open(`tel:${alerta.telefono}`, '_self');
+    } else {
+      alert(`No hay teléfono registrado para ${alerta.cliente}`);
+    }
   }
 
   getNombreCliente(credito: any): string {
