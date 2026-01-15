@@ -1032,7 +1032,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
           <div style="text-align: left;">
             <p><strong>Cliente NUEVO - Validación de límites:</strong></p>
             <p>• Monto solicitado: <strong>$${monto.toLocaleString()}</strong></p>
-            <p>• Límite aplicado: <strong>$3,000 - $25,000</strong></p>
+            <p>• Límite aplicado: <strong>$3,000 - $7,000</strong></p>
             <p>• Tipo: <strong>PRIMER CRÉDITO</strong></p>
             <hr>
             <p class="text-info">
@@ -1168,8 +1168,8 @@ export class ClientListComponent implements OnInit, OnDestroy {
         <div style="text-align: left;">
           <p><strong>Cliente:</strong> ${this.getNombreCompleto(this.clienteParaSolicitud)}</p>
           <p><strong>Monto:</strong> $${this.solicitudForm.value.monto_solicitado}</p>
-          <p><strong>Ejecutivo:</strong> ${usuarioNombre}</p>
-          <p><strong>ID Ejecutivo:</strong> ${usuarioId}</p>
+          <p><strong>Usuario Control:</strong> ${usuarioNombre}</p>
+          
         </div>
       `,
       icon: 'question',
@@ -1220,7 +1220,6 @@ export class ClientListComponent implements OnInit, OnDestroy {
               <p>La solicitud ha sido registrada exitosamente</p>
               <p><strong>Folio:</strong> ${response.id_solicitud || 'N/A'}</p>
               <p><strong>Estado:</strong> PENDIENTE</p>
-              <p><strong>Ejecutivo ID:</strong> ${usuarioId}</p>
             </div>
           `,
           confirmButtonText: 'Aceptar',

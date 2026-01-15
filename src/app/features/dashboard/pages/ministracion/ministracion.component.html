@@ -461,13 +461,13 @@
 <div class="modal-backdrop" *ngIf="modalGenerarCreditoAbierto">
   <div class="modal-container modal-md">
     <div class="modal-header">
-      <h3>GENERAR CRÉDITO - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
+      <h3>GENERAR PAGARÉ - {{ solicitudSeleccionada?.nombre_cliente }} {{ solicitudSeleccionada?.app_cliente }}</h3>
       <button class="btn-close" (click)="cerrarModalGenerarCredito()">&times;</button>
     </div>
 
     <div class="modal-body">
       <div class="form-section">
-        <h4>Configurar Fechas del Crédito</h4>
+        <h4>Configurar Fechas</h4>
 
         <div class="row">
           <div class="col-md-6">
@@ -548,7 +548,7 @@
       <button class="btn btn-primary" (click)="crearCredito()"
         [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoGeneracion">
         <i class="fas" [ngClass]="procesandoGeneracion ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-        {{ procesandoGeneracion ? 'Creando...' : 'Generar Crédito' }}
+        {{ procesandoGeneracion ? 'Creando...' : 'Guardar' }}
       </button>
     </div>
   </div>

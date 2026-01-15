@@ -1124,10 +1124,9 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
           <p><strong>Dirección:</strong> ${this.getDireccionCompleta(this.solicitudSeleccionada!)}</p>
           <p><strong>Teléfono:</strong> ${this.getTelefonoFormateado(this.solicitudSeleccionada!)}</p>
           <p><strong>Fecha domiciliación:</strong> ${this.fechaDomiciliacion}</p>
-          <p><strong>Horario:</strong> ${this.horario}</p>
+          <p><strong>Horario de Disponibilidad:</strong> ${this.horario}</p>
           <p><strong>Persona que recibió:</strong> ${this.personaRecibio}</p>
           <p><strong>Registrado por:</strong> ${this.usuarioActual?.nombre || 'Coordinador'}</p>
-          <p><strong>ID Coordinador:</strong> ${this.coordinadorId}</p>
         </div>
       `,
       icon: 'question',

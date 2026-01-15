@@ -70,9 +70,6 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    // const app = initializeApp(environment.firebaseConfig);
-    // this.auth = getAuth(app);
-    // this.setupAuthStateListener();
     const app = initializeApp(environment.firebaseConfig);
     this.auth = getAuth(app);
     this.loadUserFromStorage();
@@ -127,7 +124,7 @@ export class AuthService {
     let tempAuth: any = null;
 
     try {
-      console.log('📲 Iniciando registro completo...');
+      console.log(' Iniciando registro completo...');
 
       // Crear una instancia temporal de auth para no afectar la sesión principal
       const app = initializeApp(environment.firebaseConfig, 'TempApp');
@@ -195,7 +192,7 @@ export class AuthService {
   // Método de registro
   async registerWithEmail(nombre: string, correo: string, password: string, rol_id: number): Promise<any> {
     try {
-      console.log('📲 Registrando usuario en Firebase...');
+      console.log('Registrando usuario en Firebase...');
 
       const userCredential = await createUserWithEmailAndPassword(this.auth, correo, password);
       const firebase_uid = userCredential.user.uid;
@@ -271,12 +268,7 @@ export class AuthService {
     }
   }
 
-  // Obtener token de Firebase, para validar el usuario 
-  // async getFirebaseToken(): Promise<string> {
-  //   const user = this.auth.currentUser;
-  //   if (!user) throw new Error('Usuario no autenticado');
-  //   return await user.getIdToken(true);
-  // }
+  // Obtener token de Firebase
   async getFirebaseToken(): Promise<string> {
     const user = this.auth.currentUser;
     if (!user) {
@@ -576,11 +568,6 @@ export class AuthService {
   }
 
   // Método para verificar rol específico
-  // hasRole(roleName: string): boolean {
-  //   const user = this.currentUserSubject.value;
-  //   if (!user || !user.nombre_rol) return false;
-  //   return user.nombre_rol.toLowerCase() === roleName.toLowerCase();
-  // }
   hasRole(roleName: string): boolean {
     const user = this.currentUserSubject.value;
     if (!user) return false;
@@ -590,13 +577,6 @@ export class AuthService {
   }
 
   // Método para verificar si tiene alguno de los roles
-  // hasAnyRole(roles: string[]): boolean {
-  //   const user = this.currentUserSubject.value;
-  //   if (!user || !user.nombre_rol) return false;
-  //   return roles.some(role => 
-  //     user.nombre_rol.toLowerCase() === role.toLowerCase()
-  //   );
-  // }
   hasAnyRole(roles: string[]): boolean {
     const user = this.currentUserSubject.value;
     if (!user) return false;

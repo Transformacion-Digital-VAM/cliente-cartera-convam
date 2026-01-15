@@ -353,6 +353,12 @@ actualizarDomiciliacion(id: number, datos: any): Observable<any> {
   }
 
 
+// O si usas PUT:
+actualizarEstadoSolicitud(idSolicitud: number, datos: any): Observable<any> {
+  return this.http.put(`${this.apiUrl}/${idSolicitud}/estado`, datos);
+}
+
+
 }
 
 

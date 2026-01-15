@@ -1,18 +1,79 @@
 <div class="dashboard-container">
   <!-- Header -->
-  <div class="dashboard-header">
-    <h1><i class="fas fa-chart-line"></i> Dashboard de Cartera</h1>
-    <div class="dashboard-controls">
-      <select class="form-control" [(ngModel)]="periodoDashboard" (change)="actualizarDashboard()">
-        <option value="hoy">Hoy</option>
-        <option value="semana">Esta semana</option>
-        <option value="mes" selected>Este mes</option>
-        <option value="trimestre">Este trimestre</option>
-      </select>
-      <button class="btn btn-primary" (click)="actualizarDashboard()" [disabled]="cargandoDashboard">
-        <i class="fas fa-sync-alt" [class.fa-spin]="cargandoDashboard"></i>
-        Actualizar
-      </button>
+  <div class="dashboard-header minimal">
+    <div class="header-main">
+      <div class="title-section">
+        <div class="icon-wrapper">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div>
+          <h1>Dashboard de Cartera</h1>
+          <p class="subtitle">Análisis y seguimiento de cartera</p>
+        </div>
+      </div>
+
+      <div class="controls-section">
+        <div class="filtros-container">
+          <!-- Selector de período predefinido -->
+          <div class="control-group">
+            <label class="control-label">
+              <i class="fas fa-calendar-alt"></i>
+              Período predefinido
+            </label>
+            <div class="controls-row">
+              <select class="select-minimal" [(ngModel)]="periodoDashboard" (change)="onPeriodoChange()">
+                <option value="sin-filtro">Ninguno</option>
+                <option value="personalizado">Fecha personalizada</option>
+                <option value="hoy">Hoy</option>
+                <option value="semana">Esta semana</option>
+                <option value="mes">Este mes</option>
+                <option value="trimestre">Este trimestre</option>
+                <option value="anio">Este año</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filtros de fecha personalizada -->
+          <div class="control-group" *ngIf="mostrarFiltrosPersonalizados">
+            <label class="control-label">
+              <i class="fas fa-calendar-day"></i>
+              Rango personalizado
+            </label>
+            <div class="date-filters">
+              <div class="date-input-group">
+                <label class="date-label">Desde:</label>
+                <input type="date" class="date-input" [(ngModel)]="fechaInicio" [max]="fechaFin || getToday()"
+                  (change)="validarFechas()">
+              </div>
+
+              <div class="date-input-group">
+                <label class="date-label">Hasta:</label>
+                <input type="date" class="date-input" [(ngModel)]="fechaFin" [min]="fechaInicio" [max]="getToday()"
+                  (change)="validarFechas()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de acción -->
+          <div class="control-group acciones">
+            <label class="control-label invisible">
+              Acciones
+            </label>
+            <div class="controls-row">
+              <button class="btn-minimal primary" (click)="actualizarDashboard()"
+                [disabled]="cargandoDashboard || !fechasValidas()">
+                <i class="fas fa-sync-alt" [class.fa-spin]="cargandoDashboard"></i>
+                <span class="btn-text">{{ cargandoDashboard ? 'Procesando' : 'Aplicar filtros' }}</span>
+              </button>
+
+              <button class="btn-minimal secondary" (click)="limpiarFiltros()" [disabled]="cargandoDashboard">
+                <i class="fas fa-times"></i>
+                <span class="btn-text">Limpiar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -28,10 +89,10 @@
           <h3>Cartera Total</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(carteraTotal) }}</div>
+          <div class="card-value">{{ formatearMoneda(dashboardData.carteraTotal || 0) }}</div>
           <div class="card-details">
-            <span>{{ totalCreditos }} créditos</span>
-            <span>{{ clientesVigentes }} clientes</span>
+            <span>{{ dashboardData.totalCreditosCount }} créditos</span>
+            <span>{{ dashboardData.clientesVigentes }} clientes</span>
           </div>
         </div>
       </div>
@@ -42,9 +103,9 @@
           <h3>Cartera Corriente</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(carteraCorriente) }}</div>
+          <div class="card-value">{{ formatearMoneda(dashboardData.carteraCorriente || 0) }}</div>
           <div class="card-percentage">{{ getPorcentajeCarteraCorriente() }}%</div>
-          <div class="card-details">{{ creditosVigentes }} créditos vigentes</div>
+          <div class="card-details">{{ dashboardData.creditosVigentes }} créditos vigentes</div>
         </div>
       </div>
 
@@ -54,9 +115,9 @@
           <h3>Cartera Vencida</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(carteraVencida) }}</div>
-          <div class="card-percentage">{{ porcentajeCarteraVencida }}%</div>
-          <div class="card-details">{{ creditosVencidos }} créditos vencidos</div>
+          <div class="card-value">{{ formatearMoneda(dashboardData.carteraVencida || 0) }}</div>
+          <div class="card-percentage">{{ dashboardData.porcentajeCarteraVencida }}%</div>
+          <div class="card-details">{{ dashboardData.creditosVencidos }} créditos vencidos</div>
         </div>
       </div>
 
@@ -66,9 +127,9 @@
           <h3>Cartera en Mora</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(carteraMora) }}</div>
-          <div class="card-percentage">{{ porcentajeCarteraMora }}%</div>
-          <div class="card-details">{{ clientesMora }} clientes en mora</div>
+          <div class="card-value">{{ formatearMoneda(dashboardData.carteraMora || 0) }}</div>
+          <div class="card-percentage">{{ dashboardData.porcentajeCarteraMora }}%</div>
+          <div class="card-details">{{ dashboardData.clientesMora }} clientes en mora</div>
         </div>
       </div>
     </div>
@@ -80,12 +141,78 @@
   <div class="section">
     <h2 class="section-title">Distribución de Cartera</h2>
     <div class="charts-grid">
+
+      <!-- Gráfica 1: Distribución -->
       <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Distribución por Estado</h3>
+            <p class="chart-subtitle">Cartera total clasificada por estado de crédito</p>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-color" style="background-color: #3b82f6;"></span>
+              <span>Corriente</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background-color: #f59e0b;"></span>
+              <span>Vencido</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-color" style="background-color: #f50b0b;"></span>
+              <span>Mora</span>
+            </div>
+          </div>
+        </div>
         <canvas #distribucionChart></canvas>
+        <div class="chart-controls">
+          <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'doughnut'"
+            (click)="cambiarTipoGrafico('doughnut')">Dona</button>
+          <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'pie'"
+            (click)="cambiarTipoGrafico('pie')">Pastel</button>
+          <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'bar'"
+            (click)="cambiarTipoGrafico('bar')">Barras</button>
+        </div>
       </div>
+
+      <!-- Gráfica 2: Ingresos -->
       <div class="chart-container">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Ingresos Mensuales</h3>
+            <p class="chart-subtitle">Comparativa de ingresos últimos 6 meses</p>
+          </div>
+          <div class="chart-controls">
+            <button class="chart-btn" [class.active]="periodoIngresos === '6M'" (click)="cambiarPeriodoIngresos('6M')">6
+              Meses</button>
+            <button class="chart-btn" [class.active]="periodoIngresos === '1Y'" (click)="cambiarPeriodoIngresos('1Y')">1
+              Año</button>
+            <button class="chart-btn" [class.active]="periodoIngresos === '3M'" (click)="cambiarPeriodoIngresos('3M')">3
+              Meses</button>
+          </div>
+        </div>
         <canvas #ingresosChart></canvas>
       </div>
+
+    </div>
+
+    <!-- Gráfica de ancho completo -->
+    <div class="chart-full">
+      <div class="chart-header">
+        <div>
+          <h3 class="chart-title">Evolución de Cartera</h3>
+          <p class="chart-subtitle">Tendencia de cartera total en el tiempo</p>
+        </div>
+        <div class="chart-controls">
+          <button class="chart-btn" [class.active]="periodoEvolucion === 'monthly'"
+            (click)="cambiarPeriodoEvolucion('monthly')">Mensual</button>
+          <button class="chart-btn" [class.active]="periodoEvolucion === 'quarterly'"
+            (click)="cambiarPeriodoEvolucion('quarterly')">Trimestral</button>
+          <button class="chart-btn" [class.active]="periodoEvolucion === 'yearly'"
+            (click)="cambiarPeriodoEvolucion('yearly')">Anual</button>
+        </div>
+      </div>
+      <canvas #evolucionChart></canvas>
     </div>
   </div>
 
@@ -105,7 +232,7 @@
             <h4>Total General</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ingresosTotalGeneral) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ingresosTotalGeneral || 0) }}</div>
           </div>
         </div>
 
@@ -115,7 +242,7 @@
             <h4>Capital</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ingresosCapitalTotal) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ingresosCapitalTotal || 0) }}</div>
           </div>
         </div>
 
@@ -125,7 +252,7 @@
             <h4>Intereses</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ingresosInteresesTotal) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ingresosInteresesTotal || 0) }}</div>
           </div>
         </div>
 
@@ -135,7 +262,7 @@
             <h4>Moratorios</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ingresosMoratoriosTotal) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.totalDeudaAtrasada || 0) }}</div>
           </div>
         </div>
       </div>
@@ -151,7 +278,7 @@
             <h4>Entregadas</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ministracionesEntregados) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesEntregados || 0) }}</div>
           </div>
         </div>
 
@@ -161,7 +288,7 @@
             <h4>Devolución</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ministracionesDevolucion) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesDevolucion || 0) }}</div>
           </div>
         </div>
 
@@ -171,7 +298,7 @@
             <h4>Total Neto</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(ministracionesTotal) }}</div>
+            <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesTotal || 0) }}</div>
           </div>
         </div>
       </div>
@@ -188,52 +315,88 @@
       <!-- Top Aliados por Cartera -->
       <div class="table-container">
         <h3><i class="fas fa-trophy"></i> Top Aliados por Cartera</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Aliado</th>
-              <th>Créditos</th>
-              <th>Cartera</th>
-              <th>Entregados</th>
-              <th>% Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let aliado of topAliados">
-              <td>{{ aliado.nombre }}</td>
-              <td>{{ aliado.creditos }}</td>
-              <td>{{ formatearMoneda(aliado.cartera) }}</td>
-              <td>{{ formatearMoneda(aliado.entregados) }}</td>
-              <td>{{ getPorcentajeCarteraAliado(aliado.cartera) }}%</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Aliado</th>
+                <th>Créditos</th>
+                <th>Cartera</th>
+                <th class="hide-mobile">Entregados</th>
+                <th>% Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let aliado of dashboardData.topAliados; let i = index">
+                <td>
+                  <div class="aliado-info">
+                    <span class="aliado-rank">{{ i + 1 }}. </span>
+                    <span class="aliado-name">{{ aliado.nombre }}</span>
+                    <span *ngIf="aliado.estado" class="status-badge" [class]="getStatusClass(aliado.estado)">
+                      {{ aliado.estado }}
+                    </span>
+                  </div>
+                </td>
+                <td>{{ aliado.creditos }}</td>
+                <td>{{ formatearMoneda(aliado.cartera) }}</td>
+                <td class="hide-mobile">{{ formatearMoneda(aliado.entregados) }}</td>
+                <td>{{ getPorcentajeCarteraAliado(aliado.cartera) }}%</td>
+              </tr>
+              <tr *ngIf="dashboardData.topAliados.length === 0">
+                <td colspan="5" class="table-empty">
+                  <i class="fas fa-database"></i>
+                  <p>No hay datos disponibles</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Mora por Aliado -->
       <div class="table-container">
         <h3><i class="fas fa-exclamation-triangle text-danger"></i> Mora por Aliado</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Aliado</th>
-              <th>Monto en Mora</th>
-              <th>% Mora Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let aliado of moraPorAliado">
-              <td>{{ aliado.nombre }}</td>
-              <td>{{ formatearMoneda(aliado.mora) }}</td>
-              <td>{{ getPorcentajeMora(aliado.mora) }}%</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrapper">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Aliado</th>
+                <th class="hide-small">Créditos</th>
+                <th>Monto en Mora</th>
+                <th>% Mora Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let aliado of dashboardData.moraPorAliado">
+                <td>
+                  <div class="aliado-info">
+                    <span class="aliado-name">{{ aliado.nombre }}</span>
+                  </div>
+                </td>
+                <td class="hide-small">{{ aliado.creditos || 'N/A' }}</td>
+                <td>{{ formatearMoneda(aliado.mora) }}</td>
+                <td>{{ getPorcentajeMora(aliado.mora) }}%</td>
+              </tr>
+              <tr *ngIf="dashboardData.moraPorAliado.length === 0">
+                <td colspan="4" class="table-empty">
+                  <i class="fas fa-check-circle text-success"></i>
+                  <p>No hay mora registrada</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- Gráfico de Mora por Aliado -->
     <div class="chart-full">
+      <div class="chart-header">
+        <div>
+          <h3 class="chart-title">Distribución de Mora por Aliado</h3>
+          <p class="chart-subtitle">Análisis comparativo de mora por aliado comercial</p>
+        </div>
+      </div>
       <canvas #moraAliadoChart></canvas>
     </div>
   </div>
@@ -241,109 +404,150 @@
   <!-- ============================================ -->
   <!-- SECCIÓN 5: LISTADOS IMPORTANTES -->
   <!-- ============================================ -->
+  <!-- Próximos Vencimientos -->
   <div class="section">
     <h2 class="section-title">Listados y Alertas</h2>
 
     <div class="tables-grid">
+
       <!-- Próximos Vencimientos -->
       <div class="table-container">
         <h3><i class="fas fa-calendar-alt"></i> Próximos Vencimientos</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Crédito</th>
-              <th>Monto</th>
-              <th>Fecha</th>
-              <th>Días</th>
-              <th>Aliado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let vencimiento of proximosVencimientos">
-              <td>{{ vencimiento.cliente }}</td>
-              <td>{{ vencimiento.credito_id }}</td>
-              <td>{{ formatearMoneda(vencimiento.monto) }}</td>
-              <td>{{ formatearFecha(vencimiento.fecha) }}</td>
-              <td>
-                <span [class]="vencimiento.dias <= 3 ? 'badge badge-danger' : 'badge badge-warning'">
-                  {{ vencimiento.dias }} días
-                </span>
-              </td>
-              <td>{{ vencimiento.aliado }}</td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div class="table-header">
+          <div class="table-controls">
+            <select class="form-control-sm" [(ngModel)]="diasVencimiento" (change)="filtrarVencimientos()">
+              <option value="1">Mañana</option>
+              <option value="3" selected>Próximos 3 días</option>
+              <option value="7">Próxima semana</option>
+              <option value="30">Próximo mes</option>
+              <option value="999">Todos los futuros</option>
+            </select>
+            <span class="badge badge-info">{{ vencimientosFiltrados.length }} vencimientos</span>
+          </div>
+        </div>
+
+        <div class="table-responsive" *ngIf="vencimientosFiltrados.length > 0">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th class="hide-mobile">Crédito</th>
+                <th>Pago #</th>
+                <th>Monto</th>
+                <th>Fecha</th>
+                <th>Días</th>
+                <th class="hide-small">Aliado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let vencimiento of vencimientosFiltrados">
+                <td>
+                  <div class="truncate-text">{{ vencimiento.cliente }}</div>
+                </td>
+                <td class="hide-mobile">{{ vencimiento.credito_id }}</td>
+                <td>{{ vencimiento.numero_pago }}</td>
+                <td>{{ formatearMoneda(vencimiento.monto) }}</td>
+                <td>{{ formatearFecha(vencimiento.fecha) }}</td>
+                <td>
+                  <span [class]="vencimiento.dias <= 3 ? 'badge badge-danger' : 'badge badge-warning'">
+                    {{ vencimiento.dias }} días
+                  </span>
+                </td>
+                <td class="hide-small">
+                  <div class="truncate-text">{{ vencimiento.aliado }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div *ngIf="vencimientosFiltrados.length === 0" class="no-data">
+          <i class="fas fa-check-circle text-success"></i>
+          <span *ngIf="todosVencimientos.length === 0">
+            No hay pagos pendientes
+          </span>
+          <span *ngIf="todosVencimientos.length > 0">
+            No hay vencimientos próximos en el rango seleccionado
+          </span>
+        </div>
+
+        <div class="table-footer" *ngIf="todosVencimientos.length > 0">
+          <small>
+            Mostrando {{ vencimientosFiltrados.length }} de {{ todosVencimientos.length }} vencimientos futuros
+            <span *ngIf="mostrarTodosVencimientos" class="text-warning ml-1">
+              <i class="fas fa-exclamation-triangle"></i> Mostrando todos los vencimientos
+            </span>
+          </small>
+        </div>
       </div>
 
       <!-- Alertas de Mora -->
       <div class="table-container">
         <h3><i class="fas fa-exclamation-circle text-danger"></i> Alertas de Mora</h3>
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Cliente</th>
-              <th>Días Mora</th>
-              <th>Monto Vencido</th>
-              <th>Saldo Pendiente</th>
-              <th>Aliado</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let alerta of alertasMora">
-              <td>{{ alerta.cliente }}</td>
-              <td>
-                <span [class]="alerta.dias_mora > 30 ? 'badge badge-danger' : 'badge badge-warning'">
-                  {{ alerta.dias_mora }} días
-                </span>
-              </td>
-              <td>{{ formatearMoneda(alerta.monto_vencido) }}</td>
-              <td>{{ formatearMoneda(alerta.saldo_pendiente) }}</td>
-              <td>{{ alerta.aliado }}</td>
-              <td>
-                <button class="btn btn-sm btn-outline-primary" (click)="contactarCliente(alerta)">
-                  <i class="fas fa-phone"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th class="hide-small">Días Mora</th>
+                <th>Monto Vencido</th>
+                <th class="hide-mobile">Saldo Pendiente</th>
+                <th class="hide-small">Aliado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let alerta of dashboardData.alertasMora">
+                <td>
+                  <div class="truncate-text">{{ alerta.cliente }}</div>
+                </td>
+                <td class="hide-small">
+                  <span [class]="alerta.dias_mora > 30 ? 'badge badge-danger' : 'badge badge-warning'">
+                    {{ alerta.dias_mora }} días
+                  </span>
+                </td>
+                <td>{{ formatearMoneda(alerta.monto_vencido) }}</td>
+                <td class="hide-mobile">{{ formatearMoneda(alerta.saldo_pendiente) }}</td>
+                <td class="hide-small">
+                  <div class="truncate-text">{{ alerta.aliado }}</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" (click)="contactarCliente(alerta)">
+                    <i class="fas fa-phone"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Al Día -->
+    <!-- Resumen de Entregas -->
     <div class="subsection">
-      <h3><i class="fas fa-calendar-day text-success"></i> Al Día - {{ formatearFecha(fechaActual) }}</h3>
+      <h3><i class="fas fa-calendar-day text-success"></i> {{ getPeriodoSeleccionado() }} (Resumen de Entregas)</h3>
+
       <div class="cards-grid">
         <div class="card">
           <div class="card-header">
             <i class="fas fa-hand-holding-usd text-success"></i>
             <h4>Créditos Entregados</h4>
           </div>
-          <!-- <div class="card-body">
-            <div class="card-value">{{ creditosDia.filter(c => c.estado === 'ENTREGADO').length }}</div>
-            <div class="card-details">
-              <span *ngFor="let credito of creditosDia.filter(c => c.estado === 'ENTREGADO')">
-                {{ credito.cliente }}: {{ formatearMoneda(credito.monto) }}
-              </span>
-            </div>
-          </div> -->
           <div class="card-body">
             <div class="card-value">
-              {{ creditosEntregados ? creditosEntregados.length : 0 }}
+              {{ dashboardData.creditosEntregados ? dashboardData.creditosEntregados.length : 0 }}
             </div>
-
             <div class="card-details">
-              <span *ngIf="creditosEntregados && creditosEntregados.length > 0; else sinCreditos">
-                <span *ngFor="let credito of creditosEntregados; let i = index">
-                  {{ credito.cliente || getNombreCliente(credito) }}: {{ formatearMoneda(credito.monto_aprobado ||
-                  credito.monto || 0) }}
-                  <br *ngIf="i < creditosEntregados.length - 1">
-                </span>
+              Total entregados {{ getPeriodoSeleccionado() }}
+            </div>
+            <div class="card-details">
+              <span
+                *ngIf="dashboardData.creditosEntregados && dashboardData.creditosEntregados.length > 0; else sinCreditos">
               </span>
               <ng-template #sinCreditos>
-                <span>No hay créditos entregados hoy</span>
+                <span class="text-muted">No hay créditos entregados</span>
               </ng-template>
             </div>
           </div>
@@ -355,9 +559,9 @@
             <h4>Créditos Registrados</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ creditosDia.length }}</div>
+            <div class="card-value">{{ dashboardData.creditosDia.length }}</div>
             <div class="card-details">
-              Total registrados hoy
+              Total registrados {{ getPeriodoSeleccionado() }}
             </div>
           </div>
         </div>
@@ -368,16 +572,15 @@
             <h4>Clientes Nuevos</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">5</div>
+            <div class="card-value">{{ dashboardData.clientesDia || 0 }}</div>
             <div class="card-details">
-              Clientes registrados hoy
+              Clientes registrados {{ getPeriodoSeleccionado() }}
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-
   <!-- ============================================ -->
   <!-- RESUMEN ESTADÍSTICO -->
   <!-- ============================================ -->
@@ -386,25 +589,76 @@
     <div class="stats-grid">
       <div class="stat-item">
         <div class="stat-label">Tasa de Morosidad</div>
-        <div class="stat-value">{{ tasaMorosidad }}%</div>
+        <div class="stat-value">{{ dashboardData.tasaMorosidad || 0 }}%</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">Ingresos del Período</div>
-        <div class="stat-value">{{ formatearMoneda(ingresosPeriodo) }}</div>
+        <div class="stat-value">{{ formatearMoneda(dashboardData.ingresosPeriodo || 0) }}</div>
       </div>
       <div class="stat-item">
         <div class="stat-label">Ministraciones Netas</div>
-        <div class="stat-value">{{ formatearMoneda(ministracionesTotal) }}</div>
+        <div class="stat-value">{{ formatearMoneda(dashboardData.ministracionesTotal || 0) }}</div>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
-  <div class="dashboard-footer">
-    <div class="footer-info">
-      <span><i class="fas fa-clock"></i> Última actualización: {{ formatearFecha(fechaActual) }}</span>
-      <span><i class="fas fa-database"></i> {{ creditos.length }} créditos cargados</span>
-      <span><i class="fas fa-receipt"></i> {{ pagos.length }} pagos registrados</span>
+  <div class="dashboard-footer compact">
+    <div class="footer-grid">
+      <div class="footer-section">
+        <div class="section-title">
+          <i class="fas fa-info-circle"></i>
+          <span>Información del Sistema</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <i class="fas fa-clock fa-sm"></i>
+            <div>
+              <div class="info-label">Actualizado</div>
+              <div class="info-value">{{ formatearFecha(fechaActual) }}</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-database fa-sm"></i>
+            <div>
+              <div class="info-label">Créditos</div>
+              <div class="info-value">{{ dashboardData.totalCreditosCount || 0 }}</div>
+            </div>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-receipt fa-sm"></i>
+            <div>
+              <div class="info-label">Pagos</div>
+              <div class="info-value">{{ dashboardData.totalPagosCount || 0 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-divider"></div>
+      <div class="footer-section">
+        <div class="export-options">
+          <h4 class="options-title">Exportar Reportes</h4>
+          <p class="options-desc">Descarga información del dashboard</p>
+          <div class="export-buttons">
+            <button class="export-btn pdf" (click)="exportarDashboard('pdf')">
+              <i class="fas fa-file-pdf"></i>
+              PDF
+            </button>
+            <button class="export-btn excel" (click)="exportarDashboard('excel')">
+              <i class="fas fa-file-excel"></i>
+              Excel
+            </button>
+            <button class="export-btn csv" (click)="exportarDashboard('csv')">
+              <i class="fas fa-file-csv"></i>
+              CSV
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+
+
