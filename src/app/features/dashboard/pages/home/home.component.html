@@ -22,13 +22,13 @@
             </label>
             <div class="controls-row">
               <select class="select-minimal" [(ngModel)]="periodoDashboard" (change)="onPeriodoChange()">
-                <option value="sin-filtro">Ninguno</option>
-                <option value="personalizado">Fecha personalizada</option>
+                <option value="sin-filtro">Mostrar todo</option>
                 <option value="hoy">Hoy</option>
                 <option value="semana">Esta semana</option>
                 <option value="mes">Este mes</option>
                 <option value="trimestre">Este trimestre</option>
                 <option value="anio">Este año</option>
+                <option value="personalizado">Fecha personalizada</option>
               </select>
             </div>
           </div>
@@ -149,25 +149,10 @@
             <h3 class="chart-title">Distribución por Estado</h3>
             <p class="chart-subtitle">Cartera total clasificada por estado de crédito</p>
           </div>
-          <div class="chart-legend">
-            <div class="legend-item">
-              <span class="legend-color" style="background-color: #3b82f6;"></span>
-              <span>Corriente</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color" style="background-color: #f59e0b;"></span>
-              <span>Vencido</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color" style="background-color: #f50b0b;"></span>
-              <span>Mora</span>
-            </div>
-          </div>
+
         </div>
         <canvas #distribucionChart></canvas>
         <div class="chart-controls">
-          <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'doughnut'"
-            (click)="cambiarTipoGrafico('doughnut')">Dona</button>
           <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'pie'"
             (click)="cambiarTipoGrafico('pie')">Pastel</button>
           <button class="chart-btn" [class.active]="tipoGraficoDistribucion === 'bar'"
@@ -292,7 +277,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <!-- <div class="card">
           <div class="card-header">
             <i class="fas fa-calculator text-primary"></i>
             <h4>Total Neto</h4>
@@ -300,7 +285,7 @@
           <div class="card-body">
             <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesTotal || 0) }}</div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
@@ -438,6 +423,7 @@
                 <th>Fecha</th>
                 <th>Días</th>
                 <th class="hide-small">Aliado</th>
+                <th>Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -456,6 +442,11 @@
                 </td>
                 <td class="hide-small">
                   <div class="truncate-text">{{ vencimiento.aliado }}</div>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" (click)="contactarCliente(vencimiento)">
+                    <i class="fas fa-phone"></i>
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -641,18 +632,18 @@
           <h4 class="options-title">Exportar Reportes</h4>
           <p class="options-desc">Descarga información del dashboard</p>
           <div class="export-buttons">
-            <button class="export-btn pdf" (click)="exportarDashboard('pdf')">
+            <!-- <button class="export-btn pdf" (click)="exportarDashboard('pdf')">
               <i class="fas fa-file-pdf"></i>
               PDF
-            </button>
+            </button> -->
             <button class="export-btn excel" (click)="exportarDashboard('excel')">
               <i class="fas fa-file-excel"></i>
               Excel
             </button>
-            <button class="export-btn csv" (click)="exportarDashboard('csv')">
+            <!-- <button class="export-btn csv" (click)="exportarDashboard('csv')">
               <i class="fas fa-file-csv"></i>
               CSV
-            </button>
+            </button> -->
           </div>
         </div>
       </div>

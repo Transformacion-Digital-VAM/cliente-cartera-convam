@@ -48,7 +48,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   ingresosChart!: Chart;
   moraAliadoChart!: Chart;
   evolucionChart!: Chart;
-  tipoGraficoDistribucion: any = 'doughnut';
+  tipoGraficoDistribucion: any = 'pie';
   periodoIngresos: string = '6M';
   periodoEvolucion: string = 'monthly';
 
@@ -432,7 +432,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
               }
             }
           }
-        } : {}
+        } 
       }
     };
 
@@ -485,44 +485,54 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private getTrendIngresosData(): any {
-    // Si no tenemos datos históricos aún o queremos simular para el dashboard inicial
-    // Usaremos los datos del periodo actual distribuidos o generaremos datos coherentes
+    const trend = this.dashboardData?.incomeTrend || [];
+
+    if (trend.length === 0) {
+      // Fallback a simulación si no hay datos (primera carga o bd vacía)
+      return this.getSimulatedIngresosData();
+    }
+
+    const labels = trend.map(t => {
+      const [year, month] = t.mes.split('-');
+      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    });
+
+    const data = trend.map(t => parseFloat(t.total || 0));
+
+    return { labels, data };
+  }
+
+  private getSimulatedIngresosData(): any {
     const labels = [];
     const data = [];
     const hoy = new Date();
-
     const numMeses = this.periodoIngresos === '3M' ? 3 : (this.periodoIngresos === '1Y' ? 12 : 6);
 
     for (let i = numMeses - 1; i >= 0; i--) {
       const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
       labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
-
-      // Simulado: El último mes es el dato real del dashboard, el resto son variaciones para demo
-      if (i === 0) {
-        data.push(this.dashboardData.ingresosPeriodo || 0);
-      } else {
-        // Variación aleatoria pero coherente para la visualización
-        const base = this.dashboardData.ingresosPeriodo || 100000;
-        data.push(base * (0.8 + Math.random() * 0.4));
-      }
+      const base = this.dashboardData?.ingresosPeriodo || 100000;
+      data.push(base * (0.8 + Math.random() * 0.4));
     }
-
     return { labels, data };
   }
 
   cambiarPeriodoIngresos(periodo: string): void {
     this.periodoIngresos = periodo;
+    this.dashboardService.getDashboardTrends(periodo).subscribe({
+      next: (trends) => {
+        if (this.dashboardData) {
+          this.dashboardData.incomeTrend = trends.data.incomeTrend;
+          if (this.ingresosChart) {
+            this.ingresosChart.destroy();
+          }
+          this.crearGraficoDistribucionIngresos();
+        }
+      }
+    };
 
-    // Aquí llamaríamos al servicio para obtener datos históricos específicos si fuera necesario
-    // Por ahora actualizamos la visualización con la nueva escala de tiempo
-    if (this.ingresosChart) {
-      this.ingresosChart.destroy();
-    }
-    this.crearGraficoDistribucionIngresos();
-
-    // Opcional: Podríamos disparar una recarga de datos con un rango mayor
-    // const meses = periodo === '3M' ? 3 : (periodo === '1Y' ? 12 : 6);
-    // this.cargarHistoricoInresos(meses);
+    this.distribucionChart = new Chart(ctx, config);
   }
 
   private crearGraficoMoraPorAliado(): void {
@@ -530,13 +540,22 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     const data = {
       labels: this.dashboardData.moraPorAliadoChart.labels,
-      datasets: [{
-        label: 'Mora por Aliado',
-        data: this.dashboardData.moraPorAliadoChart.data,
-        backgroundColor: 'rgba(255, 99, 132, 0.7)',
-        borderColor: 'rgb(255, 99, 132)',
-        borderWidth: 1
-      }]
+      datasets: [
+        {
+          label: 'Mora en Ciclo (Corriente)',
+          data: this.dashboardData.moraPorAliadoChart.moraCorriente,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgb(54, 162, 235)',
+          borderWidth: 1
+        },
+        {
+          label: 'Mora Fuera de Ciclo (Vencida)',
+          data: this.dashboardData.moraPorAliadoChart.moraVencida,
+          backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          borderColor: 'rgb(255, 99, 132)',
+          borderWidth: 1
+        }
+      ]
     };
 
     const config: ChartConfiguration = {
@@ -546,7 +565,75 @@ export class HomeComponent implements OnInit, AfterViewInit {
         responsive: true,
         plugins: {
           legend: {
-            display: false
+            display: true,
+            position: 'bottom'
+          }
+        },
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: {
+              callback: (value) => {
+                if (typeof value === 'number') {
+                  return this.formatearMoneda(value);
+                }
+                return value;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    this.moraAliadoChart = new Chart(ctx, config);
+  }
+
+  private crearGraficoEvolucionCartera(): void {
+    if (!this.evolucionChartRef) return;
+    const ctx = this.evolucionChartRef.nativeElement.getContext('2d');
+
+    const dataTrend = this.getTrendEvolucionData();
+
+    const data = {
+      labels: dataTrend.labels,
+      datasets: [
+        {
+          label: 'Cartera Total',
+          data: dataTrend.carteraTotal,
+          backgroundColor: 'rgba(59, 130, 246, 0.2)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4
+        },
+        {
+          label: 'Mora',
+          data: dataTrend.mora,
+          backgroundColor: 'rgba(239, 68, 68, 0.2)',
+          borderColor: 'rgb(239, 68, 68)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    };
+
+    const config: ChartConfiguration = {
+      type: 'line',
+      data: data,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: false,
+            text: 'Evolución de Cartera'
           },
           title: {
             display: true,
@@ -642,53 +729,56 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private getTrendEvolucionData(): any {
+    const trend = this.dashboardData?.portfolioTrend || [];
+
+    if (trend.length === 0) {
+      return this.getSimulatedEvolucionData();
+    }
+
+    const labels = trend.map(t => {
+      const [year, month] = t.mes.split('-');
+      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+    });
+
+    const carteraTotal = trend.map(t => parseFloat(t.cartera_total || 0));
+    const mora = trend.map(t => parseFloat(t.mora || 0));
+
+    return { labels, carteraTotal, mora };
+  }
+
+  private getSimulatedEvolucionData(): any {
     const labels = [];
     const carteraTotal = [];
     const mora = [];
     const hoy = new Date();
-
-    let steps = 12; // Mensual: 12 meses
-    if (this.periodoEvolucion === 'quarterly') steps = 8; // Trimestral: 8 trimestres (2 años)
-    if (this.periodoEvolucion === 'yearly') steps = 5; // Anual: 5 años
-
+    let steps = 12;
     for (let i = steps - 1; i >= 0; i--) {
-      let label = '';
-      if (this.periodoEvolucion === 'monthly') {
-        const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-        label = d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
-      } else if (this.periodoEvolucion === 'quarterly') {
-        const d = new Date(hoy.getFullYear(), hoy.getMonth() - (i * 3), 1);
-        const quarter = Math.floor(d.getMonth() / 3) + 1;
-        label = `T${quarter} ${d.getFullYear().toString().slice(-2)}`;
-      } else {
-        label = (hoy.getFullYear() - i).toString();
-      }
-      labels.push(label);
-
-      // Simulado: Basado en datos actuales con variaciones históricas
-      const baseCartera = this.dashboardData.carteraTotal || 5000000;
-      const baseMora = this.dashboardData.carteraMora || 250000;
-
-      if (i === 0) {
-        carteraTotal.push(baseCartera);
-        mora.push(baseMora);
-      } else {
-        // Simular crecimiento hacia atrás
-        const factor = 1 - (i * 0.05);
-        carteraTotal.push(baseCartera * factor * (0.95 + Math.random() * 0.1));
-        mora.push(baseMora * factor * (0.8 + Math.random() * 0.4));
-      }
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+      labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
+      const baseCartera = this.dashboardData?.carteraTotal || 5000000;
+      const baseMora = this.dashboardData?.carteraMora || 250000;
+      const factor = 1 - (i * 0.05);
+      carteraTotal.push(baseCartera * factor * (0.95 + Math.random() * 0.1));
+      mora.push(baseMora * factor * (0.8 + Math.random() * 0.4));
     }
-
     return { labels, carteraTotal, mora };
   }
 
   cambiarPeriodoEvolucion(periodo: string): void {
     this.periodoEvolucion = periodo;
-    if (this.evolucionChart) {
-      this.evolucionChart.destroy();
-    }
-    this.crearGraficoEvolucionCartera();
+    // Para evolución siempre traemos un año para tener buena perspectiva
+    this.dashboardService.getDashboardTrends('1Y').subscribe({
+      next: (trends) => {
+        if (this.dashboardData) {
+          this.dashboardData.portfolioTrend = trends.data.portfolioTrend;
+          if (this.evolucionChart) {
+            this.evolucionChart.destroy();
+          }
+          this.crearGraficoEvolucionCartera();
+        }
+      }
+    });
   }
 
   cambiarTipoGrafico(tipo: string): void {
@@ -737,10 +827,11 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   contactarCliente(alerta: any): void {
-    // Implementar lógica para contactar cliente
-    console.log('Contactando cliente:', alerta.cliente);
-    // Aquí podrías abrir un modal o redirigir a la página de contacto
-    alert(`Contactando a ${alerta.cliente}`);
+    if (alerta.telefono) {
+      window.open(`tel:${alerta.telefono}`, '_self');
+    } else {
+      alert(`No hay teléfono registrado para ${alerta.cliente}`);
+    }
   }
 
   getNombreCliente(credito: any): string {
