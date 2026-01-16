@@ -29,7 +29,7 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   async login(): Promise<void> {
     if (!this.correo || !this.password) {
@@ -47,40 +47,37 @@ export class LoginComponent {
 
     try {
       await this.authService.loginWithEmail(this.correo, this.password);
-      
-      // Esperar a que se sincronice el usuario
-      setTimeout(() => {
-        const currentUser = this.authService.getCurrentUser();
-        console.log('Usuario después del login:', currentUser);
-        
-        if (currentUser) {
-          // Obtener información del rol
-          const rolInfo = this.getRolInfo(currentUser.rol_id);
-          const redirectRoute = rolInfo.ruta;
-          const nombreRol = rolInfo.nombre;
-          
-          console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
-          
-          Swal.fire({
-            title: '¡Bienvenido!',
-            text: `Has iniciado sesión como ${nombreRol}`,
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => {
-            this.router.navigate([redirectRoute]);
-          });
-        } else {
-          console.warn('No se pudo obtener el usuario, redirigiendo a dashboard');
-          this.router.navigate(['/dashboard']);
-        }
-      }, 1000);
+
+      const currentUser = this.authService.getCurrentUser();
+      console.log('Usuario después del login:', currentUser);
+
+      if (currentUser) {
+        // Obtener información del rol
+        const rolInfo = this.getRolInfo(currentUser.rol_id);
+        const redirectRoute = rolInfo.ruta;
+        const nombreRol = rolInfo.nombre;
+
+        console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
+
+        Swal.fire({
+          title: '¡Bienvenido!',
+          text: `Has iniciado sesión como ${nombreRol}`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          this.router.navigate([redirectRoute]);
+        });
+      } else {
+        console.warn('No se pudo obtener el usuario después de la sincronización');
+        Swal.fire('Error', 'No se pudo sincronizar la sesión con el servidor. Por favor, intenta de nuevo.', 'error');
+      }
 
     } catch (error: any) {
       console.error('Error en login:', error);
-      
+
       let errorMessage = error.message || 'Error al iniciar sesión';
-      
+
       if (errorMessage.includes('auth/invalid-credential') || errorMessage.includes('auth/wrong-password')) {
         errorMessage = 'Correo o contraseña incorrectos';
       } else if (errorMessage.includes('auth/user-not-found')) {
@@ -90,7 +87,7 @@ export class LoginComponent {
       } else if (errorMessage.includes('auth/user-disabled')) {
         errorMessage = 'Esta cuenta ha sido deshabilitada';
       }
-      
+
       Swal.fire('Error', errorMessage, 'error');
     } finally {
       this.isLoading = false;
@@ -102,32 +99,30 @@ export class LoginComponent {
 
     try {
       await this.authService.loginWithGoogle();
-      
-      setTimeout(() => {
-        const currentUser = this.authService.getCurrentUser();
-        console.log('Usuario después del login con Google:', currentUser);
-        
-        if (currentUser) {
-          const rolInfo = this.getRolInfo(currentUser.rol_id);
-          const redirectRoute = rolInfo.ruta;
-          const nombreRol = rolInfo.nombre;
-          
-          console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
-          
-          Swal.fire({
-            title: '¡Bienvenido!',
-            text: `Has iniciado sesión con Google como ${nombreRol}`,
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          }).then(() => {
-            this.router.navigate([redirectRoute]);
-          });
-        } else {
-          console.warn('No se pudo obtener el usuario, redirigiendo a dashboard');
-          this.router.navigate(['/dashboard']);
-        }
-      }, 1000);
+
+      const currentUser = this.authService.getCurrentUser();
+      console.log('Usuario después del login con Google:', currentUser);
+
+      if (currentUser) {
+        const rolInfo = this.getRolInfo(currentUser.rol_id);
+        const redirectRoute = rolInfo.ruta;
+        const nombreRol = rolInfo.nombre;
+
+        console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
+
+        Swal.fire({
+          title: '¡Bienvenido!',
+          text: `Has iniciado sesión con Google como ${nombreRol}`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          this.router.navigate([redirectRoute]);
+        });
+      } else {
+        console.warn('No se pudo obtener el usuario después de la sincronización con Google');
+        Swal.fire('Error', 'No se pudo sincronizar la sesión de Google con el servidor.', 'error');
+      }
 
     } catch (error: any) {
       console.error('Error en login con Google:', error);

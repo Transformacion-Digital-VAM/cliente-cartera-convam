@@ -82,10 +82,12 @@ export class AuthService {
 
   // Sesión de Firebase
   private setupAuthStateListener(): void {
+    console.log('Configurando listener de estado de autenticación...');
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log('onAuthStateChanged disparado, firebaseUser:', firebaseUser ? firebaseUser.email : 'null');
       if (firebaseUser) {
         console.log('Usuario autenticado en Firebase:', firebaseUser.email);
-        await this.syncUserWithBackend();
+        await this.syncUserWithBackend(firebaseUser);
       } else {
         console.log('Usuario cerró sesión en Firebase');
         this.currentUserSubject.next(null);
@@ -96,9 +98,17 @@ export class AuthService {
   }
 
   // Sincroniza usuario Firebase con backend
-  private async syncUserWithBackend(): Promise<void> {
+  public async syncUserWithBackend(firebaseUser?: FirebaseUser): Promise<void> {
+    console.log('Iniciando sincronización con backend...');
     try {
-      const token = await this.getFirebaseToken();
+      const user = firebaseUser || this.auth.currentUser;
+      if (!user) {
+        console.warn('No hay usuario de Firebase para sincronizar');
+        return;
+      }
+
+      const token = await user.getIdToken(true);
+      console.log('Token obtenido para sincronización');
       const response = await firstValueFrom(
         this.http.post<AuthResponse>(
           `${this.apiUrl}/login`,
@@ -107,15 +117,16 @@ export class AuthService {
         )
       );
 
+      console.log('Respuesta del backend recibida:', response);
       if (response?.success) {
         console.log('Usuario sincronizado con backend:', response.data.user);
         this.setUserData(response.data.user, token);
       } else {
-        console.error('Error en respuesta del backend:', response);
+        console.error('Error en respuesta del backend (success=false):', response);
         this.logout();
       }
     } catch (error) {
-      console.error('Error sincronizando con backend:', error);
+      console.error('Excepción sincronizando con backend:', error);
       // this.logout();
     }
   }
@@ -238,8 +249,9 @@ export class AuthService {
   async loginWithEmail(correo: string, password: string): Promise<void> {
     try {
       console.log('Iniciando sesión con:', correo);
-      await signInWithEmailAndPassword(this.auth, correo, password);
-      console.log('Login Firebase exitoso');
+      const userCredential = await signInWithEmailAndPassword(this.auth, correo, password);
+      console.log('Login Firebase exitoso, sincronizando...');
+      await this.syncUserWithBackend(userCredential.user);
     } catch (error: any) {
       console.error('Error en login Firebase:', error);
       throw new Error(this.handleFirebaseError(error));
@@ -250,7 +262,8 @@ export class AuthService {
   async loginWithGoogle(): Promise<void> {
     try {
       const userCredential = await signInWithPopup(this.auth, this.googleProvider);
-      console.log('Login con Google exitoso:', userCredential.user.email);
+      console.log('Login con Google exitoso, sincronizando...:', userCredential.user.email);
+      await this.syncUserWithBackend(userCredential.user);
     } catch (error: any) {
       console.error('Error en login Google:', error);
       throw new Error(this.handleFirebaseError(error));
