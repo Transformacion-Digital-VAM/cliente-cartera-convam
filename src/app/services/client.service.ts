@@ -39,13 +39,13 @@
 //     return clientes.filter(cliente => {
 //       const nombreCompleto = `${cliente.nombre_cliente} ${cliente.app_cliente} ${cliente.apm_cliente || ''}`.toLowerCase();
 //       const buscaNombre = filtros.nombre?.toLowerCase() || '';
-      
+
 //       const coincideNombre = !filtros.nombre || 
 //         nombreCompleto.includes(buscaNombre);
-      
+
 //       const coincideIdentificacion = !filtros.identificacion || 
 //         cliente.curp?.includes(filtros.identificacion);
-      
+
 //       const coincideEstado = !filtros.estadoCredito;
 
 //       return coincideNombre && coincideIdentificacion && coincideEstado;
@@ -109,15 +109,15 @@
 //   }
 
 //   // ========== MÉTODO COMPLETO (backup) ==========
-  
+
 //   // Método original para crear cliente completo en una sola operación
 //   crearCliente(datosCompletos: any): Observable<any> {
 //     return this.http.post(`${this.apiUrl}/crear`, datosCompletos);
 //   }
-  
 
 
-  
+
+
 // }
 
 
@@ -126,12 +126,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ClienteService {
-  private apiUrl = 'http://localhost:3000/cliente';
+  private apiUrl = `${environment.apiUrl}/cliente`;
 
   constructor(private http: HttpClient) { }
 
@@ -153,21 +154,21 @@ export class ClienteService {
   // Resto de métodos existentes...
   buscarCliente(filtros: any): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/obtener`).pipe(
-      map(clientes => this.filtrarClientes(clientes, filtros))    );
+      map(clientes => this.filtrarClientes(clientes, filtros)));
   }
 
-  
+
   private filtrarClientes(clientes: any[], filtros: any): any[] {
     return clientes.filter(cliente => {
       const nombreCompleto = `${cliente.nombre_cliente} ${cliente.app_cliente} ${cliente.apm_cliente || ''}`.toLowerCase();
       const buscaNombre = filtros.nombre?.toLowerCase() || '';
-      
-      const coincideNombre = !filtros.nombre || 
+
+      const coincideNombre = !filtros.nombre ||
         nombreCompleto.includes(buscaNombre);
-      
-      const coincideIdentificacion = !filtros.identificacion || 
+
+      const coincideIdentificacion = !filtros.identificacion ||
         cliente.curp?.includes(filtros.identificacion);
-      
+
       const coincideEstado = !filtros.estadoCredito;
 
       return coincideNombre && coincideIdentificacion && coincideEstado;
@@ -231,7 +232,7 @@ export class ClienteService {
   }
 
   // ========== MÉTODO COMPLETO (backup) ==========
-  
+
   // Método original para crear cliente completo en una sola operación
   crearCliente(datosCompletos: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/crear`, datosCompletos);

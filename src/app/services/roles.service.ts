@@ -7,11 +7,13 @@ export interface Rol {
   nombre_rol: string;
 }
 
+import { environment } from '../environments/environment';
+
 @Injectable({ providedIn: 'root' })
 export class RolService {
-  private apiUrl = 'http://localhost:3000/rol';
+  private apiUrl = `${environment.apiUrl}/rol`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getRoles(): Observable<any> {
     return this.http.get<any>(this.apiUrl);

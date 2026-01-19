@@ -1,12 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AvalesService {
-  private apiUrl = 'http://localhost:3000/cliente/aval';
+  private apiUrl = `${environment.apiUrl}/cliente/aval`;
 
   constructor(private http: HttpClient) { }
 

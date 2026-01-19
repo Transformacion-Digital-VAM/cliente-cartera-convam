@@ -26,7 +26,7 @@
 
 //   // NOTA: No necesitas métodos separados para "descargar" porque
 //   // el backend ya devuelve el PDF directamente al generarlo
-  
+
 //   // Método auxiliar para manejar la descarga (opcional)
 //   descargarArchivo(blob: Blob, nombreArchivo: string): void {
 //     const url = window.URL.createObjectURL(blob);
@@ -46,12 +46,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PagareService {
-  private apiUrl = 'http://localhost:3000/pagare';
+  private apiUrl = `${environment.apiUrl}/pagare`;
 
   constructor(private http: HttpClient) { }
 
