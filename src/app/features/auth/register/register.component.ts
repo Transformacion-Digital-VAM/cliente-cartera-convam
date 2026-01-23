@@ -44,7 +44,7 @@ export class RegisterComponent implements OnInit {
         
         this.roles = Array.isArray(response) ? response : response.data;
 
-        console.log('Roles cargados correctamente:', this.roles);
+        console.log('Roles cargados correctamente');
         
         if (this.roles && this.roles.length > 0) {
           this.rol_id = this.roles[0].id_rol;
@@ -97,12 +97,12 @@ export class RegisterComponent implements OnInit {
 
     try {
       console.log('Iniciando registro completo...');
-      console.log('Datos del registro:', {
-        nombre: this.nombre,
-        correo: this.correo,
-        rol_id: this.rol_id,
-        rol_seleccionado: this.roles.find(r => r.id_rol === this.rol_id)?.nombre_rol
-      });
+      // console.log('Datos del registro:', {
+      //   nombre: this.nombre,
+      //   correo: this.correo,
+      //   rol_id: this.rol_id,
+      //   rol_seleccionado: this.roles.find(r => r.id_rol === this.rol_id)?.nombre_rol
+      // });
       
       // REGISTRO SIN INICIAR SESIÓN
       const result = await this.authService.registerWithoutLogin(

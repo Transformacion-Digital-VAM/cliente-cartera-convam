@@ -1326,22 +1326,46 @@ export class ClientListComponent implements OnInit, OnDestroy {
     }
   }
 
-  buscarCliente(): void {
-    this.cargando = true;
-    this.error = '';
+  // buscarCliente(): void {
+  //   this.cargando = true;
+  //   this.error = '';
 
-    this.clienteService.buscarCliente(this.filtro).subscribe({
-      next: (data) => {
-        this.clientes = (data || []).filter(cliente => cliente != null);
-        this.cargando = false;
-      },
-      error: (err) => {
-        this.error = 'Error en la búsqueda';
-        this.cargando = false;
-        console.error('Error:', err);
-      }
-    });
-  }
+  //   this.clienteService.buscarCliente(this.filtro).subscribe({
+  //     next: (data) => {
+  //       this.clientes = (data || []).filter(cliente => cliente != null);
+  //       this.cargando = false;
+  //     },
+  //     error: (err) => {
+  //       this.error = 'Error en la búsqueda';
+  //       this.cargando = false;
+  //       console.error('Error:', err);
+  //     }
+  //   });
+  // }
+  buscarCliente(): void {
+  this.cargando = true;
+  this.error = '';
+
+  this.clienteService.buscarCliente(this.filtro).subscribe({
+    next: (data) => {
+      this.clientes = (data || []).filter(cliente => cliente != null);
+      
+      // ✓ AGREGAR: Validar estado de cada cliente encontrado
+      console.log('Clientes encontrados en búsqueda:', this.clientes.length);
+      
+      this.clientes.forEach(cliente => {
+        this.validarEstadoClienteParaLista(cliente);
+      });
+      
+      this.cargando = false;
+    },
+    error: (err) => {
+      this.error = 'Error en la búsqueda';
+      this.cargando = false;
+      console.error('Error:', err);
+    }
+  });
+}
 
   limpiarFiltros(): void {
     this.filtro = {
@@ -1423,7 +1447,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
       // Obtener el calendario del cliente usando el método existente
       this.pagareService.obtenerCalendarioPorCliente(cliente.id_cliente).subscribe({
         next: (calendario) => {
-          console.log(`Calendario del cliente ${cliente.id_cliente}:`, calendario);
+          // console.log(`Calendario del cliente ${cliente.id_cliente}:`, calendario);
 
           // Si no tiene calendario, es cliente nuevo - PUEDE solicitar
           if (!calendario || calendario.length === 0) {

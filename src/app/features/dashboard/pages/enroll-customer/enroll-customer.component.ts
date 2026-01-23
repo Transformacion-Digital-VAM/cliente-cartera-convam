@@ -357,7 +357,7 @@ export class EnrollCustomerComponent {
       this.idDireccion = response.id_direccion;
       this.currentStep++;
       this.cerrarAlerta();
-      console.log('Dirección cliente guardada con ID:', this.idDireccion);
+      // console.log('Dirección cliente guardada con ID:', this.idDireccion);
     } catch (error: any) {
       console.error('Error al guardar dirección:', error);
       this.cerrarAlerta();

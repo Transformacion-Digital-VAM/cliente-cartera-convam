@@ -1,6 +1,6 @@
 export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:3000/api', 
+  production: true,
+  apiUrl: 'https://servidor-cartera-convam.onrender.com/api',
   firebaseConfig: {
     apiKey: "AIzaSyChIpIvjSg0Rqe5A_sv0tiGjA286CabasE",
     authDomain: "convam-cartera.firebaseapp.com",

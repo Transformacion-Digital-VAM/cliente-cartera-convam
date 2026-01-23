@@ -70,6 +70,9 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {
+    // const app = initializeApp(environment.firebaseConfig);
+    // this.auth = getAuth(app);
+    // this.setupAuthStateListener();
     const app = initializeApp(environment.firebaseConfig);
     this.auth = getAuth(app);
     this.loadUserFromStorage();
@@ -79,10 +82,12 @@ export class AuthService {
 
   // Sesión de Firebase
   private setupAuthStateListener(): void {
+    console.log('Configurando listener de estado de autenticación...');
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
+      console.log('onAuthStateChanged disparado, firebaseUser:', firebaseUser ? firebaseUser.email : 'null');
       if (firebaseUser) {
         console.log('Usuario autenticado en Firebase:', firebaseUser.email);
-        await this.syncUserWithBackend();
+        await this.syncUserWithBackend(firebaseUser);
       } else {
         console.log('Usuario cerró sesión en Firebase');
         this.currentUserSubject.next(null);
@@ -93,9 +98,17 @@ export class AuthService {
   }
 
   // Sincroniza usuario Firebase con backend
-  private async syncUserWithBackend(): Promise<void> {
+  public async syncUserWithBackend(firebaseUser?: FirebaseUser): Promise<void> {
+    console.log('Iniciando sincronización con backend...');
     try {
-      const token = await this.getFirebaseToken();
+      const user = firebaseUser || this.auth.currentUser;
+      if (!user) {
+        console.warn('No hay usuario de Firebase para sincronizar');
+        return;
+      }
+
+      const token = await user.getIdToken(true);
+      console.log('Token obtenido para sincronización');
       const response = await firstValueFrom(
         this.http.post<AuthResponse>(
           `${this.apiUrl}/login`,
@@ -104,15 +117,16 @@ export class AuthService {
         )
       );
 
+      console.log('Respuesta del backend recibida:', response);
       if (response?.success) {
-        console.log('Usuario sincronizado con backend:', response.data.user);
+        console.log('Usuario sincronizado con backend:');
         this.setUserData(response.data.user, token);
       } else {
-        console.error('Error en respuesta del backend:', response);
+        console.error('Error en respuesta del backend (success=false):', response);
         this.logout();
       }
     } catch (error) {
-      console.error('Error sincronizando con backend:', error);
+      console.error('Excepción sincronizando con backend:', error);
       // this.logout();
     }
   }
@@ -124,7 +138,7 @@ export class AuthService {
     let tempAuth: any = null;
 
     try {
-      console.log(' Iniciando registro completo...');
+      console.log('Iniciando registro completo...');
 
       // Crear una instancia temporal de auth para no afectar la sesión principal
       const app = initializeApp(environment.firebaseConfig, 'TempApp');
@@ -235,8 +249,9 @@ export class AuthService {
   async loginWithEmail(correo: string, password: string): Promise<void> {
     try {
       console.log('Iniciando sesión con:', correo);
-      await signInWithEmailAndPassword(this.auth, correo, password);
-      console.log('Login Firebase exitoso');
+      const userCredential = await signInWithEmailAndPassword(this.auth, correo, password);
+      console.log('Login Firebase exitoso, sincronizando...');
+      await this.syncUserWithBackend(userCredential.user);
     } catch (error: any) {
       console.error('Error en login Firebase:', error);
       throw new Error(this.handleFirebaseError(error));
@@ -247,7 +262,8 @@ export class AuthService {
   async loginWithGoogle(): Promise<void> {
     try {
       const userCredential = await signInWithPopup(this.auth, this.googleProvider);
-      console.log('Login con Google exitoso:', userCredential.user.email);
+      console.log('Login con Google exitoso, sincronizando...:', userCredential.user.email);
+      await this.syncUserWithBackend(userCredential.user);
     } catch (error: any) {
       console.error('Error en login Google:', error);
       throw new Error(this.handleFirebaseError(error));
@@ -268,7 +284,12 @@ export class AuthService {
     }
   }
 
-  // Obtener token de Firebase
+  // Obtener token de Firebase, para validar el usuario 
+  // async getFirebaseToken(): Promise<string> {
+  //   const user = this.auth.currentUser;
+  //   if (!user) throw new Error('Usuario no autenticado');
+  //   return await user.getIdToken(true);
+  // }
   async getFirebaseToken(): Promise<string> {
     const user = this.auth.currentUser;
     if (!user) {
@@ -568,6 +589,11 @@ export class AuthService {
   }
 
   // Método para verificar rol específico
+  // hasRole(roleName: string): boolean {
+  //   const user = this.currentUserSubject.value;
+  //   if (!user || !user.nombre_rol) return false;
+  //   return user.nombre_rol.toLowerCase() === roleName.toLowerCase();
+  // }
   hasRole(roleName: string): boolean {
     const user = this.currentUserSubject.value;
     if (!user) return false;
@@ -577,6 +603,13 @@ export class AuthService {
   }
 
   // Método para verificar si tiene alguno de los roles
+  // hasAnyRole(roles: string[]): boolean {
+  //   const user = this.currentUserSubject.value;
+  //   if (!user || !user.nombre_rol) return false;
+  //   return roles.some(role => 
+  //     user.nombre_rol.toLowerCase() === role.toLowerCase()
+  //   );
+  // }
   hasAnyRole(roles: string[]): boolean {
     const user = this.currentUserSubject.value;
     if (!user) return false;
@@ -613,98 +646,3 @@ export class AuthService {
 
 
 
-
-
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-
-// // auth.service.ts
-// import { Injectable } from '@angular/core';
-// import { BehaviorSubject, Observable } from 'rxjs';
-// import { map } from 'rxjs/operators';
-
-// @Injectable({
-//   providedIn: 'root'
-// })
-// export class AuthService {
-//   private currentUserSubject = new BehaviorSubject<any>(null);
-//   public currentUser$ = this.currentUserSubject.asObservable();
-
-//   // Mapeo de roles por ID
-//   private roleMap: { [key: number]: { nombre: string; ruta: string } } = {
-//     1: { nombre: 'ejecutiva', ruta: '/dashboard' },
-//     2: { nombre: 'tesoreria', ruta: '/solicitud' },
-//     3: { nombre: 'coordinador', ruta: '/domiciliacion' },
-//     4: { nombre: 'administrador', ruta: '/admin-control' }
-//   };
-//   getFirebaseToken: any;
-//   loginWithEmail: any;
-//   loginWithGoogle: any;
-
-//   constructor() {
-//     // Cargar usuario de localStorage al iniciar
-//     const savedUser = localStorage.getItem('user');
-//     if (savedUser) {
-//       this.currentUserSubject.next(JSON.parse(savedUser));
-//     }
-//   }
-
-//   // Obtener información del rol por ID
-//   getRoleInfo(rolId: number): { nombre: string; ruta: string } {
-//     return this.roleMap[rolId] || { nombre: 'usuario', ruta: '/dashboard' };
-//   }
-
-//      // Obtener nombre del rol por ID
-//   getRoleName(rolId: number): string {
-//     return this.getRoleInfo(rolId).nombre;
-//   }
-
-//   // Obtener ruta por rol ID
-//   getRouteByRoleId(rolId: number): string {
-//     return this.getRoleInfo(rolId).ruta;
-//   }
-
-//   // Verificar si es administrador
-//   isAdmin(user: any): boolean {
-//     return user?.rol_id === 4;
-//   }
-
-//   // Obtener usuario actual
-//   getCurrentUser(): any {
-//     return this.currentUserSubject.value;
-//   }
-
-//   // Establecer usuario
-//   setUser(user: any): void {
-//     // Agregar nombre_rol al usuario para compatibilidad con guards
-//     if (user && user.rol_id) {
-//       user.nombre_rol = this.getRoleName(user.rol_id);
-//     }
-//     this.currentUserSubject.next(user);
-//     localStorage.setItem('user', JSON.stringify(user));
-//   }
-
-//   // Limpiar usuario (logout)
-//   clearUser(): void {
-//     this.currentUserSubject.next(null);
-//     localStorage.removeItem('user');
-//   }
-
-//   // Obtener ruta según rol del usuario actual
-//   getRouteByRole(): string {
-//     const user = this.getCurrentUser();
-//     if (!user || !user.rol_id) return '/login';
-//     return this.getRouteByRoleId(user.rol_id);
-//   }
-
-//   // Verificar si tiene un rol específico
-//   hasRole(roleName: string): boolean {
-//     const user = this.getCurrentUser();
-//     if (!user || !user.rol_id) return false;
-//     return this.getRoleName(user.rol_id) === roleName.toLowerCase();
-//   }
-
-
-// }

@@ -48,182 +48,184 @@
       </div>
     </div>
 
-    <!-- Tabla de créditos -->
-    <section class="tabla-section-vertical">
-      <div class="tabla-header">
-        <h3>ESTADO DE PAGOS</h3>
-        <div class="botones-filtros">
-          <button class="btn btn-outline btn-sm" (click)="cargarCreditos()" [disabled]="cargando">
-            <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
-            {{ cargando ? 'Cargando...' : 'ACTUALIZAR' }}
-          </button>
+    <div class="pagos-tabla">
+      <!-- Tabla de créditos -->
+      <section class="tabla-section-vertical">
+        <div class="tabla-header">
+          <h3>ESTADO DE PAGOS</h3>
+          <div class="botones-filtros">
+            <button class="btn btn-outline btn-sm" (click)="cargarCreditos()" [disabled]="cargando">
+              <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+              {{ cargando ? 'Cargando...' : 'ACTUALIZAR' }}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <label for="" class="semana-actual">{{ formatearSemanaActual() }}</label>
-      <div class="table-container-vertical">
-        <table class="table">
-          <thead>
-            <tr>
-              <th></th>
-              <th class="text-center">SEMANA</th>
-              <th class="text-center">CLIENTE</th>
-              <th class="text-center">ID CRÉDITO</th>
-              <th class="text-center">ALIADO</th>
-              <th class="text-center">DÍA DE PAGO</th>
-              <th class="text-center">PAGOS REALIZADOS</th>
-              <th class="text-center">PAGO SEMANAL</th>
-              <th class="text-center">PRÓXIMA FECHA</th>
-              <th class="text-center">TOTAL A PAGAR</th>
-              <th class="text-center">TOTAL PAGADO</th>
-              <th class="text-center">SALDO PENDIENTE</th>
-              <th class="text-center">PRÓXIMO PAGO</th>
-              <th class="text-center">DÍAS ATRASO</th>
-              <th class="text-center">SEMANAS ATRASO</th>
-              <th class="text-center">TOTAL ATRASADO</th>
-              <th class="text-center">ACCIONES</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngIf="cargando">
-              <td colspan="20" class="text-center">
-                <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
-              </td>
-            </tr>
-
-            <tr *ngIf="!cargando && !hayCreditos">
-              <td colspan="20" class="text-center">
-                No hay créditos entregados
-              </td>
-            </tr>
-
-            <ng-container *ngFor="let credito of creditosFiltrados">
-              <!-- Fila principal con color según estado -->
-              <tr class="clickable-row" [ngClass]="getEstadoPago(credito).filaClase"
-                (click)="toggleFilaDetalle(credito.id_credito)">
-                <td>
-                  <i class="fas icon-detalles" [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
-                    [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
-                </td>
-                <td class="text-center semanas">
-                  {{ calcularSemanaActualCliente(credito) }}
-                </td>
-                <td>{{ getNombreCliente(credito) }}</td>
-                <td>{{ getCreditoId(credito) }}</td>
-                <td>{{ getNombreAliado(credito.aliado_id) }}</td>
-                <td>{{ getDiaPago(credito) }}</td>
-                <td>
-                  {{ calcularPagosRealizados(credito) }}/16
-                  <small class="text-muted">({{ calcularPagosPendientes(credito) }} PENDIENTES)</small>
-                </td>
-                <td class="col-estado">{{ formatearMoneda(calcularPagoSemanal(credito)) }}</td>
-                <td class="col-estado">{{ formatearProximaFechaPago(credito) }}</td> <!-- Fecha de pago-->
-                <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar) }}</td> <!-- Total a Pagar-->
-                <td class="col-estado">{{ formatearMoneda(calcularTotalPagado(credito)) }}</td> <!-- Total Pagado-->
-                <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente) }}</td>
-                <td class="text-center">{{ calcularProximoNumeroPago(credito) }}</td>
-                <td class="text-center" [ngClass]="{'text-danger': calcularDiasAtraso(credito) > 0}">{{
-                  calcularDiasAtraso(credito) }}</td>
-                <td class="text-center" [ngClass]="{'text-danger': calcularSemanasAtraso(credito) > 0}">{{
-                  calcularSemanasAtraso(credito) }}</td>
-                <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
-                  {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
-                </td>
-                <td class="actions-cell">
-                  <button class="btn btn-success btn-sm"
-                    (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
-                    <i class="fas fa-money-bill-wave"></i> PAGO
-                  </button>
+        <label for="" class="semana-actual">{{ formatearSemanaActual() }}</label>
+        <div class="table-container-vertical">
+          <table class="table">
+            <thead>
+              <tr>
+                <th></th>
+                <th class="text-center">SEMANA</th>
+                <th class="text-center">CLIENTE</th>
+                <th class="text-center">ID CRÉDITO</th>
+                <th class="text-center">ALIADO</th>
+                <th class="text-center">DÍA DE PAGO</th>
+                <th class="text-center">PAGOS REALIZADOS</th>
+                <th class="text-center">PAGO SEMANAL</th>
+                <th class="text-center">PRÓXIMA FECHA</th>
+                <th class="text-center">TOTAL A PAGAR</th>
+                <th class="text-center">TOTAL PAGADO</th>
+                <th class="text-center">SALDO PENDIENTE</th>
+                <th class="text-center">PRÓXIMO PAGO</th>
+                <th class="text-center">DÍAS ATRASO</th>
+                <th class="text-center">SEMANAS ATRASO</th>
+                <th class="text-center">TOTAL ATRASADO</th>
+                <th class="text-center">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="cargando">
+                <td colspan="20" class="text-center">
+                  <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
                 </td>
               </tr>
 
-              <!-- Fila expandible con detalles de pagos -->
-              <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
-                <td colspan="20">
-                  <div class="detalle-pagos-container">
-                    <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
+              <tr *ngIf="!cargando && !hayCreditos">
+                <td colspan="20" class="text-center">
+                  No hay créditos entregados
+                </td>
+              </tr>
 
-                    <div class="table-responsive">
-                      <table class="table table-sm table-detalle">
-                        <thead>
-                          <tr>
-                            <th>No. PAGO</th>
-                            <th class="text-center">TOTAL PAGADO</th>
-                            <th class="text-center">FECHA</th>
-                            <th class="text-center">CAPITAL</th>
-                            <th class="text-center">INTERESES</th>
-                            <th class="text-center">MORA</th>
-                            <th class="text-center">TIPO</th>
-                            <th class="text-center">GARANTÍA ACTUAL</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngIf="getDetallesPagos(credito.id_credito).length === 0">
-                            <td colspan="7" class="text-center text-muted">
-                              No hay pagos registrados
-                            </td>
-                          </tr>
-                          <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
-                            <td class="font-bold">{{ detalle.numeroPago }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.montoTotal) }}</td>
-                            <td class="text-center">{{ formatearFecha(detalle.fecha) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.capital) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.intereses) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.mora) }}</td>
-                            <td class="text-center">
-                              <span class="badge" [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
-                                [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
-                                {{ detalle.tipoPago }}
-                              </span>
-                            </td>
-                            <td class="text-center">
-                              <!-- Mostrar el monto total de garantía -->
-                              <span class="badge bg-info" *ngIf="credito.total_garantia > 0">
-                                {{ formatearMoneda(credito.total_garantia) }}
-                              </span>
-                              <span class="badge bg-secondary"
-                                *ngIf="!credito.total_garantia || credito.total_garantia === 0">
-                                Sin garantía
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+              <ng-container *ngFor="let credito of creditosFiltrados">
+                <!-- Fila principal con color según estado -->
+                <tr class="clickable-row" [ngClass]="getEstadoPago(credito).filaClase"
+                  (click)="toggleFilaDetalle(credito.id_credito)">
+                  <td>
+                    <i class="fas icon-detalles" [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
+                      [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
+                  </td>
+                  <td class="text-center detalles-pago">
+                    {{ calcularSemanaActualCliente(credito) }}
+                  </td>
+                  <td>{{ getNombreCliente(credito) }}</td>
+                  <td>{{ getCreditoId(credito) }}</td>
+                  <td>{{ getNombreAliado(credito.aliado_id) }}</td>
+                  <td class="detalles-pago color:#4a3ef9">{{ getDiaPago(credito) }}</td>
+                  <td>
+                    {{ calcularPagosRealizados(credito) }}/16
+                    <small class="text-muted">({{ calcularPagosPendientes(credito) }} PENDIENTES)</small>
+                  </td>
+                  <td class="detalles-pago">{{ formatearMoneda(calcularPagoSemanal(credito)) }}</td>
+                  <td class="col-estado">{{ formatearProximaFechaPago(credito) }}</td> <!-- Fecha de pago-->
+                  <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar) }}</td> <!-- Total a Pagar-->
+                  <td class="col-estado">{{ formatearMoneda(calcularTotalPagado(credito)) }}</td> <!-- Total Pagado-->
+                  <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente) }}</td>
+                  <td class="text-center">{{ calcularProximoNumeroPago(credito) }}</td>
+                  <td class="text-center" [ngClass]="{'text-danger': calcularDiasAtraso(credito) > 0}">{{
+                    calcularDiasAtraso(credito) }}</td>
+                  <td class="text-center" [ngClass]="{'text-danger': calcularSemanasAtraso(credito) > 0}">{{
+                    calcularSemanasAtraso(credito) }}</td>
+                  <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
+                    {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
+                  </td>
+                  <td class="actions-cell">
+                    <button class="btn btn-success btn-sm"
+                      (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
+                      <i class="fas fa-money-bill-wave"></i> PAGO
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Fila expandible con detalles de pagos -->
+                <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
+                  <td colspan="20">
+                    <div class="detalle-pagos-container">
+                      <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
+
+                      <div class="table-responsive">
+                        <table class="table table-sm table-detalle">
+                          <thead>
+                            <tr>
+                              <th>No. PAGO</th>
+                              <th class="text-center">TOTAL PAGADO</th>
+                              <th class="text-center">FECHA</th>
+                              <th class="text-center">CAPITAL</th>
+                              <th class="text-center">INTERESES</th>
+                              <th class="text-center">MORA</th>
+                              <th class="text-center">TIPO</th>
+                              <th class="text-center">GARANTÍA ACTUAL</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngIf="getDetallesPagos(credito.id_credito).length === 0">
+                              <td colspan="7" class="text-center text-muted">
+                                No hay pagos registrados
+                              </td>
+                            </tr>
+                            <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
+                              <td class="font-bold">{{ detalle.numeroPago }}</td>
+                              <td class="text-center">{{ formatearMoneda(detalle.montoTotal) }}</td>
+                              <td class="text-center">{{ formatearFecha(detalle.fecha) }}</td>
+                              <td class="text-center">{{ formatearMoneda(detalle.capital) }}</td>
+                              <td class="text-center">{{ formatearMoneda(detalle.intereses) }}</td>
+                              <td class="text-center">{{ formatearMoneda(detalle.mora) }}</td>
+                              <td class="text-center">
+                                <span class="badge" [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
+                                  [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
+                                  {{ detalle.tipoPago }}
+                                </span>
+                              </td>
+                              <td class="text-center">
+                                <!-- Mostrar el monto total de garantía -->
+                                <span class="badge bg-info" *ngIf="credito.total_garantia > 0">
+                                  {{ formatearMoneda(credito.total_garantia) }}
+                                </span>
+                                <span class="badge bg-secondary"
+                                  *ngIf="!credito.total_garantia || credito.total_garantia === 0">
+                                  Sin garantía
+                                </span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+            <tfoot class="table-footer fixed-footer">
+              <tr>
+                <td colspan="9" class="text-right text-footer ">
+                  TOTAL DE CRÉDITOS: {{ creditosFiltrados.length }}
+                </td>
+                <td class="text-center font-bold text-details">
+                  {{ formatearMoneda(calcularTotalAPagarGeneral()) }}
+                </td>
+                <td class="text-center font-bold text-details">
+                  {{ formatearMoneda(calcularTotalPagadoGeneral()) }}
+                </td>
+                <td class="text-center font-bold text-details bg-light">
+                  {{ formatearMoneda(calcularTotalCartera()) }}
+                </td>
+                <td></td>
+
+                <td colspan="6" class="text-center font-bold text-m text-danger">
+                  {{ formatearMoneda(calcularTotalAtrasadoGeneral()) }}
                 </td>
               </tr>
-            </ng-container>
-          </tbody>
-          <tfoot class="table-footer fixed-footer">
-            <tr>
-              <td colspan="9" class="text-right text-footer ">
-                TOTAL DE CRÉDITOS: {{ creditosFiltrados.length }}
-              </td>
-              <td class="text-center font-bold text-details">
-                {{ formatearMoneda(calcularTotalAPagarGeneral()) }}
-              </td>
-              <td class="text-center font-bold text-details">
-                {{ formatearMoneda(calcularTotalPagadoGeneral()) }}
-              </td>
-              <td class="text-center font-bold text-details bg-light">
-                {{ formatearMoneda(calcularTotalCartera()) }}
-              </td>
-              <td></td>
+            </tfoot>
+          </table>
+        </div>
 
-              <td colspan="6" class="text-center font-bold text-m text-danger">
-                {{ formatearMoneda(calcularTotalAtrasadoGeneral()) }}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <div *ngIf="!cargando && hayCreditos && creditosFiltrados.length === 0" class="no-data">
-        <i class="fas fa-file-invoice-dollar fa-2x"></i>
-        <p>No se encontraron créditos con los filtros aplicados</p>
-      </div>
-    </section>
+        <div *ngIf="!cargando && hayCreditos && creditosFiltrados.length === 0" class="no-data">
+          <i class="fas fa-file-invoice-dollar fa-2x"></i>
+          <p>No se encontraron créditos con los filtros aplicados</p>
+        </div>
+      </section>
+    </div>
 
   </div>
 </div>

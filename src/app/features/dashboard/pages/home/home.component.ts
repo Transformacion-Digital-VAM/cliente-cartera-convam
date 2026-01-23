@@ -3,6 +3,7 @@ import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { DashboardService, DashboardData } from '../../../../services/dashboard.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { config } from 'rxjs';
 
 Chart.register(...registerables);
 
@@ -60,7 +61,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.actualizarDashboard();
+    this.actualizarDashboard(true);
 
     // Configurar actualización automática cada 1 minuto
     this.refreshInterval = setInterval(() => {
@@ -183,13 +184,14 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   // Actualizar dashboard con filtros
-  actualizarDashboard(): void {
+  actualizarDashboard(ignoreDateFilter: boolean = false): void {
     this.cargandoDashboard = true;
 
     const filtros = {
-      startDate: this.fechaInicio,
-      endDate: this.fechaFin,
-      periodo: this.periodoDashboard
+      startDate: ignoreDateFilter ? '' : this.fechaInicio,
+      endDate: ignoreDateFilter ? '' : this.fechaFin,
+      periodo: ignoreDateFilter ? 'sin-filtro' : this.periodoDashboard,
+      vencimiento: !ignoreDateFilter
     };
 
     this.dashboardService.getDashboardData(filtros)
@@ -202,7 +204,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           this.inicializarFiltrosVencimientos();
 
           this.cargandoDashboard = false;
-          this.crearGraficos();
+            this.crearGraficos();
 
           console.log('Datos recibidos:', data);
           console.log('Vencimientos:', this.todosVencimientos);
@@ -216,9 +218,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
       });
   }
 
+
   private inicializarFiltrosVencimientos(): void {
-    // Por defecto mostrar solo urgentes (3 días o menos)
-    this.vencimientosFiltrados = this.todosVencimientos.filter(v =>
+      this.vencimientosFiltrados = this.todosVencimientos.filter(v =>
       v.dias <= this.diasVencimiento && v.dias > 0
     );
 
@@ -311,6 +313,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       carteraCorriente: 0,
       carteraVencida: 0,
       carteraMora: 0,
+      moraCorriente: 0,
       totalCreditos: 0,
       creditosVigentes: 0,
       creditosVencidos: 0,
@@ -319,6 +322,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       clientesMora: 0,
       porcentajeCarteraVencida: 0,
       porcentajeCarteraMora: 0,
+      porcentajeMoraCorriente: 0,
       porcentajeTotalDeudaAtrasada: 0,
       ingresosTotalGeneral: 0,
       ingresosCapitalTotal: 0,
@@ -344,8 +348,32 @@ export class HomeComponent implements OnInit, AfterViewInit {
     };
   }
 
+  // private crearGraficos(): void {
+  //   // Destruir gráficos existentes si los hay
+  //   if (this.distribucionChart) {
+  //     this.distribucionChart.destroy();
+  //   }
+  //   if (this.ingresosChart) {
+  //     this.ingresosChart.destroy();
+  //   }
+  //   if (this.moraAliadoChart) {
+  //     this.moraAliadoChart.destroy();
+  //   }
+
+  //   // Crear gráfico de distribución de cartera
+  //   this.crearGraficoDistribucionCartera();
+
+  //   // Crear gráfico de distribución de ingresos
+  //   this.crearGraficoDistribucionIngresos();
+
+  //   // Crear gráfico de mora por aliado
+  //   this.crearGraficoMoraPorAliado();
+
+  //   // Crear gráfico de evolución de cartera
+  //   this.crearGraficoEvolucionCartera();
+  // }
   private crearGraficos(): void {
-    // Destruir gráficos existentes si los hay
+    // Destruir TODOS los gráficos existentes antes de recrearlos
     if (this.distribucionChart) {
       this.distribucionChart.destroy();
     }
@@ -355,23 +383,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
     if (this.moraAliadoChart) {
       this.moraAliadoChart.destroy();
     }
+    if (this.evolucionChart) {
+      this.evolucionChart.destroy();
+    }
 
-    // Crear gráfico de distribución de cartera
+    // Crear gráficos
     this.crearGraficoDistribucionCartera();
-
-    // Crear gráfico de distribución de ingresos
     this.crearGraficoDistribucionIngresos();
-
-    // Crear gráfico de mora por aliado
     this.crearGraficoMoraPorAliado();
-
-    // Crear gráfico de evolución de cartera
     this.crearGraficoEvolucionCartera();
   }
 
   private crearGraficoDistribucionCartera(): void {
     if (!this.distribucionChartRef) return;
+
     const ctx = this.distribucionChartRef.nativeElement.getContext('2d');
+    if (!ctx) return;
+
     const data = {
       labels: ['Cartera Corriente', 'Cartera Vencida', 'Cartera Mora'],
       datasets: [{
@@ -396,7 +424,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     const config: ChartConfiguration = {
       type: this.tipoGraficoDistribucion,
-      data: data,
+      data,
       options: {
         responsive: true,
         plugins: {
@@ -413,31 +441,36 @@ export class HomeComponent implements OnInit, AfterViewInit {
               label: (context) => {
                 const label = context.label || '';
                 const value = context.raw as number;
-                const total = (context.dataset.data as number[]).reduce((a: number, b: number) => a + b, 0);
-                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                const total = (context.dataset.data as number[])
+                  .reduce((a, b) => a + b, 0);
+                const percentage = total > 0
+                  ? ((value / total) * 100).toFixed(1)
+                  : '0';
+
                 return `${label}: ${this.formatearMoneda(value)} (${percentage}%)`;
               }
             }
           }
         },
-        scales: this.tipoGraficoDistribucion === 'bar' ? {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (typeof value === 'number') {
-                  return this.formatearMoneda(value);
-                }
-                return value;
+        scales: this.tipoGraficoDistribucion === 'bar'
+          ? {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) =>
+                  typeof value === 'number'
+                    ? this.formatearMoneda(value)
+                    : value
               }
             }
           }
-        } 
+          : undefined
       }
     };
 
     this.distribucionChart = new Chart(ctx, config);
   }
+
 
   private crearGraficoDistribucionIngresos(): void {
     if (!this.ingresosChartRef) return;
@@ -484,56 +517,92 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.ingresosChart = new Chart(ctx, config);
   }
 
+  //   private getTrendIngresosData(): any {
+  //   const trend = this.dashboardData?.incomeTrend || [];
+
+  //   if (trend.length === 0) {
+  //     // ✅ Retornar estructura vacía en lugar de datos simulados
+  //     return { labels: [], data: [] };
+  //   }
+
+  //   const labels = trend.map(t => {
+  //     const [year, month] = t.mes.split('-');
+  //     const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+  //     return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+  //   });
+
+  //   const data = trend.map(t => parseFloat(t.total || 0));
+
+  //   return { labels, data };
+  // }
   private getTrendIngresosData(): any {
-    const trend = this.dashboardData?.incomeTrend || [];
+    let trend = this.dashboardData?.incomeTrend || [];
+
+    // DEBUG: Ver datos reales que llegan del backend
+    console.log('Datos Ingresos (Backend):', trend);
+
+    // FILTRO: Mostrar solo datos a partir de 2026
+    trend = trend.filter(t => {
+      const fechaStr = t.mes || t.fecha || t.date || t.periodo;
+      return fechaStr && String(fechaStr) >= '2026-01';
+    });
 
     if (trend.length === 0) {
-      // Fallback a simulación si no hay datos (primera carga o bd vacía)
-      return this.getSimulatedIngresosData();
+      return { labels: [], data: [] };
     }
 
     const labels = trend.map(t => {
-      const [year, month] = t.mes.split('-');
-      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
-      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+      // Buscar la propiedad de fecha (puede venir como mes, fecha, date, etc.)
+      const fechaStr = t.mes || t.fecha || t.date || t.periodo;
+      
+      if (!fechaStr) return '';
+      try {
+        // Si es formato ISO completo (ej: 2023-05-01T00:00:00)
+        if (typeof fechaStr === 'string' && fechaStr.includes('T')) {
+           const d = new Date(fechaStr);
+           return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+        }
+
+        const parts = String(fechaStr).split('-');
+        if (parts.length < 2) return fechaStr;
+        const [year, month] = parts;
+        const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+      } catch (e) {
+        return fechaStr;
+      }
     });
 
-    const data = trend.map(t => parseFloat(t.total || 0));
+    const data = trend.map(t => {
+      // Buscar la propiedad de valor (puede venir como total, monto, ingreso, etc.)
+      // Usamos ?? para aceptar 0 como valor válido si la propiedad existe
+      const val = t.total ?? t.monto ?? t.ingreso ?? t.amount ?? 0;
+      
+      if (typeof val === 'string') return parseFloat(val.replace(/,/g, '')) || 0;
+      return parseFloat(val || 0);
+    });
 
-    return { labels, data };
-  }
-
-  private getSimulatedIngresosData(): any {
-    const labels = [];
-    const data = [];
-    const hoy = new Date();
-    const numMeses = this.periodoIngresos === '3M' ? 3 : (this.periodoIngresos === '1Y' ? 12 : 6);
-
-    for (let i = numMeses - 1; i >= 0; i--) {
-      const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-      labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
-      const base = this.dashboardData?.ingresosPeriodo || 100000;
-      data.push(base * (0.8 + Math.random() * 0.4));
-    }
     return { labels, data };
   }
 
   cambiarPeriodoIngresos(periodo: string): void {
     this.periodoIngresos = periodo;
+
     this.dashboardService.getDashboardTrends(periodo).subscribe({
       next: (trends) => {
-        if (this.dashboardData) {
-          this.dashboardData.incomeTrend = trends.data.incomeTrend;
-          if (this.ingresosChart) {
-            this.ingresosChart.destroy();
-          }
-          this.crearGraficoDistribucionIngresos();
-        }
-      }
-    };
+        if (!this.dashboardData) return;
 
-    this.distribucionChart = new Chart(ctx, config);
+        this.dashboardData.incomeTrend = trends.data.incomeTrend;
+
+        if (this.ingresosChart) {
+          this.ingresosChart.destroy();
+        }
+
+        this.crearGraficoDistribucionIngresos();
+      }
+    });
   }
+
 
   private crearGraficoMoraPorAliado(): void {
     const ctx = this.moraAliadoChartRef.nativeElement.getContext('2d');
@@ -544,15 +613,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
         {
           label: 'Mora en Ciclo (Corriente)',
           data: this.dashboardData.moraPorAliadoChart.moraCorriente,
-          backgroundColor: 'rgba(54, 162, 235, 0.7)',
-          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(235, 83, 13, 0.7)',
+          borderColor: 'rgb(235, 83, 13)',
           borderWidth: 1
         },
         {
           label: 'Mora Fuera de Ciclo (Vencida)',
           data: this.dashboardData.moraPorAliadoChart.moraVencida,
-          backgroundColor: 'rgba(255, 99, 132, 0.7)',
-          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(184, 6, 45, 0.7)',
+          borderColor: 'rgb(255, 0, 55)',
           borderWidth: 1
         }
       ]
@@ -611,74 +680,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
           tension: 0.4
         },
         {
-          label: 'Mora',
-          data: dataTrend.mora,
-          backgroundColor: 'rgba(239, 68, 68, 0.2)',
-          borderColor: 'rgb(239, 68, 68)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }
-      ]
-    };
-
-    const config: ChartConfiguration = {
-      type: 'line',
-      data: data,
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          title: {
-            display: false,
-            text: 'Evolución de Cartera'
-          },
-          title: {
-            display: true,
-            text: 'Mora por Aliado'
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: (value) => {
-                if (typeof value === 'number') {
-                  return this.formatearMoneda(value);
-                }
-                return value;
-              }
-            }
-          }
-        }
-      }
-    };
-
-    this.moraAliadoChart = new Chart(ctx, config);
-  }
-
-  private crearGraficoEvolucionCartera(): void {
-    if (!this.evolucionChartRef) return;
-    const ctx = this.evolucionChartRef.nativeElement.getContext('2d');
-
-    const dataTrend = this.getTrendEvolucionData();
-
-    const data = {
-      labels: dataTrend.labels,
-      datasets: [
-        {
-          label: 'Cartera Total',
-          data: dataTrend.carteraTotal,
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-          borderColor: 'rgb(59, 130, 246)',
-          borderWidth: 3,
-          fill: true,
-          tension: 0.4
-        },
-        {
-          label: 'Mora',
+          label: 'Mora Total',
           data: dataTrend.mora,
           backgroundColor: 'rgba(239, 68, 68, 0.2)',
           borderColor: 'rgb(239, 68, 68)',
@@ -728,42 +730,66 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.evolucionChart = new Chart(ctx, config);
   }
 
+
   private getTrendEvolucionData(): any {
-    const trend = this.dashboardData?.portfolioTrend || [];
+    let trend = this.dashboardData?.portfolioTrend || [];
+
+    // DEBUG: Ver datos reales que llegan del backend
+    console.log('Datos Evolución (Backend):', trend);
+
+    // FILTRO: Mostrar solo datos a partir de 2026
+    trend = trend.filter(t => t.mes && t.mes >= '2026-01');
 
     if (trend.length === 0) {
-      return this.getSimulatedEvolucionData();
+      return { labels: [], carteraTotal: [], mora: [] };
     }
 
     const labels = trend.map(t => {
-      const [year, month] = t.mes.split('-');
-      const d = new Date(parseInt(year), parseInt(month) - 1, 1);
-      return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+      if (!t.mes) return '';
+      try {
+        const parts = t.mes.split('-');
+        if (parts.length < 2) return t.mes;
+        const [year, month] = parts;
+        const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+      } catch (e) {
+        return t.mes;
+      }
     });
 
-    const carteraTotal = trend.map(t => parseFloat(t.cartera_total || 0));
-    const mora = trend.map(t => parseFloat(t.mora || 0));
+    const carteraTotal = trend.map(t => {
+      const val = t.cartera_total || t.carteraTotal;
+      if (typeof val === 'string') return parseFloat(val.replace(/,/g, '')) || 0;
+      return parseFloat(val || 0);
+    });
+
+    const mora = trend.map(t => {
+      // Calcular Mora Total = Mora Corriente + Mora Vencida
+      const valCorriente = t.mora_corriente || t.moraCorriente;
+      const valVencida = t.mora_vencida || t.moraVencida;
+
+      let mCorriente = 0;
+      let mVencida = 0;
+
+      if (typeof valCorriente === 'string') mCorriente = parseFloat(valCorriente.replace(/,/g, '')) || 0;
+      else mCorriente = parseFloat(valCorriente || 0);
+
+      if (typeof valVencida === 'string') mVencida = parseFloat(valVencida.replace(/,/g, '')) || 0;
+      else mVencida = parseFloat(valVencida || 0);
+
+      // Si hay componentes, sumarlos. Si no, usar el campo 'mora' directo.
+      if (mCorriente > 0 || mVencida > 0) {
+        return mCorriente + mVencida;
+      }
+
+      const val = t.mora;
+      if (typeof val === 'string') return parseFloat(val.replace(/,/g, '')) || 0;
+      return parseFloat(val || 0);
+    });
 
     return { labels, carteraTotal, mora };
   }
 
-  private getSimulatedEvolucionData(): any {
-    const labels = [];
-    const carteraTotal = [];
-    const mora = [];
-    const hoy = new Date();
-    let steps = 12;
-    for (let i = steps - 1; i >= 0; i--) {
-      const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-      labels.push(d.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }));
-      const baseCartera = this.dashboardData?.carteraTotal || 5000000;
-      const baseMora = this.dashboardData?.carteraMora || 250000;
-      const factor = 1 - (i * 0.05);
-      carteraTotal.push(baseCartera * factor * (0.95 + Math.random() * 0.1));
-      mora.push(baseMora * factor * (0.8 + Math.random() * 0.4));
-    }
-    return { labels, carteraTotal, mora };
-  }
 
   cambiarPeriodoEvolucion(periodo: string): void {
     this.periodoEvolucion = periodo;
@@ -856,6 +882,31 @@ export class HomeComponent implements OnInit, AfterViewInit {
         a.click();
         window.URL.revokeObjectURL(url);
       });
+  }
+
+  // ==========================================
+  // NUEVO: Función para descargar reportes específicos
+  // ==========================================
+  descargarReporteEspecifico(tipo: 'ministraciones' | 'capital-cartera' | 'detalle-pagos', formato: 'excel' | 'pdf') {
+    const filtros = {
+      startDate: this.fechaInicio,
+      endDate: this.fechaFin,
+      periodo: this.periodoDashboard
+    };
+
+    this.dashboardService.descargarReporte(tipo, formato, filtros).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_${tipo}_${new Date().toISOString().slice(0, 10)}.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => console.error('Error descargando reporte:', err)
+    });
   }
 
 

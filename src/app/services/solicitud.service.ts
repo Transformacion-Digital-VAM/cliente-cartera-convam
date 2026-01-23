@@ -5,6 +5,7 @@ import { catchError, map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { from } from 'rxjs/internal/observable/from';
 import { switchMap } from 'rxjs/internal/operators/switchMap';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -14,11 +15,15 @@ export class SolicitudService {
   actualizarSolicitudDomicilio(datosActualizacion: { id_solicitud: any; estado: string; horario_entrega: string; persona_confirma: string; fecha_domiciliada: string; }) {
     throw new Error('Method not implemented.');
   }
-  private apiUrl = 'http://localhost:3000/solicitud';
-  
+  // private apiUrl = 'http://localhost:3000/solicitud';
+  private baseUrl = `${environment.apiUrl}/solicitud`;
+
+  private aliadosUrl = `${environment.apiUrl}/aliado`;
+  private avalesUrl = `${environment.apiUrl}/cliente/aval`;
+
   // Rutas actualizadas
-  private aliadosUrl = 'http://localhost:3000/aliado'; 
-  private avalesUrl = 'http://localhost:3000/cliente/aval';
+  // private aliadosUrl = 'http://localhost:3000/aliado'; 
+  // private avalesUrl = 'http://localhost:3000/cliente/aval';
 
   constructor(
     private http: HttpClient,
@@ -46,7 +51,7 @@ export class SolicitudService {
   // Obtener todas las solicitudes con nombres de aliado y aval
   obtenerSolicitudes(): Observable<any[]> {
     return forkJoin({
-      solicitudes: this.http.get<any[]>(this.apiUrl),
+      solicitudes: this.http.get<any[]>(this.baseUrl),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -60,7 +65,7 @@ export class SolicitudService {
   // Obtener solicitudes por estado con nombres
   obtenerSolicitudesPorEstado(estado: string): Observable<any[]> {
     return forkJoin({
-      solicitudes: this.http.get<any[]>(`${this.apiUrl}/estado/${estado}`),
+      solicitudes: this.http.get<any[]>(`${this.baseUrl}/estado/${estado}`),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -74,7 +79,7 @@ export class SolicitudService {
   // Obtener solicitud específica con nombres
   obtenerSolicitudPorId(id: number): Observable<any> {
     return forkJoin({
-      solicitud: this.http.get<any>(`${this.apiUrl}/${id}`),
+      solicitud: this.http.get<any>(`${this.baseUrl}/${id}`),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -193,18 +198,6 @@ export class SolicitudService {
     );
   }
 
-  // Obtener todos los avales con manejo de errores
-  // obtenerTodosAvales(): Observable<any[]> {
-  //   return this.http.get<any[]>(this.avalesUrl).pipe(
-  //     catchError(error => {
-  //       console.warn('No se pudieron cargar avales:', error.message);
-  //       return of([]); // Retornar array vacío si falla
-  //     })
-  //   );
-  // }
-
-  // REEMPLAZA el método obtenerTodosAvales() en tu SolicitudService
-
 // Obtener todos los avales con manejo de errores y normalización
 obtenerTodosAvales(): Observable<any[]> {
   return this.http.get<any>(this.avalesUrl).pipe(
@@ -285,14 +278,14 @@ obtenerTodosAvales(): Observable<any[]> {
   crearSolicitud(solicitud: any): Observable<any> {
     console.log('Creando solicitud con datos:', solicitud);
     
-    return this.http.post(`${this.apiUrl}/crear`, solicitud).pipe(
+    return this.http.post(`${this.baseUrl}/crear`, solicitud).pipe(
       catchError(this.handleError)
     );
   }
 
   // Aprobar solicitud
   aprobarSolicitud(id: number, montoAprobado: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/aprobar/${id}`, { 
+    return this.http.put(`${this.baseUrl}/aprobar/${id}`, { 
       monto_aprobado: montoAprobado 
     }).pipe(
       catchError(this.handleError)
@@ -301,7 +294,7 @@ obtenerTodosAvales(): Observable<any[]> {
 
   // Rechazar solicitud
   rechazarSolicitud(id: number, motivo: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/rechazar/${id}`, { 
+    return this.http.put(`${this.baseUrl}/rechazar/${id}`, { 
       motivo: motivo 
     }).pipe(
       catchError(this.handleError)
@@ -310,14 +303,14 @@ obtenerTodosAvales(): Observable<any[]> {
 
   // Obtener solicitudes por cliente
   obtenerSolicitudesPorCliente(clienteId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/cliente/${clienteId}`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/cliente/${clienteId}`).pipe(
       catchError(this.handleError)
     );
   }
 
   // Obtener solicitudes por usuario (ejecutivo)
   obtenerSolicitudesPorUsuario(usuarioId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/usuario/${usuarioId}`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/usuario/${usuarioId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -332,7 +325,7 @@ actualizarDomiciliacion(id: number, datos: any): Observable<any> {
       });
 
       return this.http.put<any>(
-        `${this.apiUrl}/${id}/domiciliar`,
+        `${this.baseUrl}/${id}/domiciliar`,
         datos,
         { headers }
       );
@@ -347,7 +340,7 @@ actualizarDomiciliacion(id: number, datos: any): Observable<any> {
 
   // Método para obtener solicitudes pendientes de domiciliación
   obtenerSolicitudesPendientesDomiciliacion(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/pendientes/domiciliacion`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/pendientes/domiciliacion`).pipe(
       catchError(this.handleError)
     );
   }
@@ -355,7 +348,7 @@ actualizarDomiciliacion(id: number, datos: any): Observable<any> {
 
 // O si usas PUT:
 actualizarEstadoSolicitud(idSolicitud: number, datos: any): Observable<any> {
-  return this.http.put(`${this.apiUrl}/${idSolicitud}/estado`, datos);
+  return this.http.put(`${this.baseUrl}/${idSolicitud}/estado`, datos);
 }
 
 

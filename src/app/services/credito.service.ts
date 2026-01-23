@@ -1,13 +1,16 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CreditoService {
-  private apiUrl = 'http://localhost:3000/credito';
-  private apiEditarUrl = 'http://localhost:3000'; // URL para editar créditos
+  // private apiUrl = 'http://localhost:3000/credito';
+  // private apiEditarUrl = 'http://localhost:3000'; 
+  private apiUrl = `${environment.apiUrl}/credito`;
+  private apiEditarUrl = `${environment.apiUrl}/credito`;
 
   constructor(private http: HttpClient) { }
 
@@ -40,23 +43,19 @@ export class CreditoService {
   eliminarCredito(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
-  
-  // actualizarEstadoCredito(id: number, estado: string): Observable<any> {
-  //   return this.http.put(`${this.apiUrl}/${id}/estado`, { estado_credito: estado });
-  // }
-  // En el servicio
-actualizarEstadoCredito(idCredito: number, estado: string, datosAdicionales?: any): Observable<any> {
-  let body: any = { estado_credito: estado };
 
-  if (datosAdicionales) {
-    body = { ...body, ...datosAdicionales };
+  actualizarEstadoCredito(idCredito: number, estado: string, datosAdicionales?: any): Observable<any> {
+    let body: any = { estado_credito: estado };
+
+    if (datosAdicionales) {
+      body = { ...body, ...datosAdicionales };
+    }
+
+    return this.http.put(
+      `${this.apiUrl}/${idCredito}/estado`,
+      body
+    );
   }
-
-  return this.http.put(
-    `${this.apiUrl}/${idCredito}/estado`,
-    body
-  );
-}
 
 
   // Obtener solicitudes por estado

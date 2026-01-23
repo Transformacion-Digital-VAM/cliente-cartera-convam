@@ -77,6 +77,9 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   private timerSubscription: Subscription = new Subscription();
   private usuarioCargado: boolean = false;
 
+  private calculosCache: Map<string, any> = new Map();
+  private ultimaActualizacionCache: number = 0;
+
   constructor(
     private creditoService: CreditoService,
     private pagoService: PagoService,
@@ -101,59 +104,172 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     }
   }
 
+
+  // ===============================================
+  // METODOS DE CACHE
+  // ===============================================
+  // Agregar estas propiedades a tu componente
+  private cacheCalculos: Map<string, {
+    valor: any,
+    timestamp: number
+  }> = new Map();
+
+  private readonly TIEMPO_EXPIRACION_CACHE = 30000; // 30 segundos
+
+  /**
+   * Genera una clave única para el caché basada en el crédito y el método
+   */
+  private generarClaveCache(creditoId: number, metodo: string, extras?: any): string {
+    const base = `${creditoId}_${metodo}`;
+    if (extras) {
+      return `${base}_${JSON.stringify(extras)}`;
+    }
+    return base;
+  }
+
+  /**
+   * Obtiene un valor del caché si existe y no ha expirado
+   */
+  private obtenerDeCache<T>(clave: string): T | null {
+    const entrada = this.cacheCalculos.get(clave);
+
+    if (!entrada) return null;
+
+    const ahora = Date.now();
+    if (ahora - entrada.timestamp > this.TIEMPO_EXPIRACION_CACHE) {
+      this.cacheCalculos.delete(clave);
+      return null;
+    }
+
+    return entrada.valor as T;
+  }
+
+  /**
+   * Guarda un valor en el caché
+   */
+  private guardarEnCache(clave: string, valor: any): void {
+    this.cacheCalculos.set(clave, {
+      valor,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Invalida el caché de un crédito específico
+   */
+  private invalidarCacheCredito(creditoId: number): void {
+    const clavesAEliminar: string[] = [];
+
+    this.cacheCalculos.forEach((valor, clave) => {
+      if (clave.startsWith(`${creditoId}_`)) {
+        clavesAEliminar.push(clave);
+      }
+    });
+
+    clavesAEliminar.forEach(clave => this.cacheCalculos.delete(clave));
+  }
+
+  /**
+   * Limpia todo el caché
+   */
+  limpiarCache(): void {
+    this.cacheCalculos.clear();
+  }
+
   // ============================================
   // MÉTODOS NUEVOS AGREGADOS
   // ============================================
 
+  // calcularSemanaActualCliente(credito: any): number {
+  //   if (!credito || !credito.fecha_primer_pago) return 1;
+
+  //   const hoy = new Date();
+  //   hoy.setHours(0, 0, 0, 0);
+
+  //   let fechaPrimerPago: Date;
+
+  //   // Manejo robusto de la fecha para evitar desfases por zona horaria
+  //   if (typeof credito.fecha_primer_pago === 'string') {
+  //     const fechaStr = credito.fecha_primer_pago.split('T')[0];
+  //     const [year, month, day] = fechaStr.split('-').map(Number);
+  //     fechaPrimerPago = new Date(year, month - 1, day);
+  //   } else {
+  //     fechaPrimerPago = new Date(credito.fecha_primer_pago);
+  //   }
+  //   fechaPrimerPago.setHours(0, 0, 0, 0);
+
+  //   // Si hoy es antes del primer pago, estamos en semana 1
+  //   if (hoy < fechaPrimerPago) return 1;
+
+  //   const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
+  //   const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
+
+  //   // Calcular semana: (días transcurridos / 7) + 1
+  //   const semana = Math.floor(diffDias / 7) + 1;
+
+  //   return Math.min(semana, 16);
+  // }
+
   calcularSemanaActualCliente(credito: any): number {
-    if (!credito || !credito.fecha_primer_pago) return 1;
+  if (!credito || !credito.fecha_primer_pago) return 1;
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
 
-    let fechaPrimerPago: Date;
+  // Usar el nuevo método para parsear la fecha
+  const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
 
-    // Manejo robusto de la fecha para evitar desfases por zona horaria
-    if (typeof credito.fecha_primer_pago === 'string') {
-      const fechaStr = credito.fecha_primer_pago.split('T')[0];
-      const [year, month, day] = fechaStr.split('-').map(Number);
-      fechaPrimerPago = new Date(year, month - 1, day);
-    } else {
-      fechaPrimerPago = new Date(credito.fecha_primer_pago);
-    }
-    fechaPrimerPago.setHours(0, 0, 0, 0);
+  // Si hoy es antes del primer pago, estamos en semana 1
+  if (hoy < fechaPrimerPago) return 1;
 
-    // Si hoy es antes del primer pago, estamos en semana 1
-    if (hoy < fechaPrimerPago) return 1;
+  const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
+  const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
 
-    const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
-    const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
+  // Calcular semana: (días transcurridos / 7) + 1
+  const semana = Math.floor(diffDias / 7) + 1;
 
-    // Calcular semana: (días transcurridos / 7) + 1
-    const semana = Math.floor(diffDias / 7) + 1;
+  return Math.min(semana, 16);
+}
 
-    return Math.min(semana, 16);
-  }
+  // calcularFechaSemana(credito: any, numeroSemana: number): Date {
+  //   if (!credito || !credito.fecha_primer_pago) return new Date();
 
+  //   const fechaPrimerPago = new Date(credito.fecha_primer_pago);
+  //   const fechaSemana = new Date(fechaPrimerPago);
+
+  //   // Sumar (numeroSemana - 1) * 7 días
+  //   fechaSemana.setDate(fechaPrimerPago.getDate() + ((numeroSemana - 1) * 7));
+
+  //   // Ajustar si cae en fin de semana
+  //   const diaSemana = fechaSemana.getDay();
+  //   if (diaSemana === 0) { // Domingo
+  //     fechaSemana.setDate(fechaSemana.getDate() + 1);
+  //   } else if (diaSemana === 6) { // Sábado
+  //     fechaSemana.setDate(fechaSemana.getDate() + 2);
+  //   }
+
+  //   return fechaSemana;
+  // }
   calcularFechaSemana(credito: any, numeroSemana: number): Date {
-    if (!credito || !credito.fecha_primer_pago) return new Date();
+  if (!credito || !credito.fecha_primer_pago) return new Date();
 
-    const fechaPrimerPago = new Date(credito.fecha_primer_pago);
-    const fechaSemana = new Date(fechaPrimerPago);
+  // Usar el nuevo método para parsear la fecha
+  const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
+  const fechaSemana = new Date(fechaPrimerPago);
 
-    // Sumar (numeroSemana - 1) * 7 días
-    fechaSemana.setDate(fechaPrimerPago.getDate() + ((numeroSemana - 1) * 7));
+  // Sumar (numeroSemana - 1) * 7 días
+  fechaSemana.setDate(fechaPrimerPago.getDate() + ((numeroSemana - 1) * 7));
 
-    // Ajustar si cae en fin de semana
-    const diaSemana = fechaSemana.getDay();
-    if (diaSemana === 0) { // Domingo
-      fechaSemana.setDate(fechaSemana.getDate() + 1);
-    } else if (diaSemana === 6) { // Sábado
-      fechaSemana.setDate(fechaSemana.getDate() + 2);
-    }
-
-    return fechaSemana;
+  // Ajustar si cae en fin de semana
+  const diaSemana = fechaSemana.getDay();
+  if (diaSemana === 0) { // Domingo
+    fechaSemana.setDate(fechaSemana.getDate() + 1);
+  } else if (diaSemana === 6) { // Sábado
+    fechaSemana.setDate(fechaSemana.getDate() + 2);
   }
+
+  return fechaSemana;
+}
 
   calcularAdeudoYFuturo(credito: any): { adeudo: number, saldoFuturo: number } {
     if (!credito) return { adeudo: 0, saldoFuturo: 0 };
@@ -244,7 +360,10 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
 
+
   abrirModalSeleccion(credito: any): void {
+    console.log('🔵 Abriendo modal de selección...', credito);
+
     if (!this.registradoPor || this.registradoPor <= 0) {
       this.mostrarError('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
       return;
@@ -252,57 +371,82 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
     this.creditoSeleccionado = credito;
 
-    // Calcular todos los datos necesarios
-    this.proximaFechaPago = this.calcularProximaFechaPago(credito);
-    this.diasAtraso = this.calcularDiasAtraso(credito);
-    this.semanasAtraso = this.calcularSemanasAtraso(credito);
-    this.moraAcumulada = this.calcularMoraAcumulada(credito);
-    this.carteraAtrasada = this.calcularCarteraAtrasada(credito);
-    this.totalAtrasado = this.calcularTotalAtrasado(credito);
-    this.ultimoPagoCompleto = this.calcularUltimaSemanaPagadaCompletamente(credito);
+    // PRE-CALCULAR todos los datos necesarios UNA SOLA VEZ
+    try {
+      console.log('Calculando datos...');
+      this.proximaFechaPago = this.calcularProximaFechaPago(credito);
+      this.diasAtraso = this.calcularDiasAtraso(credito);
+      this.semanasAtraso = this.calcularSemanasAtraso(credito);
+      this.moraAcumulada = this.calcularMoraAcumulada(credito);
+      this.carteraAtrasada = this.calcularCarteraAtrasada(credito);
+      this.totalAtrasado = this.calcularTotalAtrasado(credito);
+      this.ultimoPagoCompleto = this.calcularUltimaSemanaPagadaCompletamente(credito);
 
-    // Valores por defecto para el modal
-    this.montoPago = credito.pago_semanal || 0;
-    this.moratorios = this.calcularMoraPendiente(credito);
-    this.numeroPagoSeleccionado = this.calcularProximoNumeroPago(credito);
+      // Valores por defecto para el modal
+      this.montoPago = credito.pago_semanal || 0;
+      this.moratorios = this.calcularMoraPendiente(credito);
+      this.numeroPagoSeleccionado = this.calcularProximoNumeroPago(credito);
 
-    // Mostrar el modal
-    this.modalSeleccionAbierto = true;
+      console.log('Datos calculados exitosamente');
+      console.log('Mostrando modal...');
+
+      // Mostrar el modal
+      this.modalSeleccionAbierto = true;
+
+      console.log('Modal abierto');
+    } catch (error) {
+      console.error('Error al calcular datos:', error);
+      this.mostrarError('Error al preparar los datos del pago');
+    }
   }
+
+
 
 
   abrirModalPago(tipo: string): void {
-    this.modalSeleccionAbierto = false;
-    this.modalPagoAbierto = true;
-    this.tipoPago = tipo;
+    console.log('Abriendo modal de pago, tipo:', tipo);
 
-    // Recalcular valores
-    this.diasAtraso = this.calcularDiasAtraso(this.creditoSeleccionado);
-    this.semanasAtraso = this.calcularSemanasAtraso(this.creditoSeleccionado);
-    this.moraAcumulada = this.calcularMoraAcumulada(this.creditoSeleccionado);
-    this.carteraAtrasada = this.calcularCarteraAtrasada(this.creditoSeleccionado);
-    this.proximaFechaPago = this.calcularProximaFechaPago(this.creditoSeleccionado);
+    try {
+      this.modalSeleccionAbierto = false;
 
-    switch (tipo) {
-      case 'PAGO':
-        this.montoPago = this.creditoSeleccionado.pago_semanal || 0;
-        this.moratorios = this.calcularMoraPendiente(this.creditoSeleccionado);
-        this.numeroPagoSeleccionado = this.calcularProximoNumeroPago(this.creditoSeleccionado);
-        break;
+      // Pequeño delay para permitir que se cierre el modal anterior
+      setTimeout(() => {
+        this.modalPagoAbierto = true;
+        this.tipoPago = tipo;
 
-      case 'ADELANTO':
-        // Para adelanto, el monto sugerido es el pago semanal
-        this.montoPago = this.creditoSeleccionado.pago_semanal || 0;
-        this.moratorios = 0;
+        // Recalcular valores
+        this.diasAtraso = this.calcularDiasAtraso(this.creditoSeleccionado);
+        this.semanasAtraso = this.calcularSemanasAtraso(this.creditoSeleccionado);
+        this.moraAcumulada = this.calcularMoraAcumulada(this.creditoSeleccionado);
+        this.carteraAtrasada = this.calcularCarteraAtrasada(this.creditoSeleccionado);
+        this.proximaFechaPago = this.calcularProximaFechaPago(this.creditoSeleccionado);
 
-        // Para adelanto, el número de pago es el próximo disponible
-        const proximoPago = this.calcularProximoNumeroPago(this.creditoSeleccionado);
-        this.numeroPagoSeleccionado = proximoPago;
-        break;
+        switch (tipo) {
+          case 'PAGO':
+            this.montoPago = this.creditoSeleccionado.pago_semanal || 0;
+            this.moratorios = this.calcularMoraPendiente(this.creditoSeleccionado);
+            this.numeroPagoSeleccionado = this.calcularProximoNumeroPago(this.creditoSeleccionado);
+            break;
+
+          case 'ADELANTO':
+            this.montoPago = this.creditoSeleccionado.pago_semanal || 0;
+            this.moratorios = 0;
+            const proximoPago = this.calcularProximoNumeroPago(this.creditoSeleccionado);
+            this.numeroPagoSeleccionado = proximoPago;
+            break;
+        }
+
+        this.metodoPago = '';
+        console.log('Modal de pago configurado');
+      }, 100);
+
+    } catch (error) {
+      console.error('Error al abrir modal de pago:', error);
+      this.mostrarError('Error al abrir el formulario de pago');
     }
-
-    this.metodoPago = '';
   }
+
+
 
 
   cerrarModalSeleccion(): void {
@@ -325,10 +469,32 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
 
   async registrarPago(): Promise<void> {
+    console.log('Iniciando registro de pago...');
+    console.log('Datos:', {
+      registradoPor: this.registradoPor,
+      tipoPago: this.tipoPago,
+      montoPago: this.montoPago,
+      metodoPago: this.metodoPago,
+      moratorios: this.moratorios,
+      numeroPago: this.numeroPagoSeleccionado
+    });
+
     if (!this.registradoPor || this.registradoPor <= 0) {
       this.mostrarError('No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.');
       return;
     }
+
+    console.log('Validando pago...');
+    const esValido = await this.validarPago();
+    console.log('Resultado validación:', esValido);
+
+    if (!esValido) {
+      console.log(' Validación falló');
+      return;
+    }
+
+    console.log(' Validación exitosa, procesando...');
+    this.procesandoPago = true;
 
     if (!await this.validarPago()) {
       return;
@@ -354,6 +520,9 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     this.pagoService.registrarPago(pagoData).subscribe({
       next: (response) => {
         console.log('Pago registrado:', response);
+
+        // INVALIDAR CACHÉ DEL CRÉDITO
+        this.invalidarCacheCredito(this.creditoSeleccionado.id_credito);
 
         // Calcular nuevo saldo pendiente aproximado
         const saldoActual = this.creditoSeleccionado.saldo_pendiente || 0;
@@ -422,76 +591,106 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
+
   async validarPago(): Promise<boolean> {
-    if (!this.montoPago || this.montoPago <= 0) {
-      await this.mostrarAdvertencia('El monto del pago debe ser mayor a 0');
+    console.log('🔍 Validando pago...');
+
+    try {
+      if (!this.montoPago || this.montoPago <= 0) {
+        console.log('Validación: monto inválido');
+        await this.mostrarAdvertencia('El monto del pago debe ser mayor a 0');
+        return false;
+      }
+
+      if (!this.metodoPago || this.metodoPago.trim() === '') {
+        console.log('Validación: método de pago no seleccionado');
+        await this.mostrarAdvertencia('Debe seleccionar un método de pago');
+        return false;
+      }
+
+      // Para PAGO: validar que se seleccionó semana
+      if (this.tipoPago === 'PAGO') {
+        if (!this.numeroPagoSeleccionado || this.numeroPagoSeleccionado < 1) {
+          console.log('Validación: semana no seleccionada');
+          await this.mostrarAdvertencia('Debe seleccionar una semana para el pago');
+          return false;
+        }
+
+        const ultimaSemanaPagada = this.calcularUltimaSemanaPagadaCompletamente(this.creditoSeleccionado);
+
+        if (this.numeroPagoSeleccionado <= ultimaSemanaPagada) {
+          console.log('Validación: semana ya pagada');
+          await this.mostrarAdvertencia(`La semana ${this.numeroPagoSeleccionado} ya está pagada. Seleccione una semana posterior.`);
+          return false;
+        }
+      }
+
+      // Para ADELANTO: validar que no haya mora pendiente
+      if (this.tipoPago === 'ADELANTO') {
+        const moraPendiente = this.calcularMoraPendiente(this.creditoSeleccionado);
+        if (moraPendiente > 0) {
+          console.log(' Validación: adelanto con mora pendiente');
+          await this.mostrarAdvertencia(
+            `No puede dar un adelanto si tiene mora pendiente de ${this.formatearMoneda(moraPendiente)}. ` +
+            `Debe liquidar primero la mora usando la opción PAGO.`
+          );
+          return false;
+        }
+
+        const diasAtraso = this.calcularDiasAtraso(this.creditoSeleccionado);
+        if (diasAtraso > 0) {
+          console.log(' Validación: adelanto con días de atraso');
+          await this.mostrarAdvertencia(
+            `No puede dar un adelanto si tiene ${diasAtraso} días de atraso. ` +
+            `Debe ponerse al día primero usando la opción PAGO.`
+          );
+          return false;
+        }
+
+        const proximoPago = this.calcularProximoNumeroPago(this.creditoSeleccionado);
+        this.numeroPagoSeleccionado = proximoPago;
+      }
+
+      console.log(' Todas las validaciones pasaron');
+      return true;
+
+    } catch (error) {
+      console.error('Error en validación:', error);
+      await this.mostrarError('Error al validar el pago');
       return false;
     }
-
-    if (!this.metodoPago || this.metodoPago.trim() === '') {
-      await this.mostrarAdvertencia('Debe seleccionar un método de pago');
-      return false;
-    }
-
-    // Para PAGO: validar que se seleccionó semana
-    if (this.tipoPago === 'PAGO') {
-      if (!this.numeroPagoSeleccionado || this.numeroPagoSeleccionado < 1) {
-        await this.mostrarAdvertencia('Debe seleccionar una semana para el pago');
-        return false;
-      }
-
-      const ultimaSemanaPagada = this.calcularUltimaSemanaPagadaCompletamente(this.creditoSeleccionado);
-
-      // Validar que no intente pagar una semana ya pagada
-      if (this.numeroPagoSeleccionado <= ultimaSemanaPagada) {
-        await this.mostrarAdvertencia(`La semana ${this.numeroPagoSeleccionado} ya está pagada. Seleccione una semana posterior.`);
-        return false;
-      }
-    }
-
-    // Para ADELANTO: validar que no haya mora pendiente
-    if (this.tipoPago === 'ADELANTO') {
-      const moraPendiente = this.calcularMoraPendiente(this.creditoSeleccionado);
-      if (moraPendiente > 0) {
-        await this.mostrarAdvertencia(
-          `No puede dar un adelanto si tiene mora pendiente de ${this.formatearMoneda(moraPendiente)}. ` +
-          `Debe liquidar primero la mora usando la opción PAGO.`
-        );
-        return false;
-      }
-
-      const diasAtraso = this.calcularDiasAtraso(this.creditoSeleccionado);
-      if (diasAtraso > 0) {
-        await this.mostrarAdvertencia(
-          `No puede dar un adelanto si tiene ${diasAtraso} días de atraso. ` +
-          `Debe ponerse al día primero usando la opción PAGO.`
-        );
-        return false;
-      }
-
-      // Para adelanto, asignar automáticamente el número de pago
-      const proximoPago = this.calcularProximoNumeroPago(this.creditoSeleccionado);
-      this.numeroPagoSeleccionado = proximoPago;
-    }
-
-    const saldoPendiente = this.creditoSeleccionado.saldo_pendiente || 0;
-    const totalAPagar = Number(this.montoPago) + Number(this.moratorios);
-
-    // Validar que no exceda demasiado el saldo pendiente
-    if (totalAPagar > saldoPendiente + 1000) {
-      const resultado = await this.mostrarConfirmacion(
-        `El monto total a pagar (${this.formatearMoneda(totalAPagar)}) ` +
-        `excede el saldo pendiente (${this.formatearMoneda(saldoPendiente)}). ` +
-        `¿Desea continuar de todas formas?`
-      );
-
-      if (!resultado.isConfirmed) {
-        return false;
-      }
-    }
-
-    return true;
   }
+
+  // ============================================
+// MÉTODO AUXILIAR PARA PARSEAR FECHAS SIN DESFASE
+// ============================================
+
+/**
+ * Convierte una fecha string o Date a un objeto Date local sin desfase de zona horaria
+ * @param fecha - Fecha en formato string (YYYY-MM-DD) o Date
+ * @returns Date object ajustado a zona horaria local
+ */
+private parsearFechaLocal(fecha: string | Date): Date {
+  if (!fecha) return new Date();
+
+  let fechaDate: Date;
+
+  if (typeof fecha === 'string') {
+    // Extraer solo la parte de la fecha (sin hora)
+    const fechaStr = fecha.split('T')[0];
+    const [year, month, day] = fechaStr.split('-').map(Number);
+    
+    // Crear fecha en zona horaria local (mes - 1 porque JavaScript usa 0-11)
+    fechaDate = new Date(year, month - 1, day);
+  } else {
+    fechaDate = new Date(fecha);
+  }
+
+  // Asegurar que la hora sea medianoche local
+  fechaDate.setHours(0, 0, 0, 0);
+  
+  return fechaDate;
+}
 
   // ============================================
   // MÉTODOS DE CÁLCULO BÁSICOS
@@ -523,9 +722,18 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     return aliado ? aliado.nom_aliado.trim() : 'N/A';
   }
 
+  // getDiaPago(credito: any): string {
+  //   if (!credito || !credito.fecha_primer_pago) return 'N/A';
+  //   const fecha = new Date(credito.fecha_primer_pago);
+  //   const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  //   return dias[fecha.getDay()];
+  // }
   getDiaPago(credito: any): string {
     if (!credito || !credito.fecha_primer_pago) return 'N/A';
-    const fecha = new Date(credito.fecha_primer_pago);
+    
+    // Usar el nuevo método para parsear la fecha
+    const fecha = this.parsearFechaLocal(credito.fecha_primer_pago);
+    
     const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     return dias[fecha.getDay()];
   }
@@ -597,39 +805,81 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     return proximaFecha;
   }
 
-  calcularDiasAtraso(credito: any): number {
-    if (!credito || !credito.fecha_primer_pago) return 0;
+  // calcularDiasAtraso(credito: any): number {
+  //   if (!credito || !credito.fecha_primer_pago) return 0;
 
+  //   const ultimaSemanaPagada = this.calcularUltimaSemanaPagadaCompletamente(credito);
+
+  //   // Si ya pagó las 16 semanas, no hay atraso
+  //   if (ultimaSemanaPagada >= 16) return 0;
+
+  //   // Calcular la fecha de vencimiento de la siguiente semana a pagar
+  //   const fechaPrimerPago = new Date(credito.fecha_primer_pago);
+  //   let fechaVencimiento = new Date(fechaPrimerPago);
+  //   fechaVencimiento.setDate(fechaPrimerPago.getDate() + (ultimaSemanaPagada * 7));
+
+  //   // Ajustar si cae en fin de semana
+  //   const diaSemana = fechaVencimiento.getDay();
+  //   if (diaSemana === 0) { // Domingo
+  //     fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
+  //   } else if (diaSemana === 6) { // Sábado
+  //     fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
+  //   }
+
+  //   const hoy = new Date();
+  //   hoy.setHours(0, 0, 0, 0);
+  //   fechaVencimiento.setHours(0, 0, 0, 0);
+
+  //   // Si la fecha de vencimiento es futura o es hoy, no hay atraso
+  //   if (fechaVencimiento >= hoy) return 0;
+
+  //   // Calcular días de atraso
+  //   const diffTiempo = hoy.getTime() - fechaVencimiento.getTime();
+  //   const diffDias = Math.floor(diffTiempo / (1000 * 3600 * 24));
+
+  //   return Math.max(0, diffDias);
+  // }
+  calcularDiasAtraso(credito: any): number {
+    if (!credito) return 0;
+
+    const clave = this.generarClaveCache(credito.id_credito, 'diasAtraso');
+    const valorCache = this.obtenerDeCache<number>(clave);
+
+    if (valorCache !== null) {
+      return valorCache;
+    }
+
+    // Cálculo original...
     const ultimaSemanaPagada = this.calcularUltimaSemanaPagadaCompletamente(credito);
 
-    // Si ya pagó las 16 semanas, no hay atraso
-    if (ultimaSemanaPagada >= 16) return 0;
+    if (ultimaSemanaPagada >= 16) {
+      this.guardarEnCache(clave, 0);
+      return 0;
+    }
 
-    // Calcular la fecha de vencimiento de la siguiente semana a pagar
     const fechaPrimerPago = new Date(credito.fecha_primer_pago);
     let fechaVencimiento = new Date(fechaPrimerPago);
     fechaVencimiento.setDate(fechaPrimerPago.getDate() + (ultimaSemanaPagada * 7));
 
-    // Ajustar si cae en fin de semana
     const diaSemana = fechaVencimiento.getDay();
-    if (diaSemana === 0) { // Domingo
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
-    } else if (diaSemana === 6) { // Sábado
-      fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
-    }
+    if (diaSemana === 0) fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
+    if (diaSemana === 6) fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
 
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     fechaVencimiento.setHours(0, 0, 0, 0);
 
-    // Si la fecha de vencimiento es futura o es hoy, no hay atraso
-    if (fechaVencimiento >= hoy) return 0;
+    if (fechaVencimiento >= hoy) {
+      this.guardarEnCache(clave, 0);
+      return 0;
+    }
 
-    // Calcular días de atraso
     const diffTiempo = hoy.getTime() - fechaVencimiento.getTime();
     const diffDias = Math.floor(diffTiempo / (1000 * 3600 * 24));
+    const resultado = Math.max(0, diffDias);
 
-    return Math.max(0, diffDias);
+    this.guardarEnCache(clave, resultado);
+    return resultado;
   }
 
 
@@ -673,45 +923,104 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     return semanasAtraso * pagoSemanal;
   }
 
+
+  //   calcularMoraAcumulada(credito: any): number {
+  //   if (!credito) return 0;
+
+  //   try {
+  //     const pagos = this.pagosPorCredito[credito.id_credito] || [];
+  //     const pagoSemanal = this.calcularPagoSemanal(credito);
+  //     const fechaPrimerPago = new Date(credito.fecha_primer_pago);
+  //     const hoy = new Date();
+
+  //     const semanasTranscurridas = this.calcularSemanasTranscurridas(credito);
+  //     const semanasPagadasCompletamente = this.calcularUltimaSemanaPagadaCompletamente(credito);
+
+  //     // LÍMITE DE SEGURIDAD: No calcular más de 20 semanas
+  //     const limiteSeguro = Math.min(semanasTranscurridas, 20);
+
+  //     const totalPagadoPrincipal = pagos.reduce((sum, pago) => {
+  //       return sum + (Number(pago.pago_registrado) || 0);
+  //     }, 0);
+
+  //     let mora = 0;
+
+  //     for (let semana = 1; semana <= limiteSeguro; semana++) {
+  //       let fechaVencimiento = new Date(fechaPrimerPago);
+  //       fechaVencimiento.setDate(fechaPrimerPago.getDate() + ((semana - 1) * 7));
+
+  //       const diaSemana = fechaVencimiento.getDay();
+  //       if (diaSemana === 0) fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
+  //       if (diaSemana === 6) fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
+
+  //       if (hoy > fechaVencimiento) {
+  //         if (semana > semanasPagadasCompletamente) {
+  //           mora += pagoSemanal;
+  //         }
+  //       }
+  //     }
+
+  //     const pagosParciales = Math.max(0, totalPagadoPrincipal - (semanasPagadasCompletamente * pagoSemanal));
+  //     mora = Math.max(0, mora - pagosParciales);
+
+  //     return mora;
+  //   } catch (error) {
+  //     console.error('Error en calcularMoraAcumulada:', error);
+  //     return 0;
+  //   }
+  // }
+
   calcularMoraAcumulada(credito: any): number {
     if (!credito) return 0;
 
-    const pagos = this.pagosPorCredito[credito.id_credito] || [];
-    const pagoSemanal = this.calcularPagoSemanal(credito);
-    const fechaPrimerPago = new Date(credito.fecha_primer_pago);
-    const hoy = new Date();
+    const clave = this.generarClaveCache(credito.id_credito, 'moraAcumulada');
+    const valorCache = this.obtenerDeCache<number>(clave);
 
-    const semanasTranscurridas = this.calcularSemanasTranscurridas(credito);
-    const semanasPagadasCompletamente = this.calcularUltimaSemanaPagadaCompletamente(credito);
-
-    const totalPagadoPrincipal = pagos.reduce((sum, pago) => {
-      return sum + (Number(pago.pago_registrado) || 0);
-    }, 0);
-
-    let deberiaHaberPagado = 0;
-    let mora = 0;
-
-    for (let semana = 1; semana <= semanasTranscurridas; semana++) {
-      let fechaVencimiento = new Date(fechaPrimerPago);
-      fechaVencimiento.setDate(fechaPrimerPago.getDate() + ((semana - 1) * 7));
-
-      const diaSemana = fechaVencimiento.getDay();
-      if (diaSemana === 0) fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
-      if (diaSemana === 6) fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
-
-      if (hoy > fechaVencimiento) {
-        deberiaHaberPagado += pagoSemanal;
-
-        if (semana > semanasPagadasCompletamente) {
-          mora += pagoSemanal;
-        }
-      }
+    if (valorCache !== null) {
+      return valorCache;
     }
 
-    const pagosParciales = Math.max(0, totalPagadoPrincipal - (semanasPagadasCompletamente * pagoSemanal));
-    mora = Math.max(0, mora - pagosParciales);
+    try {
+      const pagos = this.pagosPorCredito[credito.id_credito] || [];
+      const pagoSemanal = this.calcularPagoSemanal(credito);
+      const fechaPrimerPago = new Date(credito.fecha_primer_pago);
+      const hoy = new Date();
 
-    return mora;
+      const semanasTranscurridas = this.calcularSemanasTranscurridas(credito);
+      const semanasPagadasCompletamente = this.calcularUltimaSemanaPagadaCompletamente(credito);
+
+      const limiteSeguro = Math.min(semanasTranscurridas, 20);
+
+      const totalPagadoPrincipal = pagos.reduce((sum, pago) => {
+        return sum + (Number(pago.pago_registrado) || 0);
+      }, 0);
+
+      let mora = 0;
+
+      for (let semana = 1; semana <= limiteSeguro; semana++) {
+        let fechaVencimiento = new Date(fechaPrimerPago);
+        fechaVencimiento.setDate(fechaPrimerPago.getDate() + ((semana - 1) * 7));
+
+        const diaSemana = fechaVencimiento.getDay();
+        if (diaSemana === 0) fechaVencimiento.setDate(fechaVencimiento.getDate() + 1);
+        if (diaSemana === 6) fechaVencimiento.setDate(fechaVencimiento.getDate() + 2);
+
+        if (hoy > fechaVencimiento) {
+          if (semana > semanasPagadasCompletamente) {
+            mora += pagoSemanal;
+          }
+        }
+      }
+
+      const pagosParciales = Math.max(0, totalPagadoPrincipal - (semanasPagadasCompletamente * pagoSemanal));
+      mora = Math.max(0, mora - pagosParciales);
+
+      this.guardarEnCache(clave, mora);
+      return mora;
+    } catch (error) {
+      console.error('Error en calcularMoraAcumulada:', error);
+      return 0;
+    }
   }
 
   calcularSemanasTranscurridas(credito: any): number {
@@ -897,6 +1206,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
   cargarCreditos(): void {
     this.cargando = true;
+    this.limpiarCache();
     this.creditoService.obtenerCreditos().subscribe({
       next: (creditos) => {
         // Filtrar créditos entregados y verificar si alguno debería estar finalizado
@@ -1094,15 +1404,28 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     }).format(monto);
   }
 
+  // formatearFecha(fecha: string): string {
+  //   if (!fecha) return 'No especificada';
+  //   const date = new Date(fecha);
+  //   return date.toLocaleDateString('es-MX', {
+  //     day: '2-digit',
+  //     month: '2-digit',
+  //     year: 'numeric'
+  //   });
+  // }
   formatearFecha(fecha: string): string {
-    if (!fecha) return 'No especificada';
-    const date = new Date(fecha);
-    return date.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  }
+  if (!fecha) return 'No especificada';
+  
+  // Usar el nuevo método para parsear la fecha
+  const date = this.parsearFechaLocal(fecha);
+  
+  return date.toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'America/Mexico_City' // Asegurar zona horaria de México
+  });
+}
 
   get hayCreditos(): boolean {
     return this.creditos.length > 0;
@@ -1422,7 +1745,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     if (!this.creditos || this.creditos.length === 0 || !this.fechaBaseAjustada) return;
 
     const conteo: { [key: string]: number } = {};
-    
+
     // Inicializar contadores para todos los aliados (para mostrar 0 si no tienen)
     if (this.aliados.length > 0) {
       this.aliados.forEach(a => {
@@ -1434,16 +1757,16 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       // Usamos fecha_ministracion para determinar cuándo se creó el crédito (cliente nuevo)
       if (credito.fecha_ministracion) {
         let fechaMinistracion: Date;
-        
+
         // Parseo seguro de fecha
         if (typeof credito.fecha_ministracion === 'string') {
-           const fechaStr = credito.fecha_ministracion.split('T')[0];
-           const [year, month, day] = fechaStr.split('-').map(Number);
-           fechaMinistracion = new Date(year, month - 1, day);
+          const fechaStr = credito.fecha_ministracion.split('T')[0];
+          const [year, month, day] = fechaStr.split('-').map(Number);
+          fechaMinistracion = new Date(year, month - 1, day);
         } else {
-           fechaMinistracion = new Date(credito.fecha_ministracion);
+          fechaMinistracion = new Date(credito.fecha_ministracion);
         }
-        
+
         // Calcular semana de este crédito usando la misma lógica que la semana actual
         const diffMs = fechaMinistracion.getTime() - this.fechaBaseAjustada.getTime();
         const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -1453,7 +1776,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         if (semanaCredito === this.semanaActual) {
           const nombreAliado = this.getNombreAliado(credito.aliado_id);
           if (nombreAliado !== 'N/A') {
-             conteo[nombreAliado] = (conteo[nombreAliado] || 0) + 1;
+            conteo[nombreAliado] = (conteo[nombreAliado] || 0) + 1;
           }
         }
       }
@@ -1466,7 +1789,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         cantidad: conteo[key]
       }))
       .sort((a, b) => b.cantidad - a.cantidad); // Ordenar de mayor a menor
-      
+
     console.log('Clientes nuevos por aliado (Semana ' + this.semanaActual + '):', this.statsClientesNuevos);
   }
 
