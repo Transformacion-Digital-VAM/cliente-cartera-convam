@@ -211,25 +211,25 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // }
 
   calcularSemanaActualCliente(credito: any): number {
-  if (!credito || !credito.fecha_primer_pago) return 1;
+    if (!credito || !credito.fecha_primer_pago) return 1;
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
 
-  // Usar el nuevo método para parsear la fecha
-  const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
+    // Usar el nuevo método para parsear la fecha
+    const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
 
-  // Si hoy es antes del primer pago, estamos en semana 1
-  if (hoy < fechaPrimerPago) return 1;
+    // Si hoy es antes del primer pago, estamos en semana 1
+    if (hoy < fechaPrimerPago) return 1;
 
-  const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
-  const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
+    const diffTiempo = hoy.getTime() - fechaPrimerPago.getTime();
+    const diffDias = Math.floor(diffTiempo / (1000 * 60 * 60 * 24));
 
-  // Calcular semana: (días transcurridos / 7) + 1
-  const semana = Math.floor(diffDias / 7) + 1;
+    // Calcular semana: (días transcurridos / 7) + 1
+    const semana = Math.floor(diffDias / 7) + 1;
 
-  return Math.min(semana, 16);
-}
+    return Math.min(semana, 16);
+  }
 
   // calcularFechaSemana(credito: any, numeroSemana: number): Date {
   //   if (!credito || !credito.fecha_primer_pago) return new Date();
@@ -251,25 +251,25 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   //   return fechaSemana;
   // }
   calcularFechaSemana(credito: any, numeroSemana: number): Date {
-  if (!credito || !credito.fecha_primer_pago) return new Date();
+    if (!credito || !credito.fecha_primer_pago) return new Date();
 
-  // Usar el nuevo método para parsear la fecha
-  const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
-  const fechaSemana = new Date(fechaPrimerPago);
+    // Usar el nuevo método para parsear la fecha
+    const fechaPrimerPago = this.parsearFechaLocal(credito.fecha_primer_pago);
+    const fechaSemana = new Date(fechaPrimerPago);
 
-  // Sumar (numeroSemana - 1) * 7 días
-  fechaSemana.setDate(fechaPrimerPago.getDate() + ((numeroSemana - 1) * 7));
+    // Sumar (numeroSemana - 1) * 7 días
+    fechaSemana.setDate(fechaPrimerPago.getDate() + ((numeroSemana - 1) * 7));
 
-  // Ajustar si cae en fin de semana
-  const diaSemana = fechaSemana.getDay();
-  if (diaSemana === 0) { // Domingo
-    fechaSemana.setDate(fechaSemana.getDate() + 1);
-  } else if (diaSemana === 6) { // Sábado
-    fechaSemana.setDate(fechaSemana.getDate() + 2);
+    // Ajustar si cae en fin de semana
+    const diaSemana = fechaSemana.getDay();
+    if (diaSemana === 0) { // Domingo
+      fechaSemana.setDate(fechaSemana.getDate() + 1);
+    } else if (diaSemana === 6) { // Sábado
+      fechaSemana.setDate(fechaSemana.getDate() + 2);
+    }
+
+    return fechaSemana;
   }
-
-  return fechaSemana;
-}
 
   calcularAdeudoYFuturo(credito: any): { adeudo: number, saldoFuturo: number } {
     if (!credito) return { adeudo: 0, saldoFuturo: 0 };
@@ -662,35 +662,35 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
   // ============================================
-// MÉTODO AUXILIAR PARA PARSEAR FECHAS SIN DESFASE
-// ============================================
+  // MÉTODO AUXILIAR PARA PARSEAR FECHAS SIN DESFASE
+  // ============================================
 
-/**
- * Convierte una fecha string o Date a un objeto Date local sin desfase de zona horaria
- * @param fecha - Fecha en formato string (YYYY-MM-DD) o Date
- * @returns Date object ajustado a zona horaria local
- */
-private parsearFechaLocal(fecha: string | Date): Date {
-  if (!fecha) return new Date();
+  /**
+   * Convierte una fecha string o Date a un objeto Date local sin desfase de zona horaria
+   * @param fecha - Fecha en formato string (YYYY-MM-DD) o Date
+   * @returns Date object ajustado a zona horaria local
+   */
+  private parsearFechaLocal(fecha: string | Date): Date {
+    if (!fecha) return new Date();
 
-  let fechaDate: Date;
+    let fechaDate: Date;
 
-  if (typeof fecha === 'string') {
-    // Extraer solo la parte de la fecha (sin hora)
-    const fechaStr = fecha.split('T')[0];
-    const [year, month, day] = fechaStr.split('-').map(Number);
-    
-    // Crear fecha en zona horaria local (mes - 1 porque JavaScript usa 0-11)
-    fechaDate = new Date(year, month - 1, day);
-  } else {
-    fechaDate = new Date(fecha);
+    if (typeof fecha === 'string') {
+      // Extraer solo la parte de la fecha (sin hora)
+      const fechaStr = fecha.split('T')[0];
+      const [year, month, day] = fechaStr.split('-').map(Number);
+
+      // Crear fecha en zona horaria local (mes - 1 porque JavaScript usa 0-11)
+      fechaDate = new Date(year, month - 1, day);
+    } else {
+      fechaDate = new Date(fecha);
+    }
+
+    // Asegurar que la hora sea medianoche local
+    fechaDate.setHours(0, 0, 0, 0);
+
+    return fechaDate;
   }
-
-  // Asegurar que la hora sea medianoche local
-  fechaDate.setHours(0, 0, 0, 0);
-  
-  return fechaDate;
-}
 
   // ============================================
   // MÉTODOS DE CÁLCULO BÁSICOS
@@ -730,10 +730,10 @@ private parsearFechaLocal(fecha: string | Date): Date {
   // }
   getDiaPago(credito: any): string {
     if (!credito || !credito.fecha_primer_pago) return 'N/A';
-    
+
     // Usar el nuevo método para parsear la fecha
     const fecha = this.parsearFechaLocal(credito.fecha_primer_pago);
-    
+
     const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     return dias[fecha.getDay()];
   }
@@ -1211,7 +1211,7 @@ private parsearFechaLocal(fecha: string | Date): Date {
       next: (creditos) => {
         // Filtrar créditos entregados y verificar si alguno debería estar finalizado
         const creditosFiltrados = creditos.filter(c => {
-          if (c.estado_credito === 'ENTREGADO') {
+          if (c.estado_credito === 'ENTREGADO' || c.estado_credito === 'VENCIDO') {
             const saldoPendiente = Number(c.saldo_pendiente) || 0;
             // Si el saldo es 0 o negativo, debería estar FINALIZADO
             if (saldoPendiente <= 0.01) {
@@ -1414,18 +1414,18 @@ private parsearFechaLocal(fecha: string | Date): Date {
   //   });
   // }
   formatearFecha(fecha: string): string {
-  if (!fecha) return 'No especificada';
-  
-  // Usar el nuevo método para parsear la fecha
-  const date = this.parsearFechaLocal(fecha);
-  
-  return date.toLocaleDateString('es-MX', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: 'America/Mexico_City' // Asegurar zona horaria de México
-  });
-}
+    if (!fecha) return 'No especificada';
+
+    // Usar el nuevo método para parsear la fecha
+    const date = this.parsearFechaLocal(fecha);
+
+    return date.toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Mexico_City' // Asegurar zona horaria de México
+    });
+  }
 
   get hayCreditos(): boolean {
     return this.creditos.length > 0;

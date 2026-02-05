@@ -108,58 +108,109 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
 
 
+  //   cargarDatosIniciales(): void {
+  //   this.cargando = true;
+
+  //   forkJoin({
+  //     aliados: this.aliadoService.obtenerAliados(),
+  //     solicitudes: this.solicitudService.obtenerSolicitudesPorEstado('APROBADO'),
+  //     creditos: this.creditoService.obtenerCreditos() // Agrega esto
+  //   }).subscribe({
+  //     next: (result) => {
+  //       this.aliados = result.aliados;
+  //       this.creditos = result.creditos; 
+
+  //       // ASIGNAR INFORMACIÓN DEL ALIADO A CADA SOLICITUD
+  //       result.solicitudes.forEach(solicitud => {
+  //         this.asignarAliadoASolicitud(solicitud);
+  //       });
+
+  //       // FILTRO CRUCIAL: Excluir solicitudes que YA TIENEN algún crédito (sin importar el estado)
+  //       this.solicitudesAprobadas = result.solicitudes.filter(solicitud => {
+  //         // Verificar si existe algún crédito asociado a esta solicitud
+  //         const tieneCredito = result.creditos.some(credito => 
+  //           credito.solicitud_id === solicitud.id_solicitud
+  //         );
+  //         return !tieneCredito; // Solo incluir solicitudes SIN crédito
+  //       });
+
+  //       // ORDENAR POR ID DE SOLICITUD DE MAYOR A MENOR (más reciente primero)
+  //       this.solicitudesAprobadas.sort((a, b) => {
+  //         const idA = Number(a.id_solicitud) || 0;
+  //         const idB = Number(b.id_solicitud) || 0;
+  //         return idB - idA; // Orden descendente (mayor a menor)
+  //       });
+
+  //       // Tomar solo las 6 solicitudes más recientes (ya están ordenadas por ID)
+  //       // this.solicitudesRecientes = this.solicitudesAprobadas.slice(0, 6);
+
+  //       // Para mantener compatibilidad con el filtro, inicializamos clientesFiltrados con las 6 más recientes
+  //       // this.clientesFiltrados = [...this.solicitudesRecientes];
+  //       this.clientesFiltrados = [...this.solicitudesAprobadas];
+  //       this.cargando = false;
+  //     },
+  //     error: (error) => {
+  //       console.error('Error al cargar datos:', error);
+  //       this.cargando = false;
+  //       Swal.fire({
+  //         icon: 'error',
+  //         title: 'Error',
+  //         text: 'Error al cargar los datos iniciales',
+  //         confirmButtonText: 'Aceptar'
+  //       });
+  //     }
+  //   });
+  // }
   cargarDatosIniciales(): void {
-  this.cargando = true;
+    this.cargando = true;
 
-  forkJoin({
-    aliados: this.aliadoService.obtenerAliados(),
-    solicitudes: this.solicitudService.obtenerSolicitudesPorEstado('APROBADO'),
-    creditos: this.creditoService.obtenerCreditos() // Agrega esto
-  }).subscribe({
-    next: (result) => {
-      this.aliados = result.aliados;
-      this.creditos = result.creditos; 
+    forkJoin({
+      aliados: this.aliadoService.obtenerAliados(),
+      solicitudes: this.solicitudService.obtenerSolicitudesPorEstado('APROBADO'),
+      creditos: this.creditoService.obtenerCreditos() // Agrega esto
+    }).subscribe({
+      next: (result) => {
+        this.aliados = result.aliados;
+        this.creditos = result.creditos;
 
-      // ASIGNAR INFORMACIÓN DEL ALIADO A CADA SOLICITUD
-      result.solicitudes.forEach(solicitud => {
-        this.asignarAliadoASolicitud(solicitud);
-      });
+        // ASIGNAR INFORMACIÓN DEL ALIADO A CADA SOLICITUD
+        result.solicitudes.forEach(solicitud => {
+          this.asignarAliadoASolicitud(solicitud);
+        });
 
-      // FILTRO CRUCIAL: Excluir solicitudes que YA TIENEN algún crédito (sin importar el estado)
-      this.solicitudesAprobadas = result.solicitudes.filter(solicitud => {
-        // Verificar si existe algún crédito asociado a esta solicitud
-        const tieneCredito = result.creditos.some(credito => 
-          credito.solicitud_id === solicitud.id_solicitud
-        );
-        return !tieneCredito; // Solo incluir solicitudes SIN crédito
-      });
+        // FILTRO CRUCIAL: Excluir solicitudes que YA TIENEN algún crédito (sin importar el estado)
+        this.solicitudesAprobadas = result.solicitudes.filter(solicitud => {
+          // Verificar si existe algún crédito asociado a esta solicitud
+          const tieneCredito = result.creditos.some(credito =>
+            credito.solicitud_id === solicitud.id_solicitud
+          );
+          return !tieneCredito; // Solo incluir solicitudes SIN crédito
+        });
 
-      // ORDENAR POR ID DE SOLICITUD DE MAYOR A MENOR (más reciente primero)
-      this.solicitudesAprobadas.sort((a, b) => {
-        const idA = Number(a.id_solicitud) || 0;
-        const idB = Number(b.id_solicitud) || 0;
-        return idB - idA; // Orden descendente (mayor a menor)
-      });
+        // ORDENAR POR ID DE SOLICITUD DE MAYOR A MENOR (más reciente primero)
+        this.solicitudesAprobadas.sort((a, b) => {
+          const idA = Number(a.id_solicitud) || 0;
+          const idB = Number(b.id_solicitud) || 0;
+          return idB - idA; // Orden descendente (mayor a menor)
+        });
 
-      // Tomar solo las 6 solicitudes más recientes (ya están ordenadas por ID)
-      this.solicitudesRecientes = this.solicitudesAprobadas.slice(0, 6);
+        // ✅ CAMBIO CLAVE: Usar TODAS las solicitudes aprobadas, no solo 6
+        this.clientesFiltrados = [...this.solicitudesAprobadas];
 
-      // Para mantener compatibilidad con el filtro, inicializamos clientesFiltrados con las 6 más recientes
-      this.clientesFiltrados = [...this.solicitudesRecientes];
-      this.cargando = false;
-    },
-    error: (error) => {
-      console.error('Error al cargar datos:', error);
-      this.cargando = false;
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Error al cargar los datos iniciales',
-        confirmButtonText: 'Aceptar'
-      });
-    }
-  });
-}
+        this.cargando = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar datos:', error);
+        this.cargando = false;
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al cargar los datos iniciales',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    });
+  }
 
 
 
@@ -245,43 +296,43 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
 
   abrirModalPagare(solicitud: any): void {
-  // ÚNICA VALIDACIÓN: Verificar si está domiciliado
-  if (!solicitud.domiciliado) {
-    Swal.fire({
-      icon: 'error',
-      title: 'No se puede proceder',
-      html: `La solicitud <strong>#${solicitud.id_solicitud}</strong> no está domiciliada.<br><br>
+    // ÚNICA VALIDACIÓN: Verificar si está domiciliado
+    if (!solicitud.domiciliado) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No se puede proceder',
+        html: `La solicitud <strong>#${solicitud.id_solicitud}</strong> no está domiciliada.<br><br>
         Debe completar el proceso de domiciliación antes de generar el crédito.`,
-      confirmButtonText: 'Entendido',
-      confirmButtonColor: '#d33'
-    });
-    return;
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#d33'
+      });
+      return;
+    }
+
+    // Si está domiciliada, continuar con el proceso normal
+    // (Ya no necesitamos validar créditos existentes porque el filtro los excluyó)
+    this.solicitudSeleccionada = solicitud;
+    this.modalGenerarCreditoAbierto = true;
+
+    // Resetear variables
+    this.referenciaBancaria = '';
+    this.cuentaBancaria = '';
+    this.creditoRecienCreado = null;
+    this.documentosGenerados = false;
+    this.pdfPagareUrl = null;
+    this.pdfHojaControlUrl = null;
+
+    // Establecer fechas por defecto
+    const hoy = new Date();
+    this.fechaMinistracion = hoy.toISOString().split('T')[0];
+
+    const fechaPrimerPago = new Date(hoy);
+    fechaPrimerPago.setDate(fechaPrimerPago.getDate() + 7);
+    this.fechaPrimerPago = fechaPrimerPago.toISOString().split('T')[0];
+
+    // Calcular valores iniciales
+    this.calcularValoresCredito();
   }
-
-  // Si está domiciliada, continuar con el proceso normal
-  // (Ya no necesitamos validar créditos existentes porque el filtro los excluyó)
-  this.solicitudSeleccionada = solicitud;
-  this.modalGenerarCreditoAbierto = true;
-
-  // Resetear variables
-  this.referenciaBancaria = '';
-  this.cuentaBancaria = '';
-  this.creditoRecienCreado = null;
-  this.documentosGenerados = false;
-  this.pdfPagareUrl = null;
-  this.pdfHojaControlUrl = null;
-
-  // Establecer fechas por defecto
-  const hoy = new Date();
-  this.fechaMinistracion = hoy.toISOString().split('T')[0];
-
-  const fechaPrimerPago = new Date(hoy);
-  fechaPrimerPago.setDate(fechaPrimerPago.getDate() + 7);
-  this.fechaPrimerPago = fechaPrimerPago.toISOString().split('T')[0];
-
-  // Calcular valores iniciales
-  this.calcularValoresCredito();
-}
 
 
   // Calcular todos los valores del crédito
@@ -302,172 +353,172 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   }
 
 
-//   crearCredito(): void {
-//   if (!this.solicitudSeleccionada) {
-//     Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
-//     return;
-//   }
+  //   crearCredito(): void {
+  //   if (!this.solicitudSeleccionada) {
+  //     Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
+  //     return;
+  //   }
 
-//   if (!this.fechaMinistracion || !this.fechaPrimerPago) {
-//     Swal.fire('Error', 'Debe completar todas las fechas', 'error');
-//     return;
-//   }
+  //   if (!this.fechaMinistracion || !this.fechaPrimerPago) {
+  //     Swal.fire('Error', 'Debe completar todas las fechas', 'error');
+  //     return;
+  //   }
 
-//   this.procesandoEntrega = true;
+  //   this.procesandoEntrega = true;
 
-//   const creditoData = {
-//     solicitud_id: this.solicitudSeleccionada.id_solicitud,
-//     fecha_ministracion: this.fechaMinistracion,
-//     fecha_primer_pago: this.fechaPrimerPago,
-//     referencia_bancaria: this.referenciaBancaria || `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
-//     tipo_credito: this.solicitudSeleccionada.tipo_credito,
-//     cuenta_bancaria: this.cuentaBancaria || '',
-//     seguro: this.seguro,
-//     tipo_servicio: "Préstamo personal"
-//   };
+  //   const creditoData = {
+  //     solicitud_id: this.solicitudSeleccionada.id_solicitud,
+  //     fecha_ministracion: this.fechaMinistracion,
+  //     fecha_primer_pago: this.fechaPrimerPago,
+  //     referencia_bancaria: this.referenciaBancaria || `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
+  //     tipo_credito: this.solicitudSeleccionada.tipo_credito,
+  //     cuenta_bancaria: this.cuentaBancaria || '',
+  //     seguro: this.seguro,
+  //     tipo_servicio: "Préstamo personal"
+  //   };
 
-//   this.creditoService.crearCredito(creditoData).subscribe({
-//     next: (response: any) => {
-//       this.creditoRecienCreado = response.credito;
+  //   this.creditoService.crearCredito(creditoData).subscribe({
+  //     next: (response: any) => {
+  //       this.creditoRecienCreado = response.credito;
 
-//       //  ACTUALIZAR EL ESTADO DE LA SOLICITUD A "FINALIZADA"
-//       this.actualizarEstadoSolicitudAFinalizada(this.solicitudSeleccionada.id_solicitud);
+  //       //  ACTUALIZAR EL ESTADO DE LA SOLICITUD A "FINALIZADA"
+  //       this.actualizarEstadoSolicitudAFinalizada(this.solicitudSeleccionada.id_solicitud);
 
-//       // Cerrar el modal de generar crédito
-//       this.modalGenerarCreditoAbierto = false;
+  //       // Cerrar el modal de generar crédito
+  //       this.modalGenerarCreditoAbierto = false;
 
-//       // Abrir el modal de generar pagaré
-//       this.modalGenerarPagareAbierto = true;
+  //       // Abrir el modal de generar pagaré
+  //       this.modalGenerarPagareAbierto = true;
 
-//       Swal.fire({
-//         icon: 'success',
-//         title: '¡Crédito creado exitosamente!',
-//         html: `El crédito ha sido creado correctamente.<br><br>
-//               <strong>ID del Crédito:</strong> ${this.creditoRecienCreado.id_credito}<br>
-//               <strong>Cliente:</strong> ${this.getNombreCompleto(this.solicitudSeleccionada)}<br><br>
-//               Ahora puede generar los documentos.`,
-//         confirmButtonText: 'Continuar',
-//         timer: 3000
-//       });
+  //       Swal.fire({
+  //         icon: 'success',
+  //         title: '¡Crédito creado exitosamente!',
+  //         html: `El crédito ha sido creado correctamente.<br><br>
+  //               <strong>ID del Crédito:</strong> ${this.creditoRecienCreado.id_credito}<br>
+  //               <strong>Cliente:</strong> ${this.getNombreCompleto(this.solicitudSeleccionada)}<br><br>
+  //               Ahora puede generar los documentos.`,
+  //         confirmButtonText: 'Continuar',
+  //         timer: 3000
+  //       });
 
-//       this.procesandoEntrega = false;
+  //       this.procesandoEntrega = false;
 
-//       // Eliminar la solicitud de la tabla
-//       this.eliminarSolicitudDeTabla(this.solicitudSeleccionada.id_solicitud);
+  //       // Eliminar la solicitud de la tabla
+  //       this.eliminarSolicitudDeTabla(this.solicitudSeleccionada.id_solicitud);
 
-//       // Recargar la lista de créditos
-//       this.cargarCreditos();
-//     },
-//     error: (error) => {
-//       console.error('Error al crear crédito:', error);
-//       Swal.fire({
-//         icon: 'error',
-//         title: 'Error',
-//         text: `Error al crear el crédito: ${error.error?.error || error.message}`,
-//         confirmButtonText: 'Aceptar'
-//       });
-//       this.procesandoEntrega = false;
-//     }
-//   });
-// }
+  //       // Recargar la lista de créditos
+  //       this.cargarCreditos();
+  //     },
+  //     error: (error) => {
+  //       console.error('Error al crear crédito:', error);
+  //       Swal.fire({
+  //         icon: 'error',
+  //         title: 'Error',
+  //         text: `Error al crear el crédito: ${error.error?.error || error.message}`,
+  //         confirmButtonText: 'Aceptar'
+  //       });
+  //       this.procesandoEntrega = false;
+  //     }
+  //   });
+  // }
 
-crearCredito(): void {
-  if (!this.solicitudSeleccionada) {
-    Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
-    return;
-  }
+  crearCredito(): void {
+    if (!this.solicitudSeleccionada) {
+      Swal.fire('Error', 'No hay solicitud seleccionada', 'error');
+      return;
+    }
 
-  if (!this.fechaMinistracion || !this.fechaPrimerPago) {
-    Swal.fire('Error', 'Debe completar todas las fechas', 'error');
-    return;
-  }
+    if (!this.fechaMinistracion || !this.fechaPrimerPago) {
+      Swal.fire('Error', 'Debe completar todas las fechas', 'error');
+      return;
+    }
 
-  this.procesandoEntrega = true;
+    this.procesandoEntrega = true;
 
-  const creditoData = {
-    solicitud_id: this.solicitudSeleccionada.id_solicitud,
-    fecha_ministracion: this.fechaMinistracion,
-    fecha_primer_pago: this.fechaPrimerPago,
-    referencia_bancaria: this.referenciaBancaria || `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
-    tipo_credito: this.solicitudSeleccionada.tipo_credito,
-    cuenta_bancaria: this.cuentaBancaria || '',
-    seguro: this.seguro,
-    tipo_servicio: "Préstamo personal"
-  };
+    const creditoData = {
+      solicitud_id: this.solicitudSeleccionada.id_solicitud,
+      fecha_ministracion: this.fechaMinistracion,
+      fecha_primer_pago: this.fechaPrimerPago,
+      referencia_bancaria: this.referenciaBancaria || `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
+      tipo_credito: this.solicitudSeleccionada.tipo_credito,
+      cuenta_bancaria: this.cuentaBancaria || '',
+      seguro: this.seguro,
+      tipo_servicio: "Préstamo personal"
+    };
 
-  this.creditoService.crearCredito(creditoData).subscribe({
-    next: (response: any) => {
-      this.creditoRecienCreado = response.credito;
+    this.creditoService.crearCredito(creditoData).subscribe({
+      next: (response: any) => {
+        this.creditoRecienCreado = response.credito;
 
-      // ACTUALIZAR EL ESTADO DE LA SOLICITUD A "ENTREGADO" (SOLO ESTE)
-      this.actualizarEstadoSolicitudAEntregado(this.solicitudSeleccionada.id_solicitud);
+        // ACTUALIZAR EL ESTADO DE LA SOLICITUD A "ENTREGADO" (SOLO ESTE)
+        this.actualizarEstadoSolicitudAEntregado(this.solicitudSeleccionada.id_solicitud);
 
-      // Cerrar el modal de generar crédito
-      this.modalGenerarCreditoAbierto = false;
+        // Cerrar el modal de generar crédito
+        this.modalGenerarCreditoAbierto = false;
 
-      // Abrir el modal de generar pagaré
-      this.modalGenerarPagareAbierto = true;
+        // Abrir el modal de generar pagaré
+        this.modalGenerarPagareAbierto = true;
 
-      Swal.fire({
-        icon: 'success',
-        title: '¡Crédito creado exitosamente!',
-        html: `El crédito ha sido creado correctamente.<br><br>
+        Swal.fire({
+          icon: 'success',
+          title: '¡Crédito creado exitosamente!',
+          html: `El crédito ha sido creado correctamente.<br><br>
               <strong>ID del Crédito:</strong> ${this.creditoRecienCreado.id_credito}<br>
               <strong>Cliente:</strong> ${this.getNombreCompleto(this.solicitudSeleccionada)}<br><br>
               Ahora puede generar los documentos.`,
-        confirmButtonText: 'Continuar',
-        timer: 3000
-      });
+          confirmButtonText: 'Continuar',
+          timer: 3000
+        });
 
-      this.procesandoEntrega = false;
+        this.procesandoEntrega = false;
 
-      // Eliminar la solicitud de la tabla
-      this.eliminarSolicitudDeTabla(this.solicitudSeleccionada.id_solicitud);
+        // Eliminar la solicitud de la tabla
+        this.eliminarSolicitudDeTabla(this.solicitudSeleccionada.id_solicitud);
 
-      // Recargar la lista de créditos
-      this.cargarCreditos();
-    },
-    error: (error) => {
-      console.error('Error al crear crédito:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: `Error al crear el crédito: ${error.error?.error || error.message}`,
-        confirmButtonText: 'Aceptar'
-      });
-      this.procesandoEntrega = false;
-    }
-  });
-}
+        // Recargar la lista de créditos
+        this.cargarCreditos();
+      },
+      error: (error) => {
+        console.error('Error al crear crédito:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: `Error al crear el crédito: ${error.error?.error || error.message}`,
+          confirmButtonText: 'Aceptar'
+        });
+        this.procesandoEntrega = false;
+      }
+    });
+  }
 
 
 
-actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
-  // Datos para actualizar el estado
-  const datosActualizacion = {
-    estado_solicitud: 'ENTREGADO'
-  };
+  actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
+    // Datos para actualizar el estado
+    const datosActualizacion = {
+      estado_solicitud: 'ENTREGADO'
+    };
 
-  // Llamar al servicio para actualizar la solicitud
-  this.solicitudService.actualizarEstadoSolicitud(idSolicitud, datosActualizacion).subscribe({
-    next: (response) => {
-      console.log(`Solicitud ${idSolicitud} actualizada a estado ENTREGADO`, response);
-    },
-    error: (error) => {
-      console.error(`Error al actualizar estado de solicitud ${idSolicitud}:`, error);
-      // Mostrar alerta de advertencia pero no interrumpir el flujo
-      Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
-        html: `El crédito se creó exitosamente, pero no se pudo actualizar el estado de la solicitud a ENTREGADO.<br><br>
+    // Llamar al servicio para actualizar la solicitud
+    this.solicitudService.actualizarEstadoSolicitud(idSolicitud, datosActualizacion).subscribe({
+      next: (response) => {
+        console.log(`Solicitud ${idSolicitud} actualizada a estado ENTREGADO`, response);
+      },
+      error: (error) => {
+        console.error(`Error al actualizar estado de solicitud ${idSolicitud}:`, error);
+        // Mostrar alerta de advertencia pero no interrumpir el flujo
+        Swal.fire({
+          icon: 'warning',
+          title: 'Advertencia',
+          html: `El crédito se creó exitosamente, pero no se pudo actualizar el estado de la solicitud a ENTREGADO.<br><br>
               <strong>ID Solicitud:</strong> ${idSolicitud}<br>
               <strong>Error:</strong> ${error.error?.message || error.message}`,
-        confirmButtonText: 'Continuar',
-        confirmButtonColor: '#ffc107'
-      });
-    }
-  });
-}
+          confirmButtonText: 'Continuar',
+          confirmButtonColor: '#ffc107'
+        });
+      }
+    });
+  }
 
   // Marcar crédito como ENTREGADO
   marcarComoEntregado(credito: any): void {
@@ -959,7 +1010,7 @@ actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
     });
   }
 
- 
+
 
   // Descargar ambos documentos
   descargarAmbosDocumentos(): void {
@@ -1012,16 +1063,52 @@ actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
   }
 
   // Modifica el método buscar para mantener el orden por ID:
-  buscar(): void {
-    let resultados = this.solicitudesRecientes.filter(solicitud => {
-      const coincideNombre = this.filtroNombre ?
-        solicitud.nombre_cliente.toLowerCase().includes(this.filtroNombre.toLowerCase()) : true;
+  // buscar(): void {
+  //   let resultados = this.solicitudesRecientes.filter(solicitud => {
+  //     const coincideNombre = this.filtroNombre ?
+  //       solicitud.nombre_cliente.toLowerCase().includes(this.filtroNombre.toLowerCase()) : true;
 
-      const coincideApPaterno = this.filtroApPaterno ?
-        solicitud.app_cliente.toLowerCase().includes(this.filtroApPaterno.toLowerCase()) : true;
+  //     const coincideApPaterno = this.filtroApPaterno ?
+  //       solicitud.app_cliente.toLowerCase().includes(this.filtroApPaterno.toLowerCase()) : true;
+
+  //     return coincideNombre && coincideApPaterno;
+  //   });
+
+  //   // Ordenar resultados por ID de mayor a menor
+  //   this.clientesFiltrados = resultados.sort((a, b) => {
+  //     const idA = Number(a.id_solicitud) || 0;
+  //     const idB = Number(b.id_solicitud) || 0;
+  //     return idB - idA; // Orden descendente
+  //   });
+  // }
+  buscar(): void {
+
+    // ✅ CORRECCIÓN: Cambia solicitudesRecientes por solicitudesAprobadas
+    let resultados = this.solicitudesAprobadas.filter(solicitud => {
+      // Verificar si la solicitud tiene datos
+      if (!solicitud) return false;
+
+      const nombreCliente = solicitud.nombre_cliente?.toLowerCase() || '';
+      const apPaternoCliente = solicitud.app_cliente?.toLowerCase() || '';
+
+      const filtroNombre = this.filtroNombre?.trim().toLowerCase() || '';
+      const filtroApPaterno = this.filtroApPaterno?.trim().toLowerCase() || '';
+
+      // Si ambos filtros están vacíos, mostrar todo
+      if (!filtroNombre && !filtroApPaterno) {
+        return true;
+      }
+
+      // Verificar coincidencias
+      const coincideNombre = filtroNombre ?
+        nombreCliente.includes(filtroNombre) : true;
+
+      const coincideApPaterno = filtroApPaterno ?
+        apPaternoCliente.includes(filtroApPaterno) : true;
 
       return coincideNombre && coincideApPaterno;
     });
+
 
     // Ordenar resultados por ID de mayor a menor
     this.clientesFiltrados = resultados.sort((a, b) => {
@@ -1029,63 +1116,80 @@ actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
       const idB = Number(b.id_solicitud) || 0;
       return idB - idA; // Orden descendente
     });
+
+    // console.log('Búsqueda completada. Mostrando:', this.clientesFiltrados.length, 'registros');
   }
 
   // Modifica el método limpiarFiltros:
+  // limpiarFiltros(): void {
+  //   this.filtroNombre = '';
+  //   this.filtroApPaterno = '';
+  //   this.clientesFiltrados = [...this.solicitudesRecientes].sort((a, b) => {
+  //     const idA = Number(a.id_solicitud) || 0;
+  //     const idB = Number(b.id_solicitud) || 0;
+  //     return idB - idA;
+  //   });
+  // }
   limpiarFiltros(): void {
+    console.log('=== LIMPIANDO FILTROS ===');
+
     this.filtroNombre = '';
     this.filtroApPaterno = '';
-    this.clientesFiltrados = [...this.solicitudesRecientes].sort((a, b) => {
+
+    // ✅ CORRECCIÓN: Usar solicitudesAprobadas en lugar de solicitudesRecientes
+    this.clientesFiltrados = [...this.solicitudesAprobadas].sort((a, b) => {
       const idA = Number(a.id_solicitud) || 0;
       const idB = Number(b.id_solicitud) || 0;
       return idB - idA;
     });
+
+    console.log('Filtros limpiados. Mostrando:', this.clientesFiltrados.length, 'registros');
   }
 
 
   eliminarSolicitudDeTabla(idSolicitud: number): void {
-  // También podrías marcar visualmente la solicitud como finalizada
-  const solicitudIndex = this.solicitudesRecientes.findIndex(s => s.id_solicitud === idSolicitud);
-  if (solicitudIndex !== -1) {
-    // Opcional: Marcar como finalizada antes de eliminar
-    this.solicitudesRecientes[solicitudIndex].estado_solicitud = 'FINALIZADA';
-    
-    // Luego eliminar después de un breve retraso (opcional)
-    setTimeout(() => {
-      this.solicitudesRecientes.splice(solicitudIndex, 1);
-      this.actualizarListasFiltradas();
-    }, 500);
-  }
+    // También podrías marcar visualmente la solicitud como finalizada
+    const solicitudIndex = this.solicitudesRecientes.findIndex(s => s.id_solicitud === idSolicitud);
+    if (solicitudIndex !== -1) {
+      // Opcional: Marcar como finalizada antes de eliminar
+      this.solicitudesRecientes[solicitudIndex].estado_solicitud = 'FINALIZADA';
 
-  // También eliminar de solicitudesAprobadas
-  const indexOriginal = this.solicitudesAprobadas.findIndex(s => s.id_solicitud === idSolicitud);
-  if (indexOriginal !== -1) {
-    this.solicitudesAprobadas.splice(indexOriginal, 1);
-  }
+      // Luego eliminar después de un breve retraso (opcional)
+      setTimeout(() => {
+        this.solicitudesRecientes.splice(solicitudIndex, 1);
+        this.actualizarListasFiltradas();
+      }, 500);
+    }
 
-  // Actualizar clientesFiltrados
-  const indexFiltrado = this.clientesFiltrados.findIndex(s => s.id_solicitud === idSolicitud);
-  if (indexFiltrado !== -1) {
-    this.clientesFiltrados.splice(indexFiltrado, 1);
-  }
+    // También eliminar de solicitudesAprobadas
+    const indexOriginal = this.solicitudesAprobadas.findIndex(s => s.id_solicitud === idSolicitud);
+    if (indexOriginal !== -1) {
+      this.solicitudesAprobadas.splice(indexOriginal, 1);
+    }
 
-  // Si tenemos menos de 6 solicitudes recientes, podemos agregar una más de la lista completa
-  if (this.solicitudesRecientes.length < 6 && this.solicitudesAprobadas.length > 0) {
-    const siguienteSolicitud = this.solicitudesAprobadas.find(s =>
-      !this.solicitudesRecientes.some(r => r.id_solicitud === s.id_solicitud)
-    );
+    // Actualizar clientesFiltrados
+    const indexFiltrado = this.clientesFiltrados.findIndex(s => s.id_solicitud === idSolicitud);
+    if (indexFiltrado !== -1) {
+      this.clientesFiltrados.splice(indexFiltrado, 1);
+    }
 
-    if (siguienteSolicitud) {
-      this.solicitudesRecientes.push(siguienteSolicitud);
-      this.clientesFiltrados = [...this.solicitudesRecientes];
+    // Si tenemos menos de 6 solicitudes recientes, podemos agregar una más de la lista completa
+    if (this.solicitudesRecientes.length < 6 && this.solicitudesAprobadas.length > 0) {
+      const siguienteSolicitud = this.solicitudesAprobadas.find(s =>
+        !this.solicitudesRecientes.some(r => r.id_solicitud === s.id_solicitud)
+      );
+
+      if (siguienteSolicitud) {
+        this.solicitudesRecientes.push(siguienteSolicitud);
+        this.clientesFiltrados = [...this.solicitudesRecientes];
+      }
     }
   }
-}
 
-// Método auxiliar para actualizar listas filtradas
-actualizarListasFiltradas(): void {
-  this.clientesFiltrados = [...this.solicitudesRecientes];
-}
+  // Método auxiliar para actualizar listas filtradas
+  actualizarListasFiltradas(): void {
+    this.clientesFiltrados = [...this.solicitudesRecientes];
+  }
 
   // Re-ingreso de crédito
   reingresoCredito(solicitud: any): void {
@@ -1786,32 +1890,32 @@ actualizarListasFiltradas(): void {
   //   return 'Generar Crédito';
   // }
   getClaseBotonGenerarCredito(solicitud: any): string {
-  if (!solicitud.domiciliado) {
-    return 'btn-action-main btn-secondary';
+    if (!solicitud.domiciliado) {
+      return 'btn-action-main btn-secondary';
+    }
+    return 'btn-action-main btn-primary';
   }
-  return 'btn-action-main btn-primary';
-}
 
-getTooltipGenerarCredito(solicitud: any): string {
-  if (!solicitud.domiciliado) {
-    return 'No domiciliado - Debe completar domiciliación';
+  getTooltipGenerarCredito(solicitud: any): string {
+    if (!solicitud.domiciliado) {
+      return 'No domiciliado - Debe completar domiciliación';
+    }
+    return 'Generar Pagaré - Cliente listo para ministración';
   }
-  return 'Generar Pagaré - Cliente listo para ministración';
-}
 
-getIconoBotonGenerarCredito(solicitud: any): string {
-  if (!solicitud.domiciliado) {
-    return 'fas fa-ban';
+  getIconoBotonGenerarCredito(solicitud: any): string {
+    if (!solicitud.domiciliado) {
+      return 'fas fa-ban';
+    }
+    return 'fas fa-file-invoice-dollar';
   }
-  return 'fas fa-file-invoice-dollar';
-}
 
-getTextoBotonGenerarCredito(solicitud: any): string {
-  if (!solicitud.domiciliado) {
-    return 'Sin Domiciliar';
+  getTextoBotonGenerarCredito(solicitud: any): string {
+    if (!solicitud.domiciliado) {
+      return 'Sin Domiciliar';
+    }
+    return 'Generar Pagaré';
   }
-  return 'Generar Pagaré';
-}
 
 
 
@@ -1823,10 +1927,10 @@ getTextoBotonGenerarCredito(solicitud: any): string {
   //   return !creditoExistente;
   // }
   puedeGenerarCredito(solicitud: any): boolean {
-  // Con el nuevo filtro, si la solicitud aparece en la lista,
-  // significa que NO tiene créditos asociados
-  return true; // Ya validamos esto en cargarDatosIniciales
-}
+    // Con el nuevo filtro, si la solicitud aparece en la lista,
+    // significa que NO tiene créditos asociados
+    return true; // Ya validamos esto en cargarDatosIniciales
+  }
 
   obtenerEstadoCreditoExistente(solicitud: any): string {
     // Buscar en la lista de créditos cargados

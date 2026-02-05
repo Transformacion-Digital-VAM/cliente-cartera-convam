@@ -27,20 +27,20 @@ export class SolicitudService {
 
   constructor(
     private http: HttpClient,
-    private authService: AuthService 
+    private authService: AuthService
   ) { }
 
   // Manejo de errores mejorado
   private handleError(error: HttpErrorResponse) {
     console.error('Error en SolicitudService:', error);
-    
+
     let errorMessage = 'Error del servidor';
     if (error.error instanceof ErrorEvent) {
       errorMessage = error.error.message;
     } else {
       errorMessage = error.error?.detalle || error.error?.error || error.message;
     }
-    
+
     return throwError(() => new Error(errorMessage));
   }
 
@@ -97,51 +97,51 @@ export class SolicitudService {
   // Agregar nombres a múltiples solicitudes
   private agregarNombresASolicitudes(solicitudes: any[], aliados: any[], avales: any[]): any[] {
     return solicitudes.map(solicitud => {
-      
+
       return this.agregarNombresASolicitud(solicitud, aliados, avales);
 
     });
 
-    
+
   }
 
   // Agregar nombres a una sola solicitud
   private agregarNombresASolicitud(solicitud: any, aliados: any[], avales: any[]): any {
-  if (!solicitud) return solicitud;
+    if (!solicitud) return solicitud;
 
-  const resultado = { ...solicitud };
+    const resultado = { ...solicitud };
 
-  // Agregar nombre del aliado (solo si no viene del backend)
-  if (!resultado.nombre_aliado && solicitud.aliado_id) {
-    const aliado = aliados.find(a => a.id_aliado == solicitud.aliado_id);
-    resultado.nombre_aliado = this.extraerNombreAliado(aliado) || 'No asignado';
-  } else if (!resultado.nombre_aliado) {
-    resultado.nombre_aliado = 'No asignado';
-  }
-
-  // Agregar nombre del aval (solo si no viene del backend)
-  if (!resultado.nombre_aval && solicitud.aval_id) {
-    const aval = avales.find(a => a.id_aval == solicitud.aval_id);
-    // Solo asignar si extraerNombreAval devuelve algo válido
-    const nombreAvalExtraido = this.extraerNombreAval(aval);
-    if (nombreAvalExtraido && nombreAvalExtraido !== 'Aval no encontrado') {
-      resultado.nombre_aval = nombreAvalExtraido;
+    // Agregar nombre del aliado (solo si no viene del backend)
+    if (!resultado.nombre_aliado && solicitud.aliado_id) {
+      const aliado = aliados.find(a => a.id_aliado == solicitud.aliado_id);
+      resultado.nombre_aliado = this.extraerNombreAliado(aliado) || 'No asignado';
+    } else if (!resultado.nombre_aliado) {
+      resultado.nombre_aliado = 'No asignado';
     }
-  }
-  
-  // Si después de todo no hay nombre_aval, asignar uno por defecto
-  if (!resultado.nombre_aval || resultado.nombre_aval === 'Aval no encontrado') {
-    // Intentar construir con los campos que sí vienen
-    const nombre = solicitud.nombre_aval || '';
-    const app = solicitud.app_aval || '';
-    const apm = solicitud.apm_aval || '';
-    const nombreCompleto = `${nombre} ${app} ${apm}`.trim();
-    
-    resultado.nombre_aval = nombreCompleto || 'Sin aval';
-  }
 
-  return resultado;
-}
+    // Agregar nombre del aval (solo si no viene del backend)
+    if (!resultado.nombre_aval && solicitud.aval_id) {
+      const aval = avales.find(a => a.id_aval == solicitud.aval_id);
+      // Solo asignar si extraerNombreAval devuelve algo válido
+      const nombreAvalExtraido = this.extraerNombreAval(aval);
+      if (nombreAvalExtraido && nombreAvalExtraido !== 'Aval no encontrado') {
+        resultado.nombre_aval = nombreAvalExtraido;
+      }
+    }
+
+    // Si después de todo no hay nombre_aval, asignar uno por defecto
+    if (!resultado.nombre_aval || resultado.nombre_aval === 'Aval no encontrado') {
+      // Intentar construir con los campos que sí vienen
+      const nombre = solicitud.nombre_aval || '';
+      const app = solicitud.app_aval || '';
+      const apm = solicitud.apm_aval || '';
+      const nombreCompleto = `${nombre} ${app} ${apm}`.trim();
+
+      resultado.nombre_aval = nombreCompleto || 'Sin aval';
+    }
+
+    return resultado;
+  }
 
   // Extraer nombre del aliado (con múltiples formatos posibles)
   private extraerNombreAliado(aliado: any): string {
@@ -165,24 +165,24 @@ export class SolicitudService {
   }
 
   // Extraer nombre del aval (con múltiples formatos posibles)
- private extraerNombreAval(aval: any): string {
-  if (!aval) return ''; // Cambia a cadena vacía
+  private extraerNombreAval(aval: any): string {
+    if (!aval) return ''; // Cambia a cadena vacía
 
-  // Intentar construir nombre completo
-  const nombre = aval.nombre || aval.nombre_aval || '';
-  const apellidoPaterno = aval.apellido_paterno || aval.app_aval || '';
-  const apellidoMaterno = aval.apellido_materno || aval.apm_aval || '';
+    // Intentar construir nombre completo
+    const nombre = aval.nombre || aval.nombre_aval || '';
+    const apellidoPaterno = aval.apellido_paterno || aval.app_aval || '';
+    const apellidoMaterno = aval.apellido_materno || aval.apm_aval || '';
 
-  const partes = [
-    nombre,
-    apellidoPaterno,
-    apellidoMaterno
-  ].filter(p => p && p.trim());
+    const partes = [
+      nombre,
+      apellidoPaterno,
+      apellidoMaterno
+    ].filter(p => p && p.trim());
 
-  return partes.join(' ').trim(); // Devuelve cadena vacía si no hay partes
-}
+    return partes.join(' ').trim(); // Devuelve cadena vacía si no hay partes
+  }
 
-  
+
 
   // ============================================
   // MÉTODOS PARA OBTENER DATOS EXTERNOS
@@ -198,57 +198,57 @@ export class SolicitudService {
     );
   }
 
-// Obtener todos los avales con manejo de errores y normalización
-obtenerTodosAvales(): Observable<any[]> {
-  return this.http.get<any>(this.avalesUrl).pipe(
-    map(response => {
-      console.log('=== RESPUESTA DE AVALES (RAW) ===');
-      console.log('Tipo:', typeof response);
-      console.log('Es array?:', Array.isArray(response));
-      console.log('Contenido:', response);
+  // Obtener todos los avales con manejo de errores y normalización
+  obtenerTodosAvales(): Observable<any[]> {
+    return this.http.get<any>(this.avalesUrl).pipe(
+      map(response => {
+        console.log('=== RESPUESTA DE AVALES (RAW) ===');
+        console.log('Tipo:', typeof response);
+        console.log('Es array?:', Array.isArray(response));
+        console.log('Contenido:', response);
 
-      // NORMALIZACIÓN: Convertir diferentes formatos a array
-      let avalesArray: any[] = [];
+        // NORMALIZACIÓN: Convertir diferentes formatos a array
+        let avalesArray: any[] = [];
 
-      if (Array.isArray(response)) {
-        // Caso 1: Ya es un array directamente
-        avalesArray = response;
-        console.log('✓ Formato: Array directo');
-      } else if (response && typeof response === 'object') {
-        // Caso 2: Es un objeto que contiene un array
-        if (response.avales && Array.isArray(response.avales)) {
-          avalesArray = response.avales;
-          console.log('✓ Formato: { avales: [...] }');
-        } else if (response.data && Array.isArray(response.data)) {
-          avalesArray = response.data;
-          console.log('✓ Formato: { data: [...] }');
-        } else if (response.rows && Array.isArray(response.rows)) {
-          avalesArray = response.rows;
-          console.log('✓ Formato: { rows: [...] }');
-        } else {
-          // Caso 3: Es un objeto único, convertir a array de 1 elemento
-          avalesArray = [response];
-          console.log('✓ Formato: Objeto único convertido a array');
+        if (Array.isArray(response)) {
+          // Caso 1: Ya es un array directamente
+          avalesArray = response;
+          console.log('✓ Formato: Array directo');
+        } else if (response && typeof response === 'object') {
+          // Caso 2: Es un objeto que contiene un array
+          if (response.avales && Array.isArray(response.avales)) {
+            avalesArray = response.avales;
+            console.log('✓ Formato: { avales: [...] }');
+          } else if (response.data && Array.isArray(response.data)) {
+            avalesArray = response.data;
+            console.log('✓ Formato: { data: [...] }');
+          } else if (response.rows && Array.isArray(response.rows)) {
+            avalesArray = response.rows;
+            console.log('✓ Formato: { rows: [...] }');
+          } else {
+            // Caso 3: Es un objeto único, convertir a array de 1 elemento
+            avalesArray = [response];
+            console.log('✓ Formato: Objeto único convertido a array');
+          }
         }
-      }
 
-      console.log('Array normalizado:', avalesArray);
-      console.log('Total de avales:', avalesArray.length);
-      
-      if (avalesArray.length > 0) {
-        console.log('Primer aval:', avalesArray[0]);
-      }
+        console.log('Array normalizado:', avalesArray);
+        console.log('Total de avales:', avalesArray.length);
 
-      return avalesArray;
-    }),
-    catchError(error => {
-      console.error('Error al cargar avales:', error);
-      console.error('Status:', error.status);
-      console.error('Message:', error.message);
-      return of([]); 
-    })
-  );
-}
+        if (avalesArray.length > 0) {
+          console.log('Primer aval:', avalesArray[0]);
+        }
+
+        return avalesArray;
+      }),
+      catchError(error => {
+        console.error('Error al cargar avales:', error);
+        console.error('Status:', error.status);
+        console.error('Message:', error.message);
+        return of([]);
+      })
+    );
+  }
 
   // Obtener aliado específico
   obtenerAliadoPorId(id: number): Observable<any> {
@@ -277,7 +277,7 @@ obtenerTodosAvales(): Observable<any[]> {
   // Crear nueva solicitud
   crearSolicitud(solicitud: any): Observable<any> {
     console.log('Creando solicitud con datos:', solicitud);
-    
+
     return this.http.post(`${this.baseUrl}/crear`, solicitud).pipe(
       catchError(this.handleError)
     );
@@ -285,8 +285,8 @@ obtenerTodosAvales(): Observable<any[]> {
 
   // Aprobar solicitud
   aprobarSolicitud(id: number, montoAprobado: number): Observable<any> {
-    return this.http.put(`${this.baseUrl}/aprobar/${id}`, { 
-      monto_aprobado: montoAprobado 
+    return this.http.put(`${this.baseUrl}/aprobar/${id}`, {
+      monto_aprobado: montoAprobado
     }).pipe(
       catchError(this.handleError)
     );
@@ -294,8 +294,8 @@ obtenerTodosAvales(): Observable<any[]> {
 
   // Rechazar solicitud
   rechazarSolicitud(id: number, motivo: string): Observable<any> {
-    return this.http.put(`${this.baseUrl}/rechazar/${id}`, { 
-      motivo: motivo 
+    return this.http.put(`${this.baseUrl}/rechazar/${id}`, {
+      motivo: motivo
     }).pipe(
       catchError(this.handleError)
     );
@@ -316,26 +316,26 @@ obtenerTodosAvales(): Observable<any[]> {
   }
 
 
-actualizarDomiciliacion(id: number, datos: any): Observable<any> {
-  return from(this.authService.getFirebaseToken()).pipe(
-    switchMap((token: string) => {
-      const headers = new HttpHeaders({
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      });
+  actualizarDomiciliacion(id: number, datos: any): Observable<any> {
+    return from(this.authService.getFirebaseToken()).pipe(
+      switchMap((token: string) => {
+        const headers = new HttpHeaders({
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        });
 
-      return this.http.put<any>(
-        `${this.baseUrl}/${id}/domiciliar`,
-        datos,
-        { headers }
-      );
-    }),
-    catchError(error => {
-      console.error('Error en actualizarDomiciliacion:', error);
-      return throwError(() => error);
-    })
-  );
-}
+        return this.http.put<any>(
+          `${this.baseUrl}/${id}/domiciliar`,
+          datos,
+          { headers }
+        );
+      }),
+      catchError(error => {
+        console.error('Error en actualizarDomiciliacion:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 
 
   // Método para obtener solicitudes pendientes de domiciliación
@@ -346,10 +346,10 @@ actualizarDomiciliacion(id: number, datos: any): Observable<any> {
   }
 
 
-// O si usas PUT:
-actualizarEstadoSolicitud(idSolicitud: number, datos: any): Observable<any> {
-  return this.http.put(`${this.baseUrl}/${idSolicitud}/estado`, datos);
-}
+  // O si usas PUT:
+  actualizarEstadoSolicitud(idSolicitud: number, datos: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/${idSolicitud}/estado`, datos);
+  }
 
 
 }
