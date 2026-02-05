@@ -1,56 +1,3 @@
-// import { Injectable } from '@angular/core';
-// import { HttpClient } from '@angular/common/http';
-// import { Observable } from 'rxjs';
-
-// @Injectable({
-//   providedIn: 'root'
-// })
-// export class SolicitudService {
-//   private apiUrl = 'http://localhost:3000/solicitud';
-//   private aliadosUrl = 'http://localhost:3000/aliados'; 
-//   private avalesUrl = 'http://localhost:3000/avales';
-
-//   constructor(private http: HttpClient) { }
-
-//   // Crear nueva solicitud
-//   crearSolicitud(solicitud: any): Observable<any> {
-//     return this.http.post(`${this.apiUrl}/crear`, solicitud);
-//   }
-
-//   obtenerSolicitudes(): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}`);
-//   }
-
-//   obtenerSolicitudPorId(id: number): Observable<any> {
-//     return this.http.get<any>(`${this.apiUrl}/${id}`);
-//   }
-
-//   // Obtener solicitudes por estado
-//   obtenerSolicitudesPorEstado(estado: string): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}/estado/${estado}`);
-//   }
-
-//   // Aprobar solicitud
-//   aprobarSolicitud(id: number, montoAprobado: number): Observable<any> {
-//     return this.http.put(`${this.apiUrl}/aprobar/${id}`, { monto_aprobado: montoAprobado });
-//   }
-
-//   // Rechazar solicitud
-//   rechazarSolicitud(id: number, motivo: string): Observable<any> {
-//     return this.http.put(`${this.apiUrl}/rechazar/${id}`, { motivo });
-//   }
-
-//   // Obtener solicitudes por cliente
-//   obtenerSolicitudesPorCliente(clienteId: number): Observable<any[]> {
-//     return this.http.get<any[]>(`${this.apiUrl}/cliente/${clienteId}`);
-//   }
-
-// }
-
-
-// -----------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------------
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, forkJoin, of } from 'rxjs';
@@ -68,15 +15,16 @@ export class SolicitudService {
   actualizarSolicitudDomicilio(datosActualizacion: { id_solicitud: any; estado: string; horario_entrega: string; persona_confirma: string; fecha_domiciliada: string; }) {
     throw new Error('Method not implemented.');
   }
-  private apiUrl = `${environment.apiUrl}/solicitud`;
+  // private apiUrl = 'http://localhost:3000/solicitud';
+  private baseUrl = `${environment.apiUrl}/solicitud`;
+
+  private aliadosUrl = `${environment.apiUrl}/aliado`;
+  private avalesUrl = `${environment.apiUrl}/cliente/aval`;
 
   // Rutas actualizadas
-  private aliadosUrl = `${environment.apiUrl}/aliado`;
-  private avalesUrl = `${environment.apiUrl}/cliente/avales`;
+  // private aliadosUrl = 'http://localhost:3000/aliado'; 
+  // private avalesUrl = 'http://localhost:3000/cliente/aval';
 
-  // constructor(private http: HttpClient) { 
-
-  // }
   constructor(
     private http: HttpClient,
     private authService: AuthService
@@ -103,7 +51,7 @@ export class SolicitudService {
   // Obtener todas las solicitudes con nombres de aliado y aval
   obtenerSolicitudes(): Observable<any[]> {
     return forkJoin({
-      solicitudes: this.http.get<any[]>(this.apiUrl),
+      solicitudes: this.http.get<any[]>(this.baseUrl),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -117,7 +65,7 @@ export class SolicitudService {
   // Obtener solicitudes por estado con nombres
   obtenerSolicitudesPorEstado(estado: string): Observable<any[]> {
     return forkJoin({
-      solicitudes: this.http.get<any[]>(`${this.apiUrl}/estado/${estado}`),
+      solicitudes: this.http.get<any[]>(`${this.baseUrl}/estado/${estado}`),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -131,7 +79,7 @@ export class SolicitudService {
   // Obtener solicitud específica con nombres
   obtenerSolicitudPorId(id: number): Observable<any> {
     return forkJoin({
-      solicitud: this.http.get<any>(`${this.apiUrl}/${id}`),
+      solicitud: this.http.get<any>(`${this.baseUrl}/${id}`),
       aliados: this.obtenerTodosAliados(),
       avales: this.obtenerTodosAvales()
     }).pipe(
@@ -355,14 +303,14 @@ export class SolicitudService {
 
   // Obtener solicitudes por cliente
   obtenerSolicitudesPorCliente(clienteId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/cliente/${clienteId}`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/cliente/${clienteId}`).pipe(
       catchError(this.handleError)
     );
   }
 
   // Obtener solicitudes por usuario (ejecutivo)
   obtenerSolicitudesPorUsuario(usuarioId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/usuario/${usuarioId}`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/usuario/${usuarioId}`).pipe(
       catchError(this.handleError)
     );
   }
@@ -392,7 +340,7 @@ export class SolicitudService {
 
   // Método para obtener solicitudes pendientes de domiciliación
   obtenerSolicitudesPendientesDomiciliacion(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/pendientes/domiciliacion`).pipe(
+    return this.http.get<any[]>(`${this.baseUrl}/pendientes/domiciliacion`).pipe(
       catchError(this.handleError)
     );
   }
@@ -405,5 +353,4 @@ export class SolicitudService {
 
 
 }
-
 
