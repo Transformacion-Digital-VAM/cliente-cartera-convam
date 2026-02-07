@@ -21,7 +21,7 @@
       </li>
 
       <!-- Solicitudes: tesoreria, coordinador, admin -->
-      <li class="nav-item" *ngIf="isTesoreria || isAdmin">
+      <li class="nav-item" *ngIf="isTesoreria || isCoordinador || isAdmin">
         <a class="nav-link text-dark fw-semibold" routerLink="/solicitud">Solicitudes</a>
       </li>
 

@@ -53,7 +53,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     try {
       this.users = await this.adminControlService.getUsers();
-      // console.log('Usuarios cargados:', this.users);
+      console.log('Usuarios cargados:', this.users);
     } catch (error: any) {
       console.error('Error cargando usuarios:', error);
       this.showError(error.message || 'Error al cargar los usuarios');

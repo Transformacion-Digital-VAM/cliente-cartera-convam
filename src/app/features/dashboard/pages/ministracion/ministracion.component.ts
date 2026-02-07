@@ -34,7 +34,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   procesandoGeneracion: boolean = false;
 
   // Control de modals
-  // modalPagareAbierto: boolean = false;
+  modalPagareAbierto: boolean = false;
   solicitudSeleccionada: any = null;
 
   // Estados de carga

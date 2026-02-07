@@ -2,15 +2,15 @@
     <!-- Migajas de Pan -->
     <nav class="breadcrumb-nav" aria-label="Migajas de pan">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="/dashboard" class="breadcrumb-link">INICIO</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                DAR DE ALTA AL CLIENTE
-            </li>
+        <li class="breadcrumb-item">
+            <a href="/dashboard" class="breadcrumb-link">INICIO</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            DAR DE ALTA AL CLIENTE
+        </li>
         </ol>
     </nav>
-
+    
     <div class="admin-header">
         <h1 class="reset-title">ALTA DEL CLIENTE</h1>
     </div>
@@ -24,9 +24,6 @@
         </div>
 
         <form class="register-form">
-             <div class="div-obliga">
-                <span class="obligatorios">Campos obligatorios *</span>
-            </div>
             <!-- PASO 1: Dirección del Cliente -->
             <div *ngIf="currentStep === 1">
                 <h2 class="section-title">DIRECCIÓN DEL CLIENTE</h2>
@@ -34,10 +31,13 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="municipio">MUNICIPIO <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccion.municipio"
-                                name="municipio" (input)="convertirAMayusculas($event, 'direccion', 'municipio')"
-                                [class.is-invalid]="errors['municipio']" required>
+                            <label class="form-label" for="municipio">MUNICIPIO *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccion.municipio" 
+                                   name="municipio"
+                                   (input)="convertirAMayusculas($event, 'direccion', 'municipio')"
+                                   [class.is-invalid]="errors['municipio']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['municipio']">
                                 {{ errors['municipio'] }}
                             </div>
@@ -45,11 +45,13 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="localidad">LOCALIDAD <span class="asterisco">*</span>
-                            </label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccion.localidad"
-                                name="localidad" (input)="convertirAMayusculas($event, 'direccion', 'localidad')"
-                                [class.is-invalid]="errors['localidad']" required>
+                            <label class="form-label" for="localidad">LOCALIDAD *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccion.localidad" 
+                                   name="localidad"
+                                   (input)="convertirAMayusculas($event, 'direccion', 'localidad')"
+                                   [class.is-invalid]="errors['localidad']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['localidad']">
                                 {{ errors['localidad'] }}
                             </div>
@@ -60,10 +62,13 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="calle">CALLE <span class="asterisco">*</span> </label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccion.calle" name="calle"
-                                (input)="convertirAMayusculas($event, 'direccion', 'calle')"
-                                [class.is-invalid]="errors['calle']" required>
+                            <label class="form-label" for="calle">CALLE *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccion.calle" 
+                                   name="calle"
+                                   (input)="convertirAMayusculas($event, 'direccion', 'calle')"
+                                   [class.is-invalid]="errors['calle']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['calle']">
                                 {{ errors['calle'] }}
                             </div>
@@ -71,9 +76,12 @@
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label class="form-label" for="numero">NÚMERO <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control" [(ngModel)]="direccion.numero" name="numero"
-                                [class.is-invalid]="errors['numero']" required>
+                            <label class="form-label" for="numero">NÚMERO *</label>
+                            <input type="text" class="form-control" 
+                                   [(ngModel)]="direccion.numero" 
+                                   name="numero"
+                                   [class.is-invalid]="errors['numero']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['numero']">
                                 {{ errors['numero'] }}
                             </div>
@@ -94,12 +102,13 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label" for="nombre_cliente">NOMBRE(S) <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.nombre_cliente"
-                                name="nombre_cliente"
-                                (input)="convertirAMayusculas($event, 'cliente', 'nombre_cliente')"
-                                [class.is-invalid]="errors['nombre_cliente']" required>
+                            <label class="form-label" for="nombre_cliente">NOMBRE(S) *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.nombre_cliente"
+                                   name="nombre_cliente" 
+                                   (input)="convertirAMayusculas($event, 'cliente', 'nombre_cliente')"
+                                   [class.is-invalid]="errors['nombre_cliente']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['nombre_cliente']">
                                 {{ errors['nombre_cliente'] }}
                             </div>
@@ -107,11 +116,13 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label" for="app_cliente">APELLIDO PATERNO <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.app_cliente"
-                                name="app_cliente" (input)="convertirAMayusculas($event, 'cliente', 'app_cliente')"
-                                [class.is-invalid]="errors['app_cliente']" required>
+                            <label class="form-label" for="app_cliente">APELLIDO PATERNO *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.app_cliente" 
+                                   name="app_cliente"
+                                   (input)="convertirAMayusculas($event, 'cliente', 'app_cliente')"
+                                   [class.is-invalid]="errors['app_cliente']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['app_cliente']">
                                 {{ errors['app_cliente'] }}
                             </div>
@@ -119,11 +130,13 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label" for="apm_cliente">APELLIDO MATERNO <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.apm_cliente"
-                                name="apm_cliente" (input)="convertirAMayusculas($event, 'cliente', 'apm_cliente')"
-                                [class.is-invalid]="errors['apm_cliente']" required>
+                            <label class="form-label" for="apm_cliente">APELLIDO MATERNO *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.apm_cliente" 
+                                   name="apm_cliente"
+                                   (input)="convertirAMayusculas($event, 'cliente', 'apm_cliente')"
+                                   [class.is-invalid]="errors['apm_cliente']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['apm_cliente']">
                                 {{ errors['apm_cliente'] }}
                             </div>
@@ -131,10 +144,13 @@
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="form-label" for="ocupacion">OCUPACIÓN <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.ocupacion"
-                                name="ocupacion" (input)="convertirAMayusculas($event, 'cliente', 'ocupacion')"
-                                [class.is-invalid]="errors['ocupacion']" required>
+                            <label class="form-label" for="ocupacion">OCUPACIÓN *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.ocupacion" 
+                                   name="ocupacion"
+                                   (input)="convertirAMayusculas($event, 'cliente', 'ocupacion')"
+                                   [class.is-invalid]="errors['ocupacion']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['ocupacion']">
                                 {{ errors['ocupacion'] }}
                             </div>
@@ -145,10 +161,14 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="curp">CURP <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.curp" name="curp"
-                                (input)="convertirAMayusculas($event, 'cliente', 'curp')"
-                                [class.is-invalid]="errors['curp']" required maxlength="18">
+                            <label class="form-label" for="curp">CURP *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.curp" 
+                                   name="curp"
+                                   (input)="convertirAMayusculas($event, 'cliente', 'curp')"
+                                   [class.is-invalid]="errors['curp']" 
+                                   required
+                                   maxlength="18">
                             <div class="error-message" *ngIf="errors['curp']">
                                 {{ errors['curp'] }}
                             </div>
@@ -157,8 +177,10 @@
                     <div class="col-md-2">
                         <div class="form-group">
                             <label class="form-label" for="nacionalidad">NACIONALIDAD</label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="cliente.nacionalidad"
-                                name="nacionalidad" (input)="convertirAMayusculas($event, 'cliente', 'nacionalidad')">
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="cliente.nacionalidad"
+                                   name="nacionalidad"
+                                   (input)="convertirAMayusculas($event, 'cliente', 'nacionalidad')">
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -175,15 +197,24 @@
                             </div>
                         </div> -->
                         <div class="form-group">
-                            <label class="form-label" for="telefono">TELÉFONO <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control" name="telefono" [(ngModel)]="cliente.telefono"
-                                maxlength="10" inputmode="numeric" pattern="[0-9]*" (input)="soloNumerosTelefono()"
-                                [class.is-invalid]="errors['telefono']" required>
+  <label class="form-label" for="telefono">TELÉFONO *</label>
+  <input
+    type="text"
+    class="form-control"
+    name="telefono"
+    [(ngModel)]="cliente.telefono"
+    maxlength="10"
+    inputmode="numeric"
+    pattern="[0-9]*"
+    (input)="soloNumerosTelefono()"
+    [class.is-invalid]="errors['telefono']"
+    required
+  >
 
-                            <div class="error-message" *ngIf="errors['telefono']">
-                                {{ errors['telefono'] }}
-                            </div>
-                        </div>
+  <div class="error-message" *ngIf="errors['telefono']">
+    {{ errors['telefono'] }}
+  </div>
+</div>
 
                     </div>
                 </div>
@@ -204,12 +235,13 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="municipio_aval">MUNICIPIO <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccionAval.municipio"
-                                name="municipio_aval"
-                                (input)="convertirAMayusculas($event, 'direccionAval', 'municipio')"
-                                [class.is-invalid]="errors['municipio_aval']" required>
+                            <label class="form-label" for="municipio_aval">MUNICIPIO *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccionAval.municipio"
+                                   name="municipio_aval" 
+                                   (input)="convertirAMayusculas($event, 'direccionAval', 'municipio')"
+                                   [class.is-invalid]="errors['municipio_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['municipio_aval']">
                                 {{ errors['municipio_aval'] }}
                             </div>
@@ -217,12 +249,13 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="localidad_aval">LOCALIDAD <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccionAval.localidad"
-                                name="localidad_aval"
-                                (input)="convertirAMayusculas($event, 'direccionAval', 'localidad')"
-                                [class.is-invalid]="errors['localidad_aval']" required>
+                            <label class="form-label" for="localidad_aval">LOCALIDAD *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccionAval.localidad"
+                                   name="localidad_aval" 
+                                   (input)="convertirAMayusculas($event, 'direccionAval', 'localidad')"
+                                   [class.is-invalid]="errors['localidad_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['localidad_aval']">
                                 {{ errors['localidad_aval'] }}
                             </div>
@@ -233,10 +266,13 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label class="form-label" for="calle_aval">CALLE <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="direccionAval.calle"
-                                name="calle_aval" (input)="convertirAMayusculas($event, 'direccionAval', 'calle')"
-                                [class.is-invalid]="errors['calle_aval']" required>
+                            <label class="form-label" for="calle_aval">CALLE *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="direccionAval.calle" 
+                                   name="calle_aval"
+                                   (input)="convertirAMayusculas($event, 'direccionAval', 'calle')"
+                                   [class.is-invalid]="errors['calle_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['calle_aval']">
                                 {{ errors['calle_aval'] }}
                             </div>
@@ -244,9 +280,12 @@
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label class="form-label" for="numero_aval">NÚMERO <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control" [(ngModel)]="direccionAval.numero"
-                                name="numero_aval" [class.is-invalid]="errors['numero_aval']" required>
+                            <label class="form-label" for="numero_aval">NÚMERO *</label>
+                            <input type="text" class="form-control" 
+                                   [(ngModel)]="direccionAval.numero"
+                                   name="numero_aval" 
+                                   [class.is-invalid]="errors['numero_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['numero_aval']">
                                 {{ errors['numero_aval'] }}
                             </div>
@@ -270,11 +309,13 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="nombre_aval">NOMBRE(S) <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="aval.nombre_aval"
-                                name="nombre_aval" (input)="convertirAMayusculas($event, 'aval', 'nombre_aval')"
-                                [class.is-invalid]="errors['nombre_aval']" required>
+                            <label class="form-label" for="nombre_aval">NOMBRE(S) *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="aval.nombre_aval" 
+                                   name="nombre_aval"
+                                   (input)="convertirAMayusculas($event, 'aval', 'nombre_aval')"
+                                   [class.is-invalid]="errors['nombre_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['nombre_aval']">
                                 {{ errors['nombre_aval'] }}
                             </div>
@@ -282,11 +323,13 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="app_aval">APELLIDO PATERNO<span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="aval.app_aval"
-                                name="app_aval" (input)="convertirAMayusculas($event, 'aval', 'app_aval')"
-                                [class.is-invalid]="errors['app_aval']" required>
+                            <label class="form-label" for="app_aval">APELLIDO PATERNO*</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="aval.app_aval" 
+                                   name="app_aval"
+                                   (input)="convertirAMayusculas($event, 'aval', 'app_aval')"
+                                   [class.is-invalid]="errors['app_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['app_aval']">
                                 {{ errors['app_aval'] }}
                             </div>
@@ -294,11 +337,13 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="apm_aval">APELLIDO MATERNO <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="aval.apm_aval"
-                                name="apm_aval" (input)="convertirAMayusculas($event, 'aval', 'apm_aval')"
-                                [class.is-invalid]="errors['apm_aval']" required>
+                            <label class="form-label" for="apm_aval">APELLIDO MATERNO *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="aval.apm_aval" 
+                                   name="apm_aval"
+                                   (input)="convertirAMayusculas($event, 'aval', 'apm_aval')"
+                                   [class.is-invalid]="errors['apm_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['apm_aval']">
                                 {{ errors['apm_aval'] }}
                             </div>
@@ -308,10 +353,14 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="curp_aval">CURP AVAL <span class="asterisco">*</span></label>
-                            <input type="text" class="form-control uppercase" [(ngModel)]="aval.curp" name="curp_aval"
-                                (input)="convertirAMayusculas($event, 'aval', 'curp')"
-                                [class.is-invalid]="errors['curp_aval']" required maxlength="18">
+                            <label class="form-label" for="curp_aval">CURP AVAL *</label>
+                            <input type="text" class="form-control uppercase" 
+                                   [(ngModel)]="aval.curp" 
+                                   name="curp_aval"
+                                   (input)="convertirAMayusculas($event, 'aval', 'curp')"
+                                   [class.is-invalid]="errors['curp_aval']" 
+                                   required
+                                   maxlength="18">
                             <div class="error-message" *ngIf="errors['curp_aval']">
                                 {{ errors['curp_aval'] }}
                             </div>
@@ -319,11 +368,13 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
-                            <label class="form-label" for="telefono_aval">TELÉFONO <span
-                                    class="asterisco">*</span></label>
-                            <input type="text" class="form-control" [(ngModel)]="aval.telefono" name="telefono_aval"
-                                maxlength="10" inputmode="numeric" pattern="[0-9]*"
-                                [class.is-invalid]="errors['telefono_aval']" required>
+                            <label class="form-label" for="telefono_aval">TELÉFONO *</label>
+                            <input type="text" class="form-control" 
+                                   [(ngModel)]="aval.telefono" 
+                                   name="telefono_aval"  maxlength="10" inputmode="numeric"
+                                    pattern="[0-9]*"
+                                   [class.is-invalid]="errors['telefono_aval']" 
+                                   required>
                             <div class="error-message" *ngIf="errors['telefono_aval']">
                                 {{ errors['telefono_aval'] }}
                             </div>
@@ -340,7 +391,6 @@
                     </button>
                 </div>
             </div>
-
         </form>
     </div>
 </div>

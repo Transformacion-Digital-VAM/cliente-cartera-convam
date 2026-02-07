@@ -175,27 +175,6 @@
     margin-top: 5px;
 }
 
-.asterisco {
-  color: rgb(175, 3, 3);
-}
-
-.div-obliga {
-  margin-bottom: 10px;
-}
-
-.obligatorios {
-  font-size: 0.9rem;
-  color: #b00020;
-  background-color: #fdecea;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.obligatorios::before {
-  content: "⚠ ";
-}
-
 /* Botones */
 .btn {
     padding: 12px 24px;

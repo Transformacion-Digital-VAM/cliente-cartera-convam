@@ -1,20 +1,21 @@
-<div class="client-domicili-container">
+<div class="client-list-container solicitudes-container">
   <!-- Migas de pan -->
   <nav class="breadcrumb-nav">
     <ol class="breadcrumb">
       <li class="breadcrumb-item">
-        <a href="/dashboard" class="breadcrumb-link">INICIO</a>
+        <a href="/" class="breadcrumb-link">Inicio</a>
       </li>
       <li class="breadcrumb-item">
-        <a href="/domiciliacion" class="breadcrumb-link">PANEL DE COORDINADOR</a>
+        <a href="/domiciliacion" class="breadcrumb-link">Panel Coordinador</a>
       </li>
-      <li class="breadcrumb-item active">SOLICITUDES A DOMICILIAR</li>
+      <li class="breadcrumb-item active">Solicitudes Domicilio</li>
     </ol>
   </nav>
 
   <!-- Encabezado -->
   <header class="admin-header">
     <h1 class="reset-title">Gestión de Solicitudes de Domicilio</h1>
+    <p class="subtitle">Administre las solicitudes enviadas y pendientes de domicilio</p>
   </header>
 
   <!-- Filtros -->
@@ -90,12 +91,7 @@
               <strong>{{getNombreCompleto(solicitud)}}</strong>
               <small class="text-muted d-block">{{getDireccionCompleta(solicitud)}}</small>
             </td>
-            <!-- <td class="telefono-cell">{{getTelefonoFormateado(solicitud)}}</td> -->
-            <td class="telefono-cell">
-              <a href="tel:{{getTelefonoNumerico(solicitud)}}" class="telefono-link">
-                <i class="fas fa-phone"></i> {{getTelefonoFormateado(solicitud)}}
-              </a>
-            </td>
+            <td class="telefono-cell">{{getTelefonoFormateado(solicitud)}}</td>
             <td class="aliado-cell">{{getNombreAliado(solicitud)}}</td>
             <td class="monto-cell">{{formatearMoneda(solicitud.monto_solicitado)}}</td>
             <td>
@@ -106,14 +102,9 @@
             <td class="fecha-cell">{{formatearFecha(solicitud.fecha_creacion)}}</td>
             <td class="actions-cell">
               <div class="btn-group">
-                <!-- <button *ngIf="solicitud.estado === 'PENDIENTE'" class="btn btn-sm btn-primary"
-                  (click)="seleccionarSolicitud(solicitud); $event.stopPropagation()">
+                <button *ngIf="solicitud.estado === 'PENDIENTE'" class="btn btn-sm btn-primary"
+                  (click)="seleccionarSolicitud(solicitud); $event.stopPropagation()" title="Marcar como domiciliada">
                   <i class="fas fa-home"></i><i class="fas fa-check"></i> Domiciliar
-                </button> -->
-                <button *ngIf="(solicitud.estado === 'PENDIENTE' || solicitud.estado === 'APROBADO') && 
-                        (solicitud.domiciliado === false || solicitud.domiciliado === null)" 
-                  class="btn btn-sm btn-primary"><i class="fas fa-home"></i><i class="fas fa-check"></i>
-                   Domiciliar
                 </button>
               </div>
             </td>
@@ -160,11 +151,9 @@
           </div>
           <div class="info-item">
             <label><i class="fas fa-phone"></i> Teléfono:</label>
-            <a href="tel:{{getTelefonoNumerico(solicitudSeleccionada)}}" class="telefono-link">
-              {{getTelefonoFormateado(solicitudSeleccionada)}}
-            </a>
+            <span>{{getTelefonoFormateado(solicitudSeleccionada)}}</span>
           </div>
-          <div class="info-item">
+          <div class="info-item full-width">
             <label><i class="fas fa-map-marker-alt"></i> Dirección:</label>
             <span>{{getDireccionCompleta(solicitudSeleccionada)}}</span>
           </div>
@@ -172,29 +161,9 @@
             <label><i class="fas fa-handshake"></i> Aliado:</label>
             <span>{{getNombreAliado(solicitudSeleccionada)}}</span>
           </div>
-        </div>
-
-        <!-- Datos del Aval -->
-        <div class="info-grid aval-section">
           <div class="info-item">
-            <label><i class="fas fa-user-shield"></i> Aval:</label>
-            <span>{{getNombreAval(solicitudSeleccionada)}}</span>
-          </div>
-
-          <div class="info-item">
-            <label><i class="fas fa-phone"></i> Teléfono Aval:</label>
-            <a *ngIf="getTelefonoAvalNumerico(solicitudSeleccionada) !== ''"
-              href="tel:{{ getTelefonoAvalNumerico(solicitudSeleccionada) }}" class="telefono-link">
-              {{ getTelefonoAvalFormateado(solicitudSeleccionada) }}
-            </a>
-            <span *ngIf="getTelefonoAvalNumerico(solicitudSeleccionada) === ''">
-              N/A
-            </span>
-          </div>
-
-          <div class="info-item full-width">
-            <label><i class="fas fa-map-marker-alt"></i> Dirección Aval:</label>
-            <span>{{ getDireccionAval(solicitudSeleccionada) }}</span>
+            <label><i class="fas fa-dollar-sign"></i> Monto Aprobado:</label>
+            <span>{{formatearMoneda(solicitudSeleccionada.monto_aprobado || 0)}}</span>
           </div>
         </div>
 
@@ -211,9 +180,13 @@
           </div>
 
           <div class="form-group">
-            <label>Horario de disponibilidad:</label>
-            <input type="time" class="form-control" [(ngModel)]="horario" />
-            <small>A partir de que hora se puede econtrar la persona</small>
+            <label>Horario de Visita:</label>
+            <input
+              type="time"
+              class="form-control"
+              [(ngModel)]="horario"
+            />
+            <small>Hora exacta de la visita</small>
           </div>
 
           <div class="form-group">
@@ -221,7 +194,7 @@
             <textarea class="form-control" rows="2"
               placeholder="Nombre completo de la persona que recibió en el domicilio" [(ngModel)]="personaRecibio">
           </textarea>
-            <small>Nombre completo de quien recibió y observaciones</small>
+            <small>Nombre completo de quien recibió el pedido</small>
           </div>
 
           <div class="acciones-aprobacion">
@@ -239,4 +212,19 @@
       </div>
     </div>
   </div>
+
+  <!-- Leyenda de estados -->
+  <!-- <div class="leyenda-estados">
+    <div class="leyenda-item">
+      <span class="badge estado-pendiente">Pendiente</span>
+      <span>Solicitud recibida, en espera de revisión</span>
+    </div>
+    <div class="leyenda-item">
+      <span class="badge estado-aprobada">Aprobada</span>
+      <span>Solicitud aprobada para proceso</span>
+    </div>
+    <div class="badge estado-rechazada">Rechazada
+      <span>Solicitud rechazada</span>
+    </div>
+  </div> -->
 </div>

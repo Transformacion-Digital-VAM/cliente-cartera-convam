@@ -57,7 +57,7 @@ export class LoginComponent {
         const redirectRoute = rolInfo.ruta;
         const nombreRol = rolInfo.nombre;
 
-        // console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
+        console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
 
         Swal.fire({
           title: '¡Bienvenido!',
@@ -108,7 +108,7 @@ export class LoginComponent {
         const redirectRoute = rolInfo.ruta;
         const nombreRol = rolInfo.nombre;
 
-        // console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
+        console.log(`Redirigiendo a: ${redirectRoute}, Rol ID: ${currentUser.rol_id}, Nombre Rol: ${nombreRol}`);
 
         Swal.fire({
           title: '¡Bienvenido!',

@@ -29,14 +29,30 @@
             placeholder="Buscar por CURP" class="form-control" />
         </div>
 
+        <div class="form-group">
+          <input type="text" id="aliado" name="aliado" [(ngModel)]="filtro.identificacion"
+            placeholder="Buscar por Aliada" class="form-control" />
+        </div>
+
+        <!-- Estado Crédito -->
+        <div class="form-group">
+          <select id="estadoCredito" name="estadoCredito" [(ngModel)]="filtro.estadoCredito" class="form-control">
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="vencido">Vencido</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="bloqueado">Bloqueado</option>
+          </select>
+        </div>
+
         <!-- Botones -->
-        <!-- En la sección de filtros -->
-        <div class="form-group botones-filtros">
-          <label class="label-fantasma">&nbsp;</label>
-          <div class="acciones">
-            <button class="btn btn-primary" (click)="buscarCliente()">BUSCAR</button>
-            <button class="btn btn-outline" (click)="limpiarFiltros()">LIMPIAR</button>
-          </div>
+        <div class="botones-filtros">
+          <button (click)="buscarCliente()" class="btn btn-primary">
+            BUSCAR
+          </button>
+          <button (click)="limpiarFiltros()" class="btn btn-secondary">
+            LIMPIAR
+          </button>
         </div>
       </div>
     </div>
@@ -64,9 +80,6 @@
     <div class="tabla-section-vertical">
       <div class="tabla-header">
         <h3>LISTA DE CLIENTES ({{ clientes.length }})</h3>
-        <button class="btn btn-secondary mb-3" (click)="alternarVistaClientes()">
-          {{ mostrarTodosClientes ? 'Ocultar Créditos Cerrados (>7 meses)' : 'Mostrar Todos' }}
-        </button>
       </div>
 
       <div class="table-container-vertical">
@@ -79,16 +92,12 @@
               <th scope="col">APELLIDO MATERNO</th>
               <th scope="col" class="text-center">CURP</th>
               <th scope="col" class="text-center">TELÉFONO</th>
-              <th scope="col" class="text-center">FECHA NACIMIENTO</th>
               <th scope="col" class="text-center">ESTADO CLIENTE</th>
               <th scope="col" class="text-center">GENERAR SOLICITUD</th>
             </tr>
           </thead>
           <tbody>
-            <!-- <tr *ngFor="let cliente of clientes"
-              [class.selected]="clienteSeleccionado?.id_cliente === cliente.id_cliente"
-              (click)="seleccionarCliente(cliente)"> -->
-            <tr *ngFor="let cliente of clientesFiltrados"
+            <tr *ngFor="let cliente of clientes"
               [class.selected]="clienteSeleccionado?.id_cliente === cliente.id_cliente"
               (click)="seleccionarCliente(cliente)">
               <td class="id-cell">{{ cliente.id_cliente }}</td>
@@ -97,10 +106,8 @@
               <td class="apellido-cell">{{ cliente.apm_cliente || 'N/A' }}</td>
               <td class="curp-cell text-center">{{ cliente.curp || 'N/A' }}</td>
               <td class="curp-cell text-center">{{ cliente.telefono || 'N/A' }}</td>
-              <td class="curp-cell text-center">
-                {{ cliente.fecha_nacimiento ? (cliente.fecha_nacimiento | date: 'dd/MM/yyyy') : 'N/A' }}</td>
               <td class="estadocliente text-center">
-                <span [class]="getEstadoClienteClass(cliente)" class="text-dark bold">
+                <span [class]="getEstadoClienteClass(cliente)" class="text-success bold">
                   {{ getEstadoCliente(cliente) }}
                 </span>
               </td>
@@ -112,9 +119,9 @@
               </td>
             </tr>
           </tbody>
-          <tfoot *ngIf="clientesFiltrados.length === 0">
+          <tfoot *ngIf="clientes.length === 0">
             <tr>
-              <td colspan="9" class="text-center no-data">
+              <td colspan="7" class="text-center no-data">
                 NO SE ENCONTRARON CLIENTES
               </td>
             </tr>
@@ -176,6 +183,16 @@
               <strong>TELÉFONO:</strong>
               <span>{{ clienteSeleccionado.telefono || 'No especificado' }}</span>
             </div>
+            <div class="info-item-detalle">
+              <strong>ESTADO:</strong>
+              <span class="badge" [ngClass]="getEstadoCreditoClass(clienteSeleccionado)">
+                {{ getEstadoCreditoText(clienteSeleccionado) }}
+              </span>
+            </div>
+            <div class="info-item-detalle">
+              <strong>CICLO ACTUAL:</strong>
+              <span>{{ clienteSeleccionado.ciclo_actual || 'No definido' }}</span>
+            </div>
           </div>
         </div>
         <!-- Información de Aval -->
@@ -220,7 +237,6 @@
     </div>
   </div>
 
-
   <!-- Modal de Solicitud -->
   <div class="modal fade" id="crearSolicitud" tabindex="-1" aria-labelledby="solicitudModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -230,12 +246,33 @@
             <i class="fa-solid fa-clipboard-list"></i>
           </div>
           <div class="modal-header-text">
+<<<<<<< HEAD
             <h3 class="modal-title"> GENERAR SOLICITUD</h3>
+=======
+            <h3 class="modal-title"> NUEVA SOLICITUD</h3>
+>>>>>>> main
           </div>
+          <!-- <h5 class="modal-title" id="solicitudModalLabel"> Nueva Solicitud de Crédito</h5> -->
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
             (click)="cerrarModalSolicitud()"></button>
         </div>
         <div class="modal-body">
+          <!-- Información del Cliente -->
+          <!-- <div class="card mb-2">
+            <div class="card-header">
+              <h6 class="mb-0">INFORMACIÓN DEL CLIENTE</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-2">
+                  <strong>ID CLIENTE:</strong> {{ clienteParaSolicitud?.id_cliente }}
+                </div>
+                <div class="col-md-6">
+                  <strong>NOMBRE:</strong> {{ getNombreCompleto(clienteParaSolicitud) }}
+                </div>
+              </div>
+            </div>
+          </div> -->
           <div class="alert alert-info mb-3">
             <small>
               <strong>Ejecutivo responsable:</strong>
@@ -263,18 +300,11 @@
                   <div class="mb-3">
                     <label for="montoSolicitado" class="form-label">MONTO SOLICITADO *</label>
                     <input type="number" class="form-control" id="montoSolicitado" formControlName="monto_solicitado"
-                      step="100" [min]="solicitudForm.get('tipo_credito')?.value === 'NUEVO' ? 3000 : 7000"
-                      [max]="solicitudForm.get('tipo_credito')?.value === 'RENOVACION' ? 5000 : 25000">
-
-                    <div *ngIf="solicitudForm.get('monto_solicitado')?.invalid && 
-                solicitudForm.get('monto_solicitado')?.touched" class="text-danger small">
-                      {{ getMontoErrorMessage() }}
-                    </div>
-
-                    <div *ngIf="solicitudForm.get('monto_solicitado')?.valid && 
-                solicitudForm.get('tipo_credito')?.value === 'NUEVO'" class="text-info small mt-1">
-                      <i class="fas fa-info-circle"></i>
-                      Rango permitido para clientes nuevos: $3,000 - $7,000
+                      min="5000" step="100">
+                    <div
+                      *ngIf="solicitudForm.get('monto_solicitado')?.invalid && solicitudForm.get('monto_solicitado')?.touched"
+                      class="text-danger small">
+                      El monto es requerido (mínimo $5000)
                     </div>
                   </div>
                 </div>

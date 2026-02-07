@@ -35,7 +35,7 @@ export const routes: Routes = [
     data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Clientes' } },
 
   { path: 'solicitud', component: CreditRequestComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['tesoreria','administrador'], breadcrumb: 'Solicitudes' } },
+    data: { expectedRoles: ['tesoreria','coordinador','administrador'], breadcrumb: 'Solicitudes' } },
 
   { path: 'ministracion', component: MinistracionComponent, canActivate: [RoleGuard],
     data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Ministración de Créditos' } },

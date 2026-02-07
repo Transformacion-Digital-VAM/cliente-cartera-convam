@@ -1,3 +1,13 @@
+// import { Injectable } from '@angular/core';
+// import { CanActivate, ActivatedRouteSnapshot, Router, UrlTree } from '@angular/router';
+// import { AuthService } from '../services/auth.service';
+// // import { Observable } from 'rxjs';
+
+// @Injectable({
+  
+//   providedIn: 'root'
+// })
+// role.guard.ts (resumen)
 import { Injectable } from '@angular/core';
 import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';

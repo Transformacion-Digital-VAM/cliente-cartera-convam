@@ -138,7 +138,7 @@ export class AuthService {
     let tempAuth: any = null;
 
     try {
-      console.log('Iniciando registro completo...');
+      console.log('📲 Iniciando registro completo...');
 
       // Crear una instancia temporal de auth para no afectar la sesión principal
       const app = initializeApp(environment.firebaseConfig, 'TempApp');
@@ -206,7 +206,7 @@ export class AuthService {
   // Método de registro
   async registerWithEmail(nombre: string, correo: string, password: string, rol_id: number): Promise<any> {
     try {
-      console.log('Registrando usuario en Firebase...');
+      console.log('📲 Registrando usuario en Firebase...');
 
       const userCredential = await createUserWithEmailAndPassword(this.auth, correo, password);
       const firebase_uid = userCredential.user.uid;
@@ -646,3 +646,98 @@ export class AuthService {
 
 
 
+
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+
+// // auth.service.ts
+// import { Injectable } from '@angular/core';
+// import { BehaviorSubject, Observable } from 'rxjs';
+// import { map } from 'rxjs/operators';
+
+// @Injectable({
+//   providedIn: 'root'
+// })
+// export class AuthService {
+//   private currentUserSubject = new BehaviorSubject<any>(null);
+//   public currentUser$ = this.currentUserSubject.asObservable();
+
+//   // Mapeo de roles por ID
+//   private roleMap: { [key: number]: { nombre: string; ruta: string } } = {
+//     1: { nombre: 'ejecutiva', ruta: '/dashboard' },
+//     2: { nombre: 'tesoreria', ruta: '/solicitud' },
+//     3: { nombre: 'coordinador', ruta: '/domiciliacion' },
+//     4: { nombre: 'administrador', ruta: '/admin-control' }
+//   };
+//   getFirebaseToken: any;
+//   loginWithEmail: any;
+//   loginWithGoogle: any;
+
+//   constructor() {
+//     // Cargar usuario de localStorage al iniciar
+//     const savedUser = localStorage.getItem('user');
+//     if (savedUser) {
+//       this.currentUserSubject.next(JSON.parse(savedUser));
+//     }
+//   }
+
+//   // Obtener información del rol por ID
+//   getRoleInfo(rolId: number): { nombre: string; ruta: string } {
+//     return this.roleMap[rolId] || { nombre: 'usuario', ruta: '/dashboard' };
+//   }
+
+//      // Obtener nombre del rol por ID
+//   getRoleName(rolId: number): string {
+//     return this.getRoleInfo(rolId).nombre;
+//   }
+
+//   // Obtener ruta por rol ID
+//   getRouteByRoleId(rolId: number): string {
+//     return this.getRoleInfo(rolId).ruta;
+//   }
+
+//   // Verificar si es administrador
+//   isAdmin(user: any): boolean {
+//     return user?.rol_id === 4;
+//   }
+
+//   // Obtener usuario actual
+//   getCurrentUser(): any {
+//     return this.currentUserSubject.value;
+//   }
+
+//   // Establecer usuario
+//   setUser(user: any): void {
+//     // Agregar nombre_rol al usuario para compatibilidad con guards
+//     if (user && user.rol_id) {
+//       user.nombre_rol = this.getRoleName(user.rol_id);
+//     }
+//     this.currentUserSubject.next(user);
+//     localStorage.setItem('user', JSON.stringify(user));
+//   }
+
+//   // Limpiar usuario (logout)
+//   clearUser(): void {
+//     this.currentUserSubject.next(null);
+//     localStorage.removeItem('user');
+//   }
+
+//   // Obtener ruta según rol del usuario actual
+//   getRouteByRole(): string {
+//     const user = this.getCurrentUser();
+//     if (!user || !user.rol_id) return '/login';
+//     return this.getRouteByRoleId(user.rol_id);
+//   }
+
+//   // Verificar si tiene un rol específico
+//   hasRole(roleName: string): boolean {
+//     const user = this.getCurrentUser();
+//     if (!user || !user.rol_id) return false;
+//     return this.getRoleName(user.rol_id) === roleName.toLowerCase();
+//   }
+
+
+// }
