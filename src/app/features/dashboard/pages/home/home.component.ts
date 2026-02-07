@@ -320,6 +320,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
       porcentajeCarteraVencida: 0,
       porcentajeCarteraMora: 0,
       porcentajeTotalDeudaAtrasada: 0,
+      moraCorriente: 0,
+      porcentajeMoraCorriente: 0,
       ingresosTotalGeneral: 0,
       ingresosCapitalTotal: 0,
       ingresosInteresesTotal: 0,
@@ -354,6 +356,9 @@ export class HomeComponent implements OnInit, AfterViewInit {
     }
     if (this.moraAliadoChart) {
       this.moraAliadoChart.destroy();
+    }
+    if (this.evolucionChart) {
+      this.evolucionChart.destroy();
     }
 
     // Crear gráfico de distribución de cartera
@@ -589,12 +594,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
     this.moraAliadoChart = new Chart(ctx, config);
   }
-
   private crearGraficoEvolucionCartera(): void {
     if (!this.evolucionChartRef) return;
     const ctx = this.evolucionChartRef.nativeElement.getContext('2d');
 
     const dataTrend = this.getTrendEvolucionData();
+
+    if (!dataTrend || !dataTrend.labels || dataTrend.labels.length === 0) {
+      return;
+    }
 
     const data = {
       labels: dataTrend.labels,
@@ -606,7 +614,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
           borderColor: 'rgb(59, 130, 246)',
           borderWidth: 3,
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          pointBackgroundColor: 'rgb(59, 130, 246)',
+          pointRadius: 4,
+          pointHoverRadius: 6
         },
         {
           label: 'Mora',
@@ -615,7 +626,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
           borderColor: 'rgb(239, 68, 68)',
           borderWidth: 2,
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          pointBackgroundColor: 'rgb(239, 68, 68)',
+          pointRadius: 4,
+          pointHoverRadius: 6
         }
       ]
     };
@@ -698,17 +712,23 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   cambiarPeriodoEvolucion(periodo: string): void {
     this.periodoEvolucion = periodo;
-    // Para evolución siempre traemos un año para tener buena perspectiva
-    this.dashboardService.getDashboardTrends('1Y').subscribe({
+    let periodoTerm = '6M';
+    if (periodo === 'yearly') periodoTerm = '1Y';
+    else if (periodo === 'quarterly') periodoTerm = '3M';
+    else periodoTerm = '6M';
+    this.dashboardService.getDashboardTrends(periodoTerm).subscribe({
       next: (trends) => {
-        if (this.dashboardData) {
+        if (this.dashboardData && trends?.data) {
+          this.dashboardData.incomeTrend = trends.data.incomeTrend;
           this.dashboardData.portfolioTrend = trends.data.portfolioTrend;
+
           if (this.evolucionChart) {
             this.evolucionChart.destroy();
           }
           this.crearGraficoEvolucionCartera();
         }
-      }
+      },
+      error: (err) => console.error('Error al actualizar periodos de evolución:', err)
     });
   }
 

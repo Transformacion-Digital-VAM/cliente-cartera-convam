@@ -92,7 +92,7 @@
           <div class="card-value">{{ formatearMoneda(dashboardData.carteraTotal || 0) }}</div>
           <div class="card-details">
             <span>{{ dashboardData.totalCreditosCount }} créditos</span>
-            <span>{{ dashboardData.clientesVigentes }} clientes</span>
+            <!-- <span>{{ dashboardData.clientesVigentes }} clientes</span> -->
           </div>
         </div>
       </div>
@@ -120,16 +120,44 @@
           <div class="card-details">{{ dashboardData.creditosVencidos }} créditos vencidos</div>
         </div>
       </div>
-
+    </div>
+    <div class="cards-grid">
+      <!-- -------------------------------------------------- -->
+      <!-- SECCIONES DE MORA  -->
+      <!-- -------------------------------------------------- -->
       <div class="card">
         <div class="card-header">
-          <i class="fas fa-clock text-danger"></i>
-          <h3>Cartera en Mora</h3>
+          <i class="fa-solid fa-file-invoice-dollar text-danger"></i>
+          <h3>Mora Total</h3>
         </div>
         <div class="card-body">
           <div class="card-value">{{ formatearMoneda(dashboardData.carteraMora || 0) }}</div>
           <div class="card-percentage">{{ dashboardData.porcentajeCarteraMora }}%</div>
           <div class="card-details">{{ dashboardData.clientesMora }} clientes en mora</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fa-solid fa-money-bill-wave text-danger"></i>
+          <h3>Mora Corriente</h3>
+        </div>
+        <div class="card-body">
+          <div class="card-value">{{ formatearMoneda(dashboardData.moraCorriente || 0) }}</div>
+          <div class="card-percentage">{{ dashboardData.porcentajeMoraCorriente }}%</div>
+          <div class="card-details">Pagos atrasados (Ciclo actual)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <i class="fa-solid fa-clock text-danger"></i>
+          <h3>Mora Vencida</h3>
+        </div>
+        <div class="card-body">
+          <div class="card-value">{{ formatearMoneda(dashboardData.carteraVencida || 0) }}</div>
+          <div class="card-percentage">{{ dashboardData.porcentajeCarteraVencida }}%</div>
+          <div class="card-details">Créditos fuera de ciclo</div>
         </div>
       </div>
     </div>
@@ -182,7 +210,7 @@
     </div>
 
     <!-- Gráfica de ancho completo -->
-    <div class="chart-full">
+    <!-- <div class="chart-full">
       <div class="chart-header">
         <div>
           <h3 class="chart-title">Evolución de Cartera</h3>
@@ -198,7 +226,7 @@
         </div>
       </div>
       <canvas #evolucionChart></canvas>
-    </div>
+    </div> -->
   </div>
 
   <!-- ============================================ -->
@@ -240,16 +268,6 @@
             <div class="card-value">{{ formatearMoneda(dashboardData.ingresosInteresesTotal || 0) }}</div>
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-header">
-            <i class="fas fa-exclamation-circle text-danger"></i>
-            <h4>Moratorios</h4>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(dashboardData.totalDeudaAtrasada || 0) }}</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -276,16 +294,6 @@
             <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesDevolucion || 0) }}</div>
           </div>
         </div>
-
-        <!-- <div class="card">
-          <div class="card-header">
-            <i class="fas fa-calculator text-primary"></i>
-            <h4>Total Neto</h4>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ formatearMoneda(dashboardData.ministracionesTotal || 0) }}</div>
-          </div>
-        </div> -->
       </div>
     </div>
   </div>
@@ -389,14 +397,13 @@
   <!-- ============================================ -->
   <!-- SECCIÓN 5: LISTADOS IMPORTANTES -->
   <!-- ============================================ -->
-  <!-- Próximos Vencimientos -->
   <div class="section">
     <h2 class="section-title">Listados y Alertas</h2>
 
     <div class="tables-grid">
 
       <!-- Próximos Vencimientos -->
-      <div class="table-container">
+      <div class="table-container fixed-height-table">
         <h3><i class="fas fa-calendar-alt"></i> Próximos Vencimientos</h3>
 
         <div class="table-header">
@@ -474,7 +481,7 @@
       </div>
 
       <!-- Alertas de Mora -->
-      <div class="table-container">
+      <div class="table-container fixed-height-table">
         <h3><i class="fas fa-exclamation-circle text-danger"></i> Alertas de Mora</h3>
 
         <div class="table-responsive">
@@ -532,14 +539,6 @@
             </div>
             <div class="card-details">
               Total entregados {{ getPeriodoSeleccionado() }}
-            </div>
-            <div class="card-details">
-              <span
-                *ngIf="dashboardData.creditosEntregados && dashboardData.creditosEntregados.length > 0; else sinCreditos">
-              </span>
-              <ng-template #sinCreditos>
-                <span class="text-muted">No hay créditos entregados</span>
-              </ng-template>
             </div>
           </div>
         </div>
@@ -627,24 +626,19 @@
       </div>
 
       <div class="footer-divider"></div>
-
       <div class="footer-section">
         <div class="export-options">
           <h4 class="options-title">Exportar Reportes</h4>
           <p class="options-desc">Descarga información del dashboard</p>
           <div class="export-buttons">
-            <!-- <button class="export-btn pdf" (click)="exportarDashboard('pdf')">
+            <button class="export-btn pdf" (click)="exportarDashboard('pdf')">
               <i class="fas fa-file-pdf"></i>
-              PDF
-            </button> -->
+              Reporte PDF
+            </button>
             <button class="export-btn excel" (click)="exportarDashboard('excel')">
               <i class="fas fa-file-excel"></i>
-              Excel
+              Reporte Excel
             </button>
-            <!-- <button class="export-btn csv" (click)="exportarDashboard('csv')">
-              <i class="fas fa-file-csv"></i>
-              CSV
-            </button> -->
           </div>
         </div>
       </div>

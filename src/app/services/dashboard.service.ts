@@ -22,6 +22,8 @@ export interface DashboardData {
   porcentajeCarteraVencida: number;
   porcentajeCarteraMora: number;
   porcentajeTotalDeudaAtrasada: number;
+  moraCorriente: number;
+  porcentajeMoraCorriente: number;
 
   // Ingresos
   ingresosTotalGeneral: number;
@@ -243,8 +245,26 @@ export class DashboardService {
     const carteraVencida = vencida;
 
     // Cartera en Mora (Total Vencida + Mora de Corrientes)
-    // "cartera en mora es todo lo que el cliente adeuda" (para vencidos) + "pago atrasado" (para corrientes)
     const carteraMora = carteraVencida + moraCorriente;
+
+    // Calcular Clientes Únicos en Mora (Vencidos + Corrientes con atraso)
+    const clientsMoraSet = new Set<string>();
+
+    // 1. Clientes con Cartera Vencida (Saldo > 0)
+    capitalRows.forEach((c: any) => {
+      if (c.estado_cartera === 'CARTERA VENCIDA' && parseFloat(c.saldo_total_pendiente || 0) > 0) {
+        clientsMoraSet.add(c.nombre_cliente || c.cliente_nombre);
+      }
+    });
+
+    // 2. Clientes con Mora Corriente (Arras de pagos atrasados)
+    pagos.forEach((p: any) => {
+      if (!p.pagado && p.dias_atraso > 0) {
+        clientsMoraSet.add(p.cliente_nombre);
+      }
+    });
+
+    const clientesMoraCount = clientsMoraSet.size;
 
     // Calcular datos del dashboard
     const dashboardData: DashboardData = {
@@ -270,11 +290,16 @@ export class DashboardService {
 
       // 7. Clientes únicos de créditos entregados
       clientesVigentes: this.getUniqueClients(capitalRows),
-      clientesMora: this.getClientsWithMoraFromPagos(pagos) + (idsVencidos.size > 0 ? idsVencidos.size : 0), // Aprox, ajuste para visualización
+      clientesMora: clientesMoraCount,
 
       // 8. Porcentajes
       porcentajeCarteraVencida: this.calculatePorcentaje(
         carteraVencida,
+        totals?.saldoPendiente || 0
+      ),
+      moraCorriente: moraCorriente,
+      porcentajeMoraCorriente: this.calculatePorcentaje(
+        moraCorriente,
         totals?.saldoPendiente || 0
       ),
       porcentajeCarteraMora: this.calculatePorcentaje(
@@ -393,21 +418,23 @@ export class DashboardService {
     const aliadosMap = new Map();
 
     creditos.forEach(credito => {
-      const aliado = credito.nom_aliado?.trim();
-      if (!aliado) return;
+      const aliasOriginal = credito.nom_aliado || '';
+      const nombreNormalizado = this.normalizeAliadoName(aliasOriginal);
+      if (!nombreNormalizado) return;
 
-      if (!aliadosMap.has(aliado)) {
-        aliadosMap.set(aliado, {
-          nombre: aliado,
+      if (!aliadosMap.has(nombreNormalizado)) {
+        aliadosMap.set(nombreNormalizado, {
+          nombre: nombreNormalizado,
           creditos: 0,
           cartera: 0,
-          entregados: parseFloat(credito.total_a_pagar || 0)
+          entregados: 0
         });
       }
 
-      const data = aliadosMap.get(aliado);
+      const data = aliadosMap.get(nombreNormalizado);
       data.creditos++;
       data.cartera += parseFloat(credito.saldo_total_pendiente || 0);
+      data.entregados += parseFloat(credito.total_a_pagar || 0);
     });
 
     return Array.from(aliadosMap.values())
@@ -421,20 +448,20 @@ export class DashboardService {
     // 1. Agregar Cartera Vencida (Saldo Total)
     creditos.forEach(c => {
       const id = c.id_credito;
-      const aliado = c.nom_aliado?.trim();
-      if (!aliado) return;
+      const nombreNormalizado = this.normalizeAliadoName(c.nom_aliado);
+      if (!nombreNormalizado) return;
       const saldo = parseFloat(c.saldo_total_pendiente || 0);
 
       if (idsVencidos.has(id) && saldo > 0) {
-        if (!moraMap.has(aliado)) {
-          moraMap.set(aliado, {
-            nombre: aliado,
+        if (!moraMap.has(nombreNormalizado)) {
+          moraMap.set(nombreNormalizado, {
+            nombre: nombreNormalizado,
             moraCorriente: 0,
             moraVencida: 0,
             creditosSet: new Set()
           });
         }
-        const data = moraMap.get(aliado);
+        const data = moraMap.get(nombreNormalizado);
         data.moraVencida += saldo;
         data.creditosSet.add(id);
       }
@@ -447,20 +474,20 @@ export class DashboardService {
       if (idsVencidos.has(id)) return;
 
       if (!p.pagado && p.dias_atraso > 0) {
-        const aliado = p.nom_aliado?.trim();
-        if (!aliado) return;
+        const nombreNormalizado = this.normalizeAliadoName(p.nom_aliado);
+        if (!nombreNormalizado) return;
         const deuda = parseFloat(p.total_semana || 0) - parseFloat(p.monto_pagado || 0);
 
         if (deuda > 0) {
-          if (!moraMap.has(aliado)) {
-            moraMap.set(aliado, {
-              nombre: aliado,
+          if (!moraMap.has(nombreNormalizado)) {
+            moraMap.set(nombreNormalizado, {
+              nombre: nombreNormalizado,
               moraCorriente: 0,
               moraVencida: 0,
               creditosSet: new Set()
             });
           }
-          const data = moraMap.get(aliado);
+          const data = moraMap.get(nombreNormalizado);
           data.moraCorriente += deuda;
           data.creditosSet.add(id);
         }
@@ -473,6 +500,7 @@ export class DashboardService {
         moraCorriente: item.moraCorriente,
         moraVencida: item.moraVencida,
         moraTotal: item.moraCorriente + item.moraVencida,
+        mora: item.moraCorriente + item.moraVencida, // Alias for template
         creditos: item.creditosSet.size
       }))
       .sort((a, b) => b.moraTotal - a.moraTotal); // Ordenar por mora total
@@ -755,7 +783,7 @@ export class DashboardService {
   }
 
 
-  // Nuevo método para calcular cartera basada en ciclo de 16 semanas
+  // Nuevo método para calcular cartera basada en ciclo dinámico (numero_pagos)
   private calculateCarteraByCycle(creditos: any[]): {
     corriente: number,
     vencida: number,
@@ -764,10 +792,6 @@ export class DashboardService {
     countCorriente: number,
     countVencida: number
   } {
-    const hoy = new Date();
-    // 16 semanas * 7 días = 112 días
-    const DIAS_CICLO = 16 * 7;
-
     let carteraCorriente = 0;
     let carteraVencida = 0;
     let countCorriente = 0;
@@ -778,17 +802,61 @@ export class DashboardService {
       const saldo = parseFloat(c.saldo_total_pendiente || 0);
       if (saldo <= 0) return;
 
+      const id = c.id_credito;
+
+      // 1. Priorizar el estado que ya viene calculado de la BD
+      if (c.estado_cartera === 'CARTERA VENCIDA') {
+        carteraVencida += saldo;
+        countVencida++;
+        if (id) idsVencidos.add(id);
+        return;
+      }
+
+      if (c.estado_cartera === 'CARTERA CORRIENTE' || c.estado_cartera === 'EN CURSO') {
+        carteraCorriente += saldo;
+        countCorriente++;
+        return;
+      }
+
+      // 2. Fallback: Cálculo manual si no hay estado_cartera o es 'REGULAR'
+      const hoy = new Date();
+
+      // Si la BD nos envía la fecha de término exacta (más preciso para mensuales/quincenales)
+      if (c.fecha_termino) {
+        const fechaTermino = new Date(c.fecha_termino);
+        // Margen de 7 días "de cajón"
+        const fechaLimiteGracia = new Date(fechaTermino.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+        // Si ya pasó la fecha de término + 7 días y tiene algún pago vencido
+        if (hoy > fechaLimiteGracia && (c.pagos_vencidos > 0 || c.estado_cartera === 'CARTERA VENCIDA')) {
+          carteraVencida += saldo;
+          countVencida++;
+          if (id) idsVencidos.add(id);
+        } else {
+          carteraCorriente += saldo;
+          countCorriente++;
+        }
+        return;
+      }
+
+      // Si no hay fecha_termino, calculamos aproximado según tipo_vencimiento
+      const numPagos = c.numero_pagos || 16;
+      let diasPorPeriodo = 7;
+      if (c.tipo_vencimiento === 'MENSUAL') diasPorPeriodo = 30;
+      else if (c.tipo_vencimiento === 'QUINCENAL') diasPorPeriodo = 15;
+
+      const diasCiclo = numPagos * diasPorPeriodo;
+
       // Intentar obtener fecha de inicio
       const fechaStr = c.fecha_ministracion || c.fecha_inicio || c.fecha_entrega;
-      const id = c.id_credito;
 
       if (fechaStr) {
         const fechaInicio = new Date(fechaStr);
         const diffTime = Math.abs(hoy.getTime() - fechaInicio.getTime());
         const diasTranscurridos = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diasTranscurridos <= DIAS_CICLO) {
-          // Dentro del ciclo (<= 16 semanas): Es cartera corriente
+        if (diasTranscurridos <= diasCiclo) {
+          // Dentro del ciclo: Es cartera corriente
           carteraCorriente += saldo;
           countCorriente++;
         } else {
@@ -798,15 +866,9 @@ export class DashboardService {
           if (id) idsVencidos.add(id);
         }
       } else {
-        // Fallback
-        if (c.estado_cartera === 'CARTERA VENCIDA') {
-          carteraVencida += saldo;
-          countVencida++;
-          if (id) idsVencidos.add(id);
-        } else {
-          carteraCorriente += saldo;
-          countCorriente++;
-        }
+        // Fallback total si no hay ni estado ni fecha
+        carteraCorriente += saldo;
+        countCorriente++;
       }
     });
 
@@ -835,8 +897,21 @@ export class DashboardService {
     return {
       vencida: distribucion.vencida,
       corriente: distribucion.corriente,
-      mora: distribucion.mora || 0
     };
+  }
+
+  private normalizeAliadoName(name: string): string {
+    if (!name) return '';
+    let normalized = name.trim().toUpperCase();
+
+    // Reglas de unificación
+    if (normalized.includes('MARISELA')) return 'MARISELA';
+    if (normalized.includes('OFICINA')) return 'OFICINA';
+    if (normalized.includes('REBECA')) return 'REBECA';
+    if (normalized.includes('YANNI')) return 'YANNI';
+
+    // Para cualquier otro, quitar texto entre paréntesis y limpiar
+    return normalized.split('(')[0].trim() || normalized;
   }
 
 }
