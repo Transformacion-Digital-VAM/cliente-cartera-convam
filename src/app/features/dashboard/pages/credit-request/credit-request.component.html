@@ -60,35 +60,87 @@
             </tr>
 
             <!-- Lista de solicitudes -->
-            <tr *ngFor="let solicitud of solicitudesPendientes">
-              <td>{{ solicitud.id_solicitud }}</td>
-              <td>{{ getNombreCompleto(solicitud) }}</td>
-              <td>{{ solicitud.tipo_credito }}</td>
-              <td>{{ formatearMoneda(solicitud.monto_solicitado) }}</td>
-              <td class="aliado-info" [title]="solicitud.aliado_id ? '' + solicitud.aliado_id : 'Sin aliado'">
-                {{ solicitud.nombre_aliado || 'No asignado' }}
-              </td>
-              <td class="aval-info" [title]="solicitud.aval_id ? '' + solicitud.aval_id : 'Sin aval'">
-                {{ getNombreAval(solicitud) }}
-              </td>
-              <td>{{ solicitud.observaciones || 'N/A'}}</td>
-              <td>
-                <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitud)">
-                  {{ getTextoDomiciliacion(solicitud) }}
-                </span>
-              </td>
+            <ng-container *ngFor="let solicitud of solicitudesPendientes">
+              <tr class="clickable-row" (click)="toggleFila(solicitud.id_solicitud)" style="cursor: pointer;">
+                <td>
+                  <i class="fas me-1" [class.fa-chevron-right]="filaExpandida !== solicitud.id_solicitud"
+                    [class.fa-chevron-down]="filaExpandida === solicitud.id_solicitud"></i>
+                  {{ solicitud.id_solicitud }}
+                </td>
+                <td>{{ getNombreCompleto(solicitud) }}</td>
+                <td>{{ solicitud.tipo_credito }}</td>
+                <td>{{ formatearMoneda(solicitud.monto_solicitado) }}</td>
+                <td class="aliado-info" [title]="solicitud.aliado_id ? '' + solicitud.aliado_id : 'Sin aliado'">
+                  {{ solicitud.nombre_aliado || 'No asignado' }}
+                </td>
+                <td class="aval-info" [title]="solicitud.aval_id ? '' + solicitud.aval_id : 'Sin aval'">
+                  {{ getNombreAval(solicitud) }}
+                </td>
+                <td>{{ solicitud.observaciones || 'N/A'}}</td>
+                <td>
+                  <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitud)">
+                    {{ getTextoDomiciliacion(solicitud) }}
+                  </span>
+                </td>
 
-              <td class="actions-cell text-center">
-                <button class="btn btn-primary btn-sm" (click)="abrirModal(solicitud)">
-                  Ver
-                </button>
-              </td>
-            </tr>
+                <td class="actions-cell text-center">
+                  <button class="btn btn-primary btn-sm" (click)="abrirModal(solicitud); $event.stopPropagation()">
+                    Ver
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Fila expandible con detalles de domiciliación -->
+              <tr *ngIf="filaExpandida === solicitud.id_solicitud" class="detalle-row">
+                <td colspan="9">
+                  <div class="detalle-container">
+                    <div *ngIf="solicitud.domiciliado; else noDomRow">
+                      <div class="detalle-info-grid">
+                        <div class="detalle-item">
+                          <i class="fas fa-calendar-day"></i>
+                          <div>
+                            <strong>Fecha Visita:</strong>
+                            <p>{{ formatearFecha(solicitud.fecha_domiciliacion) }}</p>
+                          </div>
+                        </div>
+
+                        <div class="detalle-item">
+                          <i class="fas fa-clock"></i>
+                          <div>
+                            <strong>Horario de disponibilidad:</strong>
+                            <p>{{ solicitud.domiciliacion_horario || 'No registrado' }}</p>
+                          </div>
+                        </div>
+
+                        <div class="detalle-item">
+                          <i class="fas fa-user-check"></i>
+                          <div>
+                            <strong>Recibió:</strong>
+                            <!-- <p class="text-capitalize texto-largo">{{ solicitud.persona_recibio || 'No especificado' }} -->
+                            <p class="text-capitalize texto-largo">{{ solicitud.persona_recibio || 'No especificado' }}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <ng-template #noDomRow>
+                      <div class="no-domiciliacion">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Esta solicitud aún no ha sido domiciliada.</span>
+                      </div>
+                    </ng-template>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
       </div>
     </section>
   </div>
+
+
 
   <!-- Modal de Detalles -->
   <div class="modal-overlay" *ngIf="modalAbierto">
@@ -99,8 +151,8 @@
           Detalles de la Solicitud #{{ solicitudSeleccionada?.id_solicitud }}
         </h3>
         <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
-            {{ getTextoDomiciliacion(solicitudSeleccionada) }}
-          </span>
+          {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+        </span>
         <button class="modal-close" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
           <i class="fas fa-times"></i>
         </button>
@@ -141,22 +193,33 @@
           </div>
 
           <!-- Domiciliación -->
-          <!-- <div class="info-section">
-            <h4><i class="fas fa-home me-2"></i>Domiciliación</h4>
-            <div class="info-grid">
-              <div class="info-item">
-                <div class="domiciliacion-status">
-                  <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
-                    {{ getTextoDomiciliacion(solicitudSeleccionada) }}
-                  </span>
-                  <div class="domiciliacion-details"
-                    *ngIf="getDetalleDomiciliacion(solicitudSeleccionada) !== 'Sin detalles'">
-                    <small class="text-muted">{{ getDetalleDomiciliacion(solicitudSeleccionada) }}</small>
-                  </div>
+          <div class="info-section">
+            <h4><i class="fas fa-map-marker-alt me-2"></i>Información de Domiciliación</h4>
+
+            <div *ngIf="solicitudSeleccionada?.domiciliado; else noDomiciliado">
+              <div class="info-grid">
+                <div class="info-item">
+                  <label>Fecha Visita:</label>
+                  <span>{{ formatearFecha(solicitudSeleccionada?.fecha_domiciliacion) }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Horario:</label>
+                  <span>{{ solicitudSeleccionada?.domiciliacion_horario || 'No registrado' }}</span>
+                </div>
+                <div class="info-item">
+                  <label>Recibió:</label>
+                  <span class="text-capitalize">{{ solicitudSeleccionada?.persona_recibio || 'No especificado' }}</span>
                 </div>
               </div>
             </div>
-          </div> -->
+
+            <ng-template #noDomiciliado>
+              <div class="alert alert-warning mt-2">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Esta solicitud aún no ha sido domiciliada.
+              </div>
+            </ng-template>
+          </div>
         </div>
 
         <!-- Segunda fila: Cálculo de Garantía -->

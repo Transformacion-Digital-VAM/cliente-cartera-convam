@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+// import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -88,7 +89,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     private creditoService: CreditoService,
     private aliadoService: AliadoService,
     private pagareService: PagareService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private ngZone: NgZone
 
   ) { }
   private intervaloActualizacion: any;
@@ -341,16 +343,30 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
     const montoAprobado = Number(this.solicitudSeleccionada.monto_aprobado);
     const tasa = this.solicitudSeleccionada.tasa_fija || 0.25;
+    const numeroPagos = Number(this.solicitudSeleccionada.no_pagos) || 16;
+    const tipoVencimiento = (this.solicitudSeleccionada.tipo_vencimiento || 'SEMANAL').toUpperCase();
+
+    // Determinar divisor para el cálculo de intereses según el tipo de vencimiento
+    let divisor = 4; // Semanal (por defecto)
+    if (tipoVencimiento === 'QUINCENAL') {
+      divisor = 2;
+    } else if (tipoVencimiento === 'MENSUAL') {
+      divisor = 1;
+    }
 
     // Calcular valores
     this.totalCapital = montoAprobado;
-    this.totalInteres = (montoAprobado * tasa) / 4 * 16;
+    this.totalInteres = (montoAprobado * tasa) / 4 * numeroPagos;
+    this.totalInteres = (montoAprobado * tasa) / divisor * numeroPagos;
     this.totalSeguro = this.seguro ? 80 : 0;
     this.totalAPagar = this.totalCapital + this.totalInteres;
     this.totalGarantia = montoAprobado * 0.10;
-    this.pagoSemanal = this.totalAPagar / 16;
+    this.pagoSemanal = this.totalAPagar / numeroPagos;
     this.pagoInicial = this.totalGarantia + this.totalSeguro;
   }
+  // monto * interes / 4 (meses) * 32/ 32)
+  // monto : capital
+  // intereses: tasa de aliado
 
 
   //   crearCredito(): void {
@@ -1485,22 +1501,32 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     });
   }
 
+
   // Actualizar el método para verificar alertas periódicamente
   private iniciarActualizacionTemporizador(): void {
-    this.intervaloActualizacion = setInterval(() => {
-      this.tiempoActual = Date.now();
+    // OPTIMIZACIÓN: Ejecutar fuera de la zona de Angular para evitar change detection cada segundo
+    this.ngZone.runOutsideAngular(() => {
+      this.intervaloActualizacion = setInterval(() => {
+        const ahora = new Date();
+        const segundos = ahora.getSeconds();
+        const minutos = ahora.getMinutes();
 
-      // Verificar alertas cada 80 segundos
-      const ahora = new Date();
-      if (ahora.getSeconds() % 80 === 0) {
-        this.verificarAlertasTemporizador();
-      }
+        // Verificar alertas cada 80 segundos
+        if (segundos % 80 === 0) {
+          this.ngZone.run(() => {
+            this.verificarAlertasTemporizador();
+          });
+        }
 
-      // Verificar cancelaciones cada 5 minutos (300 segundos)
-      if (ahora.getSeconds() % 300 === 0) {
-        this.verificarDevolucionesParaCancelar();
-      }
-    }, 1000);
+        // Verificar cancelaciones cada 5 minutos (300 segundos)
+        // Para evitar múltiples ejecuciones en el mismo minuto, también verificamos minutos
+        if (segundos === 0 && minutos % 5 === 0) {
+          this.ngZone.run(() => {
+            this.verificarDevolucionesParaCancelar();
+          });
+        }
+      }, 1000); // Verificar cada segundo
+    });
   }
 
   // ------------------------------------------------------
@@ -2107,6 +2133,3 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
 
 }
-
-
-

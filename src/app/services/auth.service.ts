@@ -119,7 +119,7 @@ export class AuthService {
 
       console.log('Respuesta del backend recibida:', response);
       if (response?.success) {
-        console.log('Usuario sincronizado con backend:');
+        // console.log('Usuario sincronizado con backend:');
         this.setUserData(response.data.user, token);
       } else {
         console.error('Error en respuesta del backend (success=false):', response);

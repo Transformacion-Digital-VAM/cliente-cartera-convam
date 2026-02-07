@@ -24,12 +24,24 @@
         <h3>Filtrar Créditos</h3>
         <div class="filtros-form">
           <div class="form-group">
-            <label class="form-label">ALIADO</label>
-            <select class="form-control" [(ngModel)]="filtroAliado">
-              <option value="">TODOS LOS ALIADOS</option>
-              <option *ngFor="let aliado of aliados" [value]="aliado.id_aliado">
-                {{ aliado.nom_aliado.trim() }}
-              </option>
+            <label class="form-label">ALIADOS</label>
+            <div class="form-control" style="height: auto; max-height: 150px; overflow-y: auto; padding: 10px;">
+              <div *ngFor="let aliado of aliados" style="margin-bottom: 5px;">
+                <input type="checkbox" [id]="'aliado-' + aliado.id_aliado"
+                  [checked]="esAliadoSeleccionado(aliado.id_aliado)" (change)="onAliadoChange($event, aliado.id_aliado)"
+                  style="margin-right: 8px;">
+                <label [for]="'aliado-' + aliado.id_aliado" style="cursor: pointer; margin-bottom: 0;">
+                  {{ aliado.nom_aliado.trim() }}
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ESTADO CRÉDITO</label>
+            <select class="form-control" [(ngModel)]="filtroEstado">
+              <option value="">TODOS</option>
+              <option value="ENTREGADO">ENTREGADO</option>
+              <option value="VENCIDO">VENCIDO</option>
             </select>
           </div>
           <div class="form-group">
@@ -100,35 +112,36 @@
 
               <ng-container *ngFor="let credito of creditosFiltrados">
                 <!-- Fila principal con color según estado -->
-                <tr class="clickable-row" [ngClass]="getEstadoPago(credito).filaClase"
+                <tr class="clickable-row" [ngClass]="credito.viewData?.estadoPago?.filaClase"
                   (click)="toggleFilaDetalle(credito.id_credito)">
                   <td>
                     <i class="fas icon-detalles" [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
                       [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
                   </td>
                   <td class="text-center detalles-pago">
-                    {{ calcularSemanaActualCliente(credito) }}
+                    {{ credito.viewData?.semanaActualCliente }}
                   </td>
-                  <td>{{ getNombreCliente(credito) }}</td>
+                  <td>{{ credito.viewData?.nombreCliente }}</td>
                   <td>{{ getCreditoId(credito) }}</td>
-                  <td>{{ getNombreAliado(credito.aliado_id) }}</td>
-                  <td class="detalles-pago color:#4a3ef9">{{ getDiaPago(credito) }}</td>
+                  <td>{{ credito.viewData?.nombreAliado }}</td>
+                  <td class="detalles-pago color:#4a3ef9">{{ credito.viewData?.diaPago }}</td>
                   <td>
-                    {{ calcularPagosRealizados(credito) }}/16
-                    <small class="text-muted">({{ calcularPagosPendientes(credito) }} PENDIENTES)</small>
+                    {{ credito.viewData?.pagosRealizados }}/{{ credito.viewData?.totalSemanas }}
+                    <small class="text-muted">({{ credito.viewData?.pagosPendientes }} PENDIENTES)</small>
                   </td>
-                  <td class="detalles-pago">{{ formatearMoneda(calcularPagoSemanal(credito)) }}</td>
-                  <td class="col-estado">{{ formatearProximaFechaPago(credito) }}</td> <!-- Fecha de pago-->
+                  <td class="detalles-pago">{{ formatearMoneda(credito.viewData?.pagoSemanal) }}</td>
+                  <td class="col-estado">{{ credito.viewData?.proximaFecha }}</td> <!-- Fecha de pago-->
                   <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar) }}</td> <!-- Total a Pagar-->
-                  <td class="col-estado">{{ formatearMoneda(calcularTotalPagado(credito)) }}</td> <!-- Total Pagado-->
+                  <td class="col-estado">{{ formatearMoneda(credito.viewData?.totalPagado) }}</td> <!-- Total Pagado-->
                   <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente) }}</td>
-                  <td class="text-center">{{ calcularProximoNumeroPago(credito) }}</td>
-                  <td class="text-center" [ngClass]="{'text-danger': calcularDiasAtraso(credito) > 0}">{{
-                    calcularDiasAtraso(credito) }}</td>
-                  <td class="text-center" [ngClass]="{'text-danger': calcularSemanasAtraso(credito) > 0}">{{
-                    calcularSemanasAtraso(credito) }}</td>
-                  <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
-                    {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
+                  <td class="text-center">{{ credito.viewData?.proximoPagoNum }}/{{ credito.viewData?.totalSemanas }}
+                  </td>
+                  <td class="text-center" [ngClass]="{'text-danger': (credito.viewData?.diasAtraso || 0) > 0}">{{
+                    credito.viewData?.diasAtraso }}</td>
+                  <td class="text-center" [ngClass]="{'text-danger': (credito.viewData?.semanasAtraso || 0) > 0}">{{
+                    credito.viewData?.semanasAtraso }}</td>
+                  <td [ngClass]="{'text-danger': (credito.viewData?.totalAtrasado || 0) > 0}">
+                    {{ formatearMoneda(credito.viewData?.totalAtrasado || 0) }}
                   </td>
                   <td class="actions-cell">
                     <button class="btn btn-success btn-sm"
@@ -291,7 +304,8 @@
           </div>
           <div class="info-item">
             <strong>Próximo Pago N°:</strong>
-            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/16</span>
+            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/{{ obtenerTotalSemanas(creditoSeleccionado)
+              }}</span>
           </div>
           <div class="info-item">
             <strong>Pagos Completados:</strong>
@@ -417,7 +431,8 @@
           </div>
           <div class="info-item">
             <strong>Próximo Pago N°:</strong>
-            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/16</span>
+            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/{{ obtenerTotalSemanas(creditoSeleccionado)
+              }}</span>
           </div>
         </div>
       </div>
@@ -433,7 +448,8 @@
             <select class="form-control" [(ngModel)]="numeroPagoSeleccionado" [disabled]="procesandoPago">
               <option *ngFor="let semana of obtenerSemanasDisponibles()" [value]="semana.numero"
                 [disabled]="semana.disabled">
-                Sem {{ semana.numero }}/16 - {{ getEstadoSemana(semana.numero).texto }} ({{
+                Sem {{ semana.numero }}/{{ obtenerTotalSemanas(creditoSeleccionado) }} - {{
+                getEstadoSemana(semana.numero).texto }} ({{
                 formatearFecha(calcularFechaSemana(creditoSeleccionado, semana.numero).toISOString()) }})
               </option>
             </select>
@@ -500,7 +516,8 @@
           <div class="resumen-detalle">
             <div class="resumen-item">
               <span>APLICAR A SEMANA:</span>
-              <span class="font-weight-bold">{{ numeroPagoSeleccionado }}/16</span>
+              <span class="font-weight-bold">{{ numeroPagoSeleccionado }}/{{ obtenerTotalSemanas(creditoSeleccionado)
+                }}</span>
             </div>
             <div class="resumen-item">
               <span>PAGO PRINCIPAL:</span>
@@ -582,7 +599,8 @@
           </div>
           <div class="info-item">
             <strong>Próximo Pago N°:</strong>
-            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/16</span>
+            <span>{{ calcularProximoNumeroPago(creditoSeleccionado) }}/{{ obtenerTotalSemanas(creditoSeleccionado)
+              }}</span>
           </div>
         </div>
       </div>

@@ -230,7 +230,7 @@
             <i class="fa-solid fa-clipboard-list"></i>
           </div>
           <div class="modal-header-text">
-            <h3 class="modal-title">  GENERAR SOLICITUD</h3>
+            <h3 class="modal-title"> GENERAR SOLICITUD</h3>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
             (click)="cerrarModalSolicitud()"></button>
@@ -328,7 +328,7 @@
                 <div class="col-md-2">
                   <div class="mb-3">
                     <label for="noPagos" class="form-label">PAGOS</label>
-                    <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1" readonly>
+                    <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1">
                   </div>
                 </div>
                 <div class="col-md-4">
@@ -349,15 +349,17 @@
                 <div class="col-md-3">
                   <div class="mb-3">
                     <label for="diaPago" class="form-label">Día de Pago *</label>
-                    <select class="form-select" id="diaPago" formControlName="dia_pago" required>
+                    <input type="number" class="form-control" id="diaPago" for="diaPAgo" formControlName="dia_pago"
+                      required>
+                    <!-- <select class="form-select" id="diaPago" formControlName="dia_pago" required>
                       <option *ngFor="let dia of diasPago" [value]="dia.value">
                         {{ dia.label }}
                       </option>
-                    </select>
-                    <div *ngIf="solicitudForm.get('dia_pago')?.invalid && solicitudForm.get('dia_pago')?.touched"
+                    </select> -->
+                    <!-- <div *ngIf="solicitudForm.get('dia_pago')?.invalid && solicitudForm.get('dia_pago')?.touched"
                       class="text-danger small">
                       Debes seleccionar un día de pago
-                    </div>
+                    </div> -->
                   </div>
                 </div>
               </div>

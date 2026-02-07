@@ -49,7 +49,7 @@ export class LoginComponent {
       await this.authService.loginWithEmail(this.correo, this.password);
 
       const currentUser = this.authService.getCurrentUser();
-      console.log('Usuario después del login:', currentUser);
+      // console.log('Usuario después del login:', currentUser);
 
       if (currentUser) {
         // Obtener información del rol
@@ -101,7 +101,7 @@ export class LoginComponent {
       await this.authService.loginWithGoogle();
 
       const currentUser = this.authService.getCurrentUser();
-      console.log('Usuario después del login con Google:', currentUser);
+      // console.log('Usuario después del login con Google:', currentUser);
 
       if (currentUser) {
         const rolInfo = this.getRolInfo(currentUser.rol_id);

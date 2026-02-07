@@ -400,11 +400,20 @@ export class CreditRequestComponent implements OnInit {
   // Estadísticas
   totalSolicitudes: number = 0;
   totalMontoSolicitado: number = 0;
+  filaExpandida: number | null = null;
 
   constructor(
     private solicitudService: SolicitudService,
     private creditoService: CreditoService
   ) { }
+
+  toggleFila(id: number): void {
+    if (this.filaExpandida === id) {
+      this.filaExpandida = null; // Cerrar si ya está abierta
+    } else {
+      this.filaExpandida = id; // Abrir la seleccionada
+    }
+  }
 
   ngOnInit(): void {
     this.cargarSolicitudesPendientes();
@@ -422,21 +431,21 @@ export class CreditRequestComponent implements OnInit {
 
         // DEPURACIÓN DETALLADA
         if (solicitudes.length > 0) {
-          console.log('=== DATOS DE SOLICITUDES ===');
-          solicitudes.forEach((solicitud, index) => {
-            console.log(`Solicitud ${index + 1}:`, {
-              id: solicitud.id_solicitud,
-              cliente: solicitud.cliente_id,
-              aliado_id: solicitud.aliado_id,
-              aval_id: solicitud.aval_id,
-              nombre_aliado: solicitud.nombre_aliado,
-              nombre_aval: solicitud.nombre_aval,
-              // Ver campos adicionales
-              app_aval: solicitud.app_aval,
-              apm_aval: solicitud.apm_aval,
-              nombre_cliente_aval: solicitud.nombre_cliente_aval
-            });
-          });
+          // console.log('=== DATOS DE SOLICITUDES ===');
+          // solicitudes.forEach((solicitud, index) => {
+          //   console.log(`Solicitud ${index + 1}:`, {
+          //     id: solicitud.id_solicitud,
+          //     cliente: solicitud.cliente_id,
+          //     aliado_id: solicitud.aliado_id,
+          //     aval_id: solicitud.aval_id,
+          //     nombre_aliado: solicitud.nombre_aliado,
+          //     nombre_aval: solicitud.nombre_aval,
+          //     // Ver campos adicionales
+          //     app_aval: solicitud.app_aval,
+          //     apm_aval: solicitud.apm_aval,
+          //     nombre_cliente_aval: solicitud.nombre_cliente_aval
+          //   });
+          // });
         }
       },
       error: (error) => {
@@ -958,69 +967,69 @@ export class CreditRequestComponent implements OnInit {
   // }
   // REEMPLAZA el método getNombreAval en tu componente
 
-getNombreAval(solicitud: any): string {
-  console.log('=== getNombreAval ===');
-  console.log('Solicitud completa:', {
-    id: solicitud.id_solicitud,
-    aval_id: solicitud.aval_id,
-    nombre_aval: solicitud.nombre_aval,
-    nombre_cliente_aval: solicitud.nombre_cliente_aval,
-    app_aval: solicitud.app_aval,
-    apm_aval: solicitud.apm_aval
-  });
+  getNombreAval(solicitud: any): string {
+    // console.log('=== getNombreAval ===');
+    // console.log('Solicitud completa:', {
+    //   id: solicitud.id_solicitud,
+    //   aval_id: solicitud.aval_id,
+    //   nombre_aval: solicitud.nombre_aval,
+    //   nombre_cliente_aval: solicitud.nombre_cliente_aval,
+    //   app_aval: solicitud.app_aval,
+    //   apm_aval: solicitud.apm_aval
+    // });
 
-  // Caso 1: No hay aval asignado
-  if (!solicitud.aval_id || solicitud.aval_id === 0) {
-    console.log('→ Sin aval (ID no válido)');
-    return 'Sin aval';
-  }
-
-  // Caso 2: Nombre completo del cliente aval
-  if (solicitud.nombre_cliente_aval) {
-    console.log('→ Usando nombre_cliente_aval:', solicitud.nombre_cliente_aval);
-    return solicitud.nombre_cliente_aval;
-  }
-
-  // Caso 3: nombre_aval válido (no es mensaje de error)
-  if (solicitud.nombre_aval && 
-      typeof solicitud.nombre_aval === 'string') {
-    
-    // Verificar que NO sea un mensaje de error
-    const esError = solicitud.nombre_aval.toLowerCase().includes('no encontrado');
-    
-    if (!esError) {
-      console.log('→ Usando nombre_aval:', solicitud.nombre_aval);
-      return solicitud.nombre_aval;
+    // Caso 1: No hay aval asignado
+    if (!solicitud.aval_id || solicitud.aval_id === 0) {
+      console.log('→ Sin aval (ID no válido)');
+      return 'Sin aval';
     }
-  }
 
-  // Caso 4: Construir desde partes (nombre, app_aval, apm_aval)
-  const partes: string[] = [];
-  
-  if (solicitud.nombre_aval && 
+    // Caso 2: Nombre completo del cliente aval
+    if (solicitud.nombre_cliente_aval) {
+      console.log('→ Usando nombre_cliente_aval:', solicitud.nombre_cliente_aval);
+      return solicitud.nombre_cliente_aval;
+    }
+
+    // Caso 3: nombre_aval válido (no es mensaje de error)
+    if (solicitud.nombre_aval &&
+      typeof solicitud.nombre_aval === 'string') {
+
+      // Verificar que NO sea un mensaje de error
+      const esError = solicitud.nombre_aval.toLowerCase().includes('no encontrado');
+
+      if (!esError) {
+        // console.log('→ Usando nombre_aval:', solicitud.nombre_aval);
+        return solicitud.nombre_aval;
+      }
+    }
+
+    // Caso 4: Construir desde partes (nombre, app_aval, apm_aval)
+    const partes: string[] = [];
+
+    if (solicitud.nombre_aval &&
       !solicitud.nombre_aval.toLowerCase().includes('no encontrado')) {
-    partes.push(solicitud.nombre_aval);
-  }
-  
-  if (solicitud.app_aval) {
-    partes.push(solicitud.app_aval);
-  }
-  
-  if (solicitud.apm_aval) {
-    partes.push(solicitud.apm_aval);
-  }
+      partes.push(solicitud.nombre_aval);
+    }
 
-  const nombreConstruido = partes.join(' ').trim();
-  
-  if (nombreConstruido) {
-    console.log('→ Nombre construido desde partes:', nombreConstruido);
-    return nombreConstruido;
-  }
+    if (solicitud.app_aval) {
+      partes.push(solicitud.app_aval);
+    }
 
-  // Caso 5: Solo mostrar el ID como último recurso
-  console.log('→ Mostrando solo ID (no se encontró nombre)');
-  return `Aval ID: ${solicitud.aval_id}`;
-}
+    if (solicitud.apm_aval) {
+      partes.push(solicitud.apm_aval);
+    }
+
+    const nombreConstruido = partes.join(' ').trim();
+
+    if (nombreConstruido) {
+      console.log('→ Nombre construido desde partes:', nombreConstruido);
+      return nombreConstruido;
+    }
+
+    // Caso 5: Solo mostrar el ID como último recurso
+    console.log('→ Mostrando solo ID (no se encontró nombre)');
+    return `Aval ID: ${solicitud.aval_id}`;
+  }
 
 
   getNombreAliado(solicitud: any): string {
