@@ -14,7 +14,7 @@
 /* Migajas de Pan (Breadcrumbs) */
 .breadcrumb-nav {
     margin-bottom: 15px;
-    max-width: 1400px;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -70,7 +70,7 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 20px;
-    max-width: 1400px;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
 }
@@ -98,7 +98,7 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 20px;
-    max-width: 1400px;
+    width: 100%;
     margin: 0 auto;
 }
 
@@ -214,7 +214,7 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     margin: 15px auto;
-    max-width: 1400px;
+    width: 100%;
 }
 
 .loading-state {
@@ -250,7 +250,7 @@
 
 /* Contenedor principal vertical */
 .main-content-vertical {
-    max-width: 1400px;
+    width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -286,7 +286,7 @@
 /* Contenedor de tabla con scroll vertical fijo */
 .table-container-vertical {
     overflow-x: auto;
-    max-height: 200px; 
+    max-height: 65vh; 
     overflow-y: auto;
 }
 
@@ -524,6 +524,27 @@
 .estado-desconocido {
     background-color: #f8f9fa;
     color: #6c757d;
+}
+
+/* Nuevos estados de cliente */
+.estado-disponible {
+    color: #28a745 !important;
+    font-weight: 700;
+}
+
+.estado-en-ciclo {
+    color: #007bff !important;
+    font-weight: 700;
+}
+
+.estado-con-mora {
+    color: #dc3545 !important;
+    font-weight: 700;
+}
+
+.estado-sin-credito {
+    color: #6c757d !important;
+    font-weight: 700;
 }
 
 /* ===== ESTILOS PARA EL MODAL DE SOLICITUD ===== */

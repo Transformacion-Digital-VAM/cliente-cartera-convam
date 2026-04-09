@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SolicitudService } from '../../../../services/solicitud.service';
 import { ClienteService } from '../../../../services/client.service';
+import { CreditoService } from '../../../../services/credito.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -25,16 +26,45 @@ export class CreditRequestComponent implements OnInit {
   // Control de modal
   modalAbierto: boolean = false;
 
+  // Tabs
+  activeTab: 'PENDIENTES' | 'APROBADO' = 'PENDIENTES';
+
   // Estados de carga
   cargando: boolean = false;
+  cargandoAprobadas: boolean = false;
   cargandoAprobacion: boolean = false;
 
+  // Lista de solicitudes aprobadas
+  solicitudesAprobadas: any[] = [];
   // Estadísticas
   totalSolicitudes: number = 0;
   totalMontoSolicitado: number = 0;
   filaExpandida: number | null = null;
 
-  constructor(private solicitudService: SolicitudService) { }
+  // Garantías
+  montoAnterior: number = 0;
+  garantiaAnterior: number = 0;
+  garantiaSolicitada: number = 0;
+  cargandoGarantia: boolean = false;
+
+  get nuevaGarantia(): number {
+    return (this.montoAprobado || 0) * 0.10;
+  }
+
+  get diferenciaGarantia(): number {
+    return this.nuevaGarantia - this.garantiaAnterior;
+  }
+
+  get alertClassGarantia(): string {
+    if (this.diferenciaGarantia > 0.01) return 'primary';
+    if (this.diferenciaGarantia < -0.01) return 'success';
+    return 'neutral';
+  }
+
+  constructor(
+    private solicitudService: SolicitudService,
+    private creditoService: CreditoService
+  ) { }
 
   toggleFila(id: number): void {
     if (this.filaExpandida === id) {
@@ -48,34 +78,29 @@ export class CreditRequestComponent implements OnInit {
     this.cargarSolicitudesPendientes();
   }
 
+  setTab(tab: 'PENDIENTES' | 'APROBADO'): void {
+    this.activeTab = tab;
+    if (tab === 'PENDIENTES' && this.solicitudesPendientes.length === 0) {
+      this.cargarSolicitudesPendientes();
+    } else if (tab === 'APROBADO' && this.solicitudesAprobadas.length === 0) {
+      this.cargarSolicitudesAprobadas();
+    }
+    this.calcularEstadisticas();
+  }
+
   // Cargar solicitudes con estado PENDIENTE
   cargarSolicitudesPendientes(): void {
     this.cargando = true;
 
     this.solicitudService.obtenerSolicitudesPorEstado('PENDIENTE').subscribe({
       next: (solicitudes) => {
-        this.solicitudesPendientes = solicitudes;
-        this.calcularEstadisticas();
+        this.solicitudesPendientes = solicitudes.sort((a, b) => {
+          const dateA = new Date(a.fecha_creacion || 0).getTime();
+          const dateB = new Date(b.fecha_creacion || 0).getTime();
+          return dateB - dateA;
+        });
+        if (this.activeTab === 'PENDIENTES') this.calcularEstadisticas();
         this.cargando = false;
-
-        // Debug: verificar estructura de datos
-        if (solicitudes.length > 0) {
-          // console.log('=== DATOS DE SOLICITUDES ===');
-          // solicitudes.forEach((solicitud, index) => {
-          //   console.log(`Solicitud ${index + 1}:`, {
-          //     id: solicitud.id_solicitud,
-          //     cliente: solicitud.cliente_id,
-          //     aliado_id: solicitud.aliado_id,
-          //     aval_id: solicitud.aval_id,
-          //     nombre_aliado: solicitud.nombre_aliado,
-          //     nombre_aval: solicitud.nombre_aval,
-          //     // Ver campos adicionales
-          //     app_aval: solicitud.app_aval,
-          //     apm_aval: solicitud.apm_aval,
-          //     nombre_cliente_aval: solicitud.nombre_cliente_aval
-          //   });
-          // });
-        }
       },
       error: (error) => {
         console.error('Error al cargar solicitudes:', error);
@@ -84,9 +109,33 @@ export class CreditRequestComponent implements OnInit {
       }
     });
   }
+
+  // Cargar solicitudes con estado APROBADO
+  cargarSolicitudesAprobadas(): void {
+    this.cargandoAprobadas = true;
+
+    this.solicitudService.obtenerSolicitudesPorEstado('APROBADO').subscribe({
+      next: (solicitudes) => {
+        this.solicitudesAprobadas = solicitudes.sort((a, b) => {
+          const dateA = new Date(a.fecha_aprobacion || a.fecha_creacion || 0).getTime();
+          const dateB = new Date(b.fecha_aprobacion || b.fecha_creacion || 0).getTime();
+          return dateB - dateA;
+        });
+        if (this.activeTab === 'APROBADO') this.calcularEstadisticas();
+        this.cargandoAprobadas = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar solicitudes aprobadas:', error);
+        this.mostrarError('No se pudieron cargar las solicitudes aprobadas', error);
+        this.cargandoAprobadas = false;
+      }
+    });
+  }
+
   calcularEstadisticas(): void {
-    this.totalSolicitudes = this.solicitudesPendientes.length;
-    this.totalMontoSolicitado = this.solicitudesPendientes.reduce(
+    const listaActual = this.activeTab === 'PENDIENTES' ? this.solicitudesPendientes : this.solicitudesAprobadas;
+    this.totalSolicitudes = listaActual.length;
+    this.totalMontoSolicitado = listaActual.reduce(
       (total, solicitud) => total + (Number(solicitud.monto_solicitado) || 0), 0
     );
   }
@@ -98,18 +147,24 @@ export class CreditRequestComponent implements OnInit {
       solicitud.estado_domiciliacion ??
       solicitud.domiciliado ??
       solicitud.domiciliacion ??
-      solicitud.domiciliada
+      solicitud.domiciliada ??
+      solicitud.es_domiciliada ??
+      solicitud.fecha_domiciliada ??
+      solicitud.fecha_domiciliacion ??
+      solicitud.fecha_domicilio
     );
   }
 
 
   getTextoDomiciliacion(solicitud: any): string {
-    return this.esDomiciliada(solicitud) ? 'Domiciliada' : 'No domiciliada';
+    if (this.esDomiciliada(solicitud)) return 'Domiciliada';
+    return (this.activeTab === 'APROBADO') ? 'Pendiente Visita' : 'No domiciliada';
   }
 
   // Clase CSS para badge según estado
   getClaseBadgeDomiciliacion(solicitud: any): string {
-    return this.esDomiciliada(solicitud) ? 'badge-success' : 'badge-secondary';
+    if (this.esDomiciliada(solicitud)) return 'badge-success';
+    return (this.activeTab === 'APROBADO') ? 'badge-danger' : 'badge-warning';
   }
 
   // Información adicional: fecha o quien confirmó (si existe)
@@ -129,6 +184,41 @@ export class CreditRequestComponent implements OnInit {
     this.solicitudSeleccionada = solicitud;
     this.montoAprobado = solicitud.monto_solicitado;
     this.modalAbierto = true;
+
+    // Garantía sobre lo solicitado (estática)
+    this.garantiaSolicitada = (solicitud.monto_solicitado || 0) * 0.10;
+
+    // Resetear garantías fijas
+    this.montoAnterior = 0;
+    this.garantiaAnterior = 0;
+
+    this.calcularGarantias(solicitud);
+  }
+
+  calcularGarantias(solicitud: any): void {
+    const esRenovacion = solicitud.tipo_credito === 'RENOVACIÓN' || solicitud.tipo_credito === 'RE-INGRESO';
+
+    if (esRenovacion && solicitud.cliente_id) {
+      this.cargandoGarantia = true;
+      this.creditoService.obtenerCreditosPorCliente(solicitud.cliente_id).subscribe({
+        next: (creditos) => {
+          if (creditos && creditos.length > 0) {
+            // Obtener el crédito más reciente por ID
+            const ultimoCredito = [...creditos].sort((a, b) =>
+              (b.id_credito || 0) - (a.id_credito || 0)
+            )[0];
+
+            this.montoAnterior = parseFloat(ultimoCredito.monto_aprobado || ultimoCredito.monto || 0);
+            this.garantiaAnterior = parseFloat(ultimoCredito.total_garantia || 0);
+          }
+          this.cargandoGarantia = false;
+        },
+        error: (err) => {
+          console.error('Error al obtener crédito anterior:', err);
+          this.cargandoGarantia = false;
+        }
+      });
+    }
   }
 
   // Cerrar modal

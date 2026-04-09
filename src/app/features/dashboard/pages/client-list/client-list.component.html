@@ -107,7 +107,7 @@
               <td class="curp-cell text-center">{{ cliente.curp || 'N/A' }}</td>
               <td class="curp-cell text-center">{{ cliente.telefono || 'N/A' }}</td>
               <td class="estadocliente text-center">
-                <span [class]="getEstadoClienteClass(cliente)" class="text-success bold">
+                <span [class]="getEstadoClienteClass(cliente)" class="bold">
                   {{ getEstadoCliente(cliente) }}
                 </span>
               </td>
@@ -254,27 +254,10 @@
         </div>
         <div class="modal-body">
           <!-- Información del Cliente -->
-          <!-- <div class="card mb-2">
-            <div class="card-header">
-              <h6 class="mb-0">INFORMACIÓN DEL CLIENTE</h6>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-2">
-                  <strong>ID CLIENTE:</strong> {{ clienteParaSolicitud?.id_cliente }}
-                </div>
-                <div class="col-md-6">
-                  <strong>NOMBRE:</strong> {{ getNombreCompleto(clienteParaSolicitud) }}
-                </div>
-              </div>
-            </div>
-          </div> -->
           <div class="alert alert-info mb-3">
             <small>
-              <strong>Ejecutivo responsable:</strong>
+              <strong>Responsable:</strong>
               {{usuarioActual?.nombre || usuarioActual?.usuario || 'No identificado'}}
-              <br>
-              <strong>ID de ejecutivo:</strong> {{usuarioActual?.id_usuario || 'N/A'}}
             </small>
           </div>
           <div class="resumen-compacto">
@@ -296,11 +279,11 @@
                   <div class="mb-3">
                     <label for="montoSolicitado" class="form-label">MONTO SOLICITADO *</label>
                     <input type="number" class="form-control" id="montoSolicitado" formControlName="monto_solicitado"
-                      min="5000" step="100">
+                      min="3000" step="100">
                     <div
                       *ngIf="solicitudForm.get('monto_solicitado')?.invalid && solicitudForm.get('monto_solicitado')?.touched"
                       class="text-danger small">
-                      El monto es requerido (mínimo $5000)
+                      El monto es requerido (mínimo $3000)
                     </div>
                   </div>
                 </div>
@@ -354,7 +337,7 @@
                 <div class="col-md-2">
                   <div class="mb-3">
                     <label for="noPagos" class="form-label">PAGOS</label>
-                    <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="1">
+                    <input type="number" class="form-control" id="noPagos" formControlName="no_pagos" min="4">
                   </div>
                 </div>
                 <div class="col-md-4">
@@ -375,7 +358,7 @@
                 <div class="col-md-3">
                   <div class="mb-3">
                     <label for="diaPago" class="form-label">Día de Pago *</label>
-                    <input type="number" class="form-control" id="diaPago" for="diaPAgo" formControlName="dia_pago"
+                    <input type="text" class="form-control" id="diaPago" for="diaPAgo" formControlName="dia_pago"
                       required>
                     <!-- <select class="form-select" id="diaPago" formControlName="dia_pago" required>
                       <option *ngFor="let dia of diasPago" [value]="dia.value">

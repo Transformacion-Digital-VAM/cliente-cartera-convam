@@ -103,7 +103,9 @@
           <h3>Cartera Corriente</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(dashboardData.carteraCorriente || 0) }}</div>
+          <div class="card-value">
+            {{ formatearMoneda(Math.round(dashboardData.carteraCorriente || 0)) }}
+          </div>
           <div class="card-percentage">{{ getPorcentajeCarteraCorriente() }}%</div>
           <div class="card-details">{{ dashboardData.creditosVigentes }} créditos vigentes</div>
         </div>
@@ -131,7 +133,7 @@
           <h3>Mora Total</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(dashboardData.carteraMora || 0) }}</div>
+          <div class="card-value">{{ formatearMoneda(Math.round(dashboardData.carteraMora || 0)) }}</div>
           <div class="card-percentage">{{ dashboardData.porcentajeCarteraMora }}%</div>
           <div class="card-details">{{ dashboardData.clientesMora }} clientes en mora</div>
         </div>
@@ -143,7 +145,7 @@
           <h3>Mora Corriente</h3>
         </div>
         <div class="card-body">
-          <div class="card-value">{{ formatearMoneda(dashboardData.moraCorriente || 0) }}</div>
+          <div class="card-value">{{ formatearMoneda(Math.round(dashboardData.moraCorriente || 0)) }}</div>
           <div class="card-percentage">{{ dashboardData.porcentajeMoraCorriente }}%</div>
           <div class="card-details">Pagos atrasados (Ciclo actual)</div>
         </div>
@@ -272,7 +274,7 @@
     </div>
 
     <!-- Ministraciones -->
-    <div class="subsection">
+    <!-- <div class="subsection">
       <h3>Ministraciones</h3>
       <div class="cards-grid">
         <div class="card">
@@ -295,7 +297,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 
   <!-- ============================================ -->
@@ -451,7 +453,9 @@
                   <div class="truncate-text">{{ vencimiento.aliado }}</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary" (click)="contactarCliente(vencimiento)">
+                  <button class="btn btn-sm btn-outline-primary" 
+                          [title]="'Llamar al: ' + (vencimiento.telefono || 'Sin registrar')" 
+                          (click)="contactarCliente(vencimiento)">
                     <i class="fas fa-phone"></i>
                   </button>
                 </td>
@@ -512,7 +516,9 @@
                   <div class="truncate-text">{{ alerta.aliado }}</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary" (click)="contactarCliente(alerta)">
+                  <button class="btn btn-sm btn-outline-primary"
+                          [title]="'Llamar al: ' + (alerta.telefono || 'Sin registrar')" 
+                          (click)="contactarCliente(alerta)">
                     <i class="fas fa-phone"></i>
                   </button>
                 </td>
@@ -525,7 +531,7 @@
 
     <!-- Resumen de Entregas -->
     <div class="subsection">
-      <h3><i class="fas fa-calendar-day text-success"></i> {{ getPeriodoSeleccionado() }} (Resumen de Entregas)</h3>
+      <h3><i class="fas fa-calendar-day text-success"></i> {{ getPeriodoSeleccionado() }}</h3>
 
       <div class="cards-grid">
         <div class="card">
@@ -535,36 +541,40 @@
           </div>
           <div class="card-body">
             <div class="card-value">
-              {{ dashboardData.creditosEntregados ? dashboardData.creditosEntregados.length : 0 }}
+              {{ formatearMoneda(dashboardData.resumenEntregado?.monto || 0) }}
             </div>
             <div class="card-details">
-              Total entregados {{ getPeriodoSeleccionado() }}
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <i class="fas fa-file-contract text-info"></i>
-            <h4>Créditos Registrados</h4>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ dashboardData.creditosDia.length }}</div>
-            <div class="card-details">
-              Total registrados {{ getPeriodoSeleccionado() }}
+              {{ dashboardData.resumenEntregado?.cantidad || 0 }} créditos
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <i class="fas fa-users text-primary"></i>
-            <h4>Clientes Nuevos</h4>
+            <i class="fas fa-exclamation-triangle text-danger"></i>
+            <h4>Créditos Vencidos</h4>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ dashboardData.clientesDia || 0 }}</div>
+            <div class="card-value">
+              {{ formatearMoneda(dashboardData.resumenVencido?.monto || 0) }}
+            </div>
             <div class="card-details">
-              Clientes registrados {{ getPeriodoSeleccionado() }}
+              {{ dashboardData.resumenVencido?.cantidad || 0 }} créditos
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <i class="fas fa-undo text-warning"></i>
+            <h4>Devolución</h4>
+          </div>
+          <div class="card-body">
+            <div class="card-value">
+              {{ formatearMoneda(dashboardData.resumenDevolucion?.monto || 0) }}
+            </div>
+            <div class="card-details">
+              {{ dashboardData.resumenDevolucion?.cantidad || 0 }} créditos
             </div>
           </div>
         </div>

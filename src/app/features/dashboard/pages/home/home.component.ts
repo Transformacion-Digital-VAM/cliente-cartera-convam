@@ -24,6 +24,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   periodoDashboard: string = 'sin-filtro';
   cargandoDashboard: boolean = false;
   fechaActual: Date = new Date();
+  protected readonly Math = Math;
 
 
   // Filtros de fecha
@@ -63,8 +64,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.actualizarDashboard();
 
     // Configurar actualización automática cada 1 minuto
+    // Configurar actualización automática cada 1 minuto
     this.refreshInterval = setInterval(() => {
-      console.log('Actualizando dashboard automáticamente...');
       this.actualizarDashboard();
     }, 60000); // 60,000 ms = 1 minuto
   }
@@ -203,10 +204,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
           this.cargandoDashboard = false;
           this.crearGraficos();
-
-          console.log('Datos recibidos:', data);
-          console.log('Vencimientos:', this.todosVencimientos);
-          console.log('Vencimientos filtrados:', this.vencimientosFiltrados);
         },
         error: (error) => {
           console.error('Error al cargar dashboard:', error);
@@ -229,8 +226,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   filtrarVencimientos(): void {
-    console.log('Filtrando vencimientos. Días seleccionados:', this.diasVencimiento);
-    console.log('Total vencimientos:', this.todosVencimientos.length);
 
     if (this.diasVencimiento === 999) {
       // Mostrar todos los vencimientos futuros
@@ -243,7 +238,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       );
       this.mostrarTodosVencimientos = false;
 
-      console.log('Vencimientos filtrados:', this.vencimientosFiltrados);
+      this.mostrarTodosVencimientos = false;
     }
   }
 
@@ -342,7 +337,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
       distribucionIngresos: { capital: 0, intereses: 0, moratorios: 0 },
       moraPorAliadoChart: { labels: [], data: [] },
       totalCreditosCount: 0,
-      totalPagosCount: 0
+      totalPagosCount: 0,
+      resumenEntregado: { cantidad: 0, monto: 0 },
+      resumenVencido: { cantidad: 0, monto: 0 },
+      resumenDevolucion: { cantidad: 0, monto: 0 }
     };
   }
 
@@ -473,6 +471,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
           title: {
             display: false,
             text: 'Ingresos Mensuales'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.raw as number;
+                return `${label}: ${this.formatearMoneda(value)}`;
+              }
+            }
           }
         },
         scales: {
@@ -779,7 +786,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   contactarCliente(alerta: any): void {
     if (alerta.telefono) {
-      window.open(`tel:${alerta.telefono}`, '_self');
+      const confirmar = confirm(`Teléfono de ${alerta.cliente}: ${alerta.telefono}\n\n¿Desea abrir la aplicación de llamadas para contactar al cliente?`);
+      if (confirmar) {
+        window.open(`tel:${alerta.telefono}`, '_self');
+      }
     } else {
       alert(`No hay teléfono registrado para ${alerta.cliente}`);
     }

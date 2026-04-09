@@ -84,9 +84,9 @@ export class AuthService {
   private setupAuthStateListener(): void {
     console.log('Configurando listener de estado de autenticación...');
     onAuthStateChanged(this.auth, async (firebaseUser: FirebaseUser | null) => {
-      console.log('onAuthStateChanged disparado, firebaseUser:', firebaseUser ? firebaseUser.email : 'null');
+      // console.log('onAuthStateChanged disparado, firebaseUser:', firebaseUser ? firebaseUser.email : 'null');
       if (firebaseUser) {
-        console.log('Usuario autenticado en Firebase:', firebaseUser.email);
+        // console.log('Usuario autenticado en Firebase:', firebaseUser.email);
         await this.syncUserWithBackend(firebaseUser);
       } else {
         console.log('Usuario cerró sesión en Firebase');
@@ -117,7 +117,7 @@ export class AuthService {
         )
       );
 
-      console.log('Respuesta del backend recibida:', response);
+      // console.log('Respuesta del backend recibida:', response);
       if (response?.success) {
         // console.log('Usuario sincronizado con backend:');
         this.setUserData(response.data.user, token);

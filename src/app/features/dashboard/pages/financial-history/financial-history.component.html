@@ -1,4 +1,4 @@
-<div class="admin-container">
+<div class="admin-container-fluid">
   <!-- Migajas de Pan -->
   <nav class="breadcrumb-nav" aria-label="Migajas de pan">
     <ol class="breadcrumb">
@@ -26,11 +26,14 @@
           <div class="form-group">
             <label class="form-label">ALIADOS</label>
             <div class="form-control" style="height: auto; max-height: 150px; overflow-y: auto; padding: 10px;">
-              <div *ngFor="let aliado of aliados" style="margin-bottom: 5px;">
+              <div *ngFor="let aliado of aliados"
+                style="display: flex; align-items: center; margin-bottom: 8px; padding: 4px; border-radius: 4px;"
+                [class.hover-effect]="true">
                 <input type="checkbox" [id]="'aliado-' + aliado.id_aliado"
                   [checked]="esAliadoSeleccionado(aliado.id_aliado)" (change)="onAliadoChange($event, aliado.id_aliado)"
-                  style="margin-right: 8px;">
-                <label [for]="'aliado-' + aliado.id_aliado" style="cursor: pointer; margin-bottom: 0;">
+                  style="margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
+                <label [for]="'aliado-' + aliado.id_aliado"
+                  style="cursor: pointer; margin: 0; flex-grow: 1; padding: 2px 0;">
                   {{ aliado.nom_aliado.trim() }}
                 </label>
               </div>
@@ -78,38 +81,37 @@
           <thead>
             <tr>
               <th></th>
-              <th class="text-center">SEMANA</th>
+              <th class="text-center">PERÍODO ACTUAL</th>
               <th class="text-center">CLIENTE</th>
               <th class="text-center">ID CRÉDITO</th>
               <th class="text-center">ALIADO</th>
               <th class="text-center">DÍA DE PAGO</th>
               <th class="text-center">PAGOS REALIZADOS</th>
-              <th class="text-center">PAGO SEMANAL</th>
+              <th class="text-center">MONTO POR PERÍODO</th>
               <th class="text-center">PRÓXIMA FECHA</th>
               <th class="text-center">TOTAL A PAGAR</th>
               <th class="text-center">TOTAL PAGADO</th>
               <th class="text-center">SALDO PENDIENTE</th>
               <th class="text-center">PRÓXIMO PAGO</th>
-              <th class="text-center">DÍAS ATRASO</th>
-              <th class="text-center">SEMANAS ATRASO</th>
+              <th class="text-center">PERÍODOS ATRASADOS</th>
               <th class="text-center">TOTAL ATRASADO</th>
               <th class="text-center">ACCIONES</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngIf="cargando">
-              <td colspan="20" class="text-center">
+              <td colspan="16" class="text-center">
                 <i class="fas fa-spinner fa-spin"></i> Cargando créditos...
               </td>
             </tr>
 
-            <tr *ngIf="!cargando && !hayCreditos">
-              <td colspan="20" class="text-center">
-                No hay créditos entregados
+            <tr *ngIf="!cargando && creditosFiltrados.length === 0">
+              <td colspan="16" class="text-center">
+                No hay créditos que coincidan con los filtros
               </td>
             </tr>
 
-            <ng-container *ngFor="let credito of creditosFiltrados">
+            <ng-container *ngFor="let credito of creditosFiltrados; let i = index">
               <!-- Fila principal con color según estado -->
               <tr class="clickable-row" [ngClass]="credito.viewData?.estadoPago?.filaClase"
                 (click)="toggleFilaDetalle(credito.id_credito)">
@@ -117,28 +119,43 @@
                   <i class="fas icon-detalles" [class.fa-chevron-right]="filaExpandida !== credito.id_credito"
                     [class.fa-chevron-down]="filaExpandida === credito.id_credito"></i>
                 </td>
+                <!-- Período actual -->
                 <td class="text-center detalles-pago">
-                  {{ credito.viewData?.semanaActualCliente }}
+                  {{ credito.viewData?.periodoActual || 1 }}
                 </td>
-                <td>{{ credito.viewData?.nombreCliente }}</td>
+                <td>{{ credito.viewData?.nombreCliente || getNombreCliente(credito) }}</td>
                 <td>{{ getCreditoId(credito) }}</td>
-                <td>{{ credito.viewData?.nombreAliado }}</td>
-                <td class="detalles-pago color:#4a3ef9">{{ credito.viewData?.diaPago }}</td>
+                <td>{{ credito.viewData?.nombreAliado || getNombreAliado(credito.aliado_id) }}</td>
+                <td class="detalles-pago">{{ credito.viewData?.diaPago || getDiaPago(credito) }}</td>
+                <!-- Pagos realizados -->
                 <td>
-                  {{ credito.viewData?.pagosRealizados }}/{{ credito.viewData?.totalSemanas }}
-                  <small class="text-muted">({{ credito.viewData?.pagosPendientes }} PENDIENTES)</small>
+                  <span class="badge bg-info">
+                    {{ credito.viewData?.pagosRealizados || 0 }}/{{
+                    credito.viewData?.totalSemanas || obtenerTotalSemanas(credito) }}
+                  </span>
+                  <small class="text-muted d-block">
+                    ({{ credito.viewData?.pagosPendientes || 0 }} PENDIENTES)
+                  </small>
                 </td>
-                <td class="detalles-pago">{{ formatearMoneda(credito.viewData?.pagoSemanal) }}</td>
-                <td class="col-estado">{{ credito.viewData?.proximaFecha }}</td> <!-- Fecha de pago-->
-                <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar) }}</td> <!-- Total a Pagar-->
-                <td class="col-estado">{{ formatearMoneda(credito.viewData?.totalPagado) }}</td> <!-- Total Pagado-->
-                <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente) }}</td>
-                <td class="text-center">{{ credito.viewData?.proximoPagoNum }}/{{ credito.viewData?.totalSemanas }}
+                <!-- Monto por período -->
+                <td class="detalles-pago">{{ formatearMoneda(credito.viewData?.pagoSemanal || credito.pago_semanal || 0) }}</td>
+                <td class="col-estado">{{ credito.viewData?.proximaFecha || 'N/A' }}</td>
+                <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar || 0) }}</td>
+                <td class="col-estado">{{ formatearMoneda(credito.viewData?.totalPagado || 0) }}</td>
+                <td class="col-estado">{{ formatearMoneda(credito.saldo_pendiente || 0) }}</td>
+
+                <!-- PRÓXIMO PAGO -->
+                <td class="text-center">
+                  <span class="badge bg-primary">
+                    {{ credito.viewData?.proximoPagoNum || 1 }}/{{
+                    credito.viewData?.totalSemanas || obtenerTotalSemanas(credito) }}
+                  </span>
                 </td>
-                <td class="text-center" [ngClass]="{'text-danger': (credito.viewData?.diasAtraso || 0) > 0}">{{
-                  credito.viewData?.diasAtraso }}</td>
-                <td class="text-center" [ngClass]="{'text-danger': (credito.viewData?.semanasAtraso || 0) > 0}">{{
-                  credito.viewData?.semanasAtraso }}</td>
+
+                <td class="text-center"
+                  [ngClass]="{'text-danger': (credito.viewData?.periodosAtrasados || 0) > 0}">
+                  {{ credito.viewData?.periodosAtrasados || 0 }}
+                </td>
                 <td [ngClass]="{'text-danger': (credito.viewData?.totalAtrasado || 0) > 0}">
                   {{ formatearMoneda(credito.viewData?.totalAtrasado || 0) }}
                 </td>
@@ -152,142 +169,113 @@
 
               <!-- Fila expandible con detalles de pagos -->
               <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
-                <td colspan="20">
+                <td colspan="16">
                   <div class="detalle-pagos-container">
                     <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
-
-                    <div class="table-responsive">
-                      <table class="table table-sm table-detalle">
-                        <thead>
-                          <tr>
-                            <th>No. PAGO</th>
-                            <th class="text-center">TOTAL PAGADO</th>
-                            <th class="text-center">FECHA</th>
-                            <th class="text-center">CAPITAL</th>
-                            <th class="text-center">INTERESES</th>
-                            <th class="text-center">MORA</th>
-                            <th class="text-center">TIPO</th>
-                            <th class="text-center">GARANTÍA ACTUAL</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr *ngIf="getDetallesPagos(credito.id_credito).length === 0">
-                            <td colspan="7" class="text-center text-muted">
-                              No hay pagos registrados
-                            </td>
-                          </tr>
-                          <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
-                            <td class="font-bold">{{ detalle.numeroPago }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.montoTotal) }}</td>
-                            <td class="text-center">{{ formatearFecha(detalle.fecha) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.capital) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.intereses) }}</td>
-                            <td class="text-center">{{ formatearMoneda(detalle.mora) }}</td>
-                            <td class="text-center">
-                              <span class="badge" [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
-                                [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
-                                {{ detalle.tipoPago }}
-                              </span>
-                            </td>
-                            <td class="text-center">
-                              <!-- Mostrar el monto total de garantía -->
-                              <span class="badge bg-info" *ngIf="credito.total_garantia > 0">
-                                {{ formatearMoneda(credito.total_garantia) }}
-                              </span>
-                              <span class="badge bg-secondary"
-                                *ngIf="!credito.total_garantia || credito.total_garantia === 0">
-                                Sin garantía
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                    <div class="row mb-3">
+                      <!-- Columna de tabla de pagos -->
+                      <div class="col-md-8">
+                        <div class="table-responsive">
+                          <table class="table table-sm table-detalle">
+                            <thead>
+                              <tr>
+                                <th>No. PAGO</th>
+                                <th class="text-center">TOTAL PAGADO</th>
+                                <th class="text-center">FECHA</th>
+                                <th class="text-center">CAPITAL</th>
+                                <th class="text-center">INTERESES</th>
+                                <th class="text-center">MORA</th>
+                                <th class="text-center">TIPO</th>
+                                <th class="text-center">REGISTRADO POR</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngIf="getDetallesPagos(credito.id_credito).length === 0">
+                                <td colspan="8" class="text-center text-muted">
+                                  No hay pagos registrados
+                                </td>
+                              </tr>
+                              <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
+                                <td class="font-bold">{{ detalle.numeroPago }}</td>
+                                <td class="text-center">{{ formatearMoneda(detalle.montoTotal) }}</td>
+                                <td class="text-center">{{ formatearFecha(detalle.fecha) }}</td>
+                                <td class="text-center">{{ formatearMoneda(detalle.capital) }}</td>
+                                <td class="text-center">{{ formatearMoneda(detalle.intereses) }}</td>
+                                <td class="text-center">{{ formatearMoneda(detalle.mora) }}</td>
+                                <td class="text-center">
+                                  <span class="badge" [ngClass]="{
+                                    'bg-primary': detalle.tipoPago?.includes('PAGO'),
+                                    'bg-success': detalle.tipoPago?.includes('ADELANTO'),
+                                    'bg-warning': detalle.tipoPago?.includes('MORA')
+                                  }">
+                                    {{ detalle.tipoPago || 'NORMAL' }}
+                                  </span>
+                                </td>
+                                <td class="text-center">
+                                  {{ detalle.registradoPor || 'Sistema' }}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </td>
               </tr>
             </ng-container>
           </tbody>
-          <tfoot class="table-footer fixed-footer">
-            <tr>
-              <td colspan="9" class="text-right text-footer ">
-                TOTAL DE CRÉDITOS: {{ creditosFiltrados.length }}
+
+          <!-- FOOTER CON TOTALES -->
+          <tfoot *ngIf="creditosFiltrados.length > 0">
+            <tr class="table-footer bg-light">
+              <td colspan="6" class="text-right"><strong>TOTALES:</strong></td>
+              <td class="text-center">
+                <strong>{{ calcularTotalPagosRealizados() }}/{{ calcularTotalPagosProgramados() }}</strong>
               </td>
-              <td>{{ getNombreCliente(credito) }}</td>
-              <td>{{ getNombreAliado(credito.aliado_id) }}</td>
-              <td>{{ formatearMoneda(credito.total_a_pagar) }}</td>
-              <td>{{ getDiaPago(credito) }}</td>
-              <td>{{ calcularProximoNumeroPago(credito) }}/16</td>
-              <td>{{ formatearMoneda(calcularPagoSemanal(credito)) }}</td>
-              <td>{{ formatearProximaFechaPago(credito) }}</td>
-              <td>{{ formatearMoneda(calcularTotalPagado(credito)) }}</td>
-              <td>{{ formatearMoneda(credito.saldo_pendiente) }}</td>
-              <td>
-                {{ calcularPagosRealizados(credito) }}/16
-                <small class="text-muted">({{ calcularPagosPendientes(credito) }} PENDIENTES)</small>
+              <td></td>
+              <td></td>
+              <td class="text-center">
+                <strong class="text-primary">{{ formatearMoneda(calcularTotalAPagarGeneral()) }}</strong>
               </td>
-              <td [ngClass]="getEstadoPago(credito).clase">
-                {{ getEstadoPago(credito).texto }}
+              <td class="text-center">
+                <strong class="text-success">{{ formatearMoneda(calcularTotalPagadoGeneral()) }}</strong>
               </td>
-              <td>{{ calcularDiasAtraso(credito) }}</td>
-              <td>{{ calcularSemanasAtraso(credito) }}</td>
-              <td [ngClass]="{'text-danger': calcularTotalAtrasado(credito) > 0}">
-                {{ formatearMoneda(calcularTotalAtrasado(credito)) }}
+              <td class="text-center">
+                <strong class="text-warning">{{ formatearMoneda(calcularTotalCartera()) }}</strong>
               </td>
-              <td class="actions-cell">
-                <button class="btn btn-success btn-sm" (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
-                  <i class="fas fa-money-bill-wave"></i> PAGO
-                </button>
+              <td></td>
+              <td></td>
+              <td class="text-center">
+                <strong class="text-danger">{{ formatearMoneda(calcularTotalAtrasadoGeneral()) }}</strong>
               </td>
+              <td></td>
             </tr>
 
-            <!-- Fila expandible con detalles de pagos -->
-            <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
-              <td colspan="20">
-                <div class="detalle-pagos-container">
-                  <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
-
-                  <div class="table-responsive">
-                    <table class="table table-sm table-detalle">
-                      <thead>
-                        <tr>
-                          <th>No. PAGO</th>
-                          <th>FECHA</th>
-                          <th>TOTAL PAGADO</th>
-                          <th>CAPITAL</th>
-                          <th>INTERESES</th>
-                          <th>MORA</th>
-                          <th>TIPO</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngIf="getDetallesPagos(credito.id_credito).length === 0">
-                          <td colspan="7" class="text-center text-muted">
-                            No hay pagos registrados
-                          </td>
-                        </tr>
-                        <tr *ngFor="let detalle of getDetallesPagos(credito.id_credito)">
-                          <td>{{ detalle.numeroPago }}</td>
-                          <td>{{ formatearFecha(detalle.fecha) }}</td>
-                          <td>{{ formatearMoneda(detalle.montoTotal) }}</td>
-                          <td>{{ formatearMoneda(detalle.capital) }}</td>
-                          <td>{{ formatearMoneda(detalle.intereses) }}</td>
-                          <td>{{ formatearMoneda(detalle.mora) }}</td>
-                          <td>
-                            <span class="badge" [class.badge-primary]="detalle.tipoPago.includes('PAGO')"
-                              [class.badge-success]="detalle.tipoPago.includes('ADELANTO')">
-                              {{ detalle.tipoPago }}
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+            <!-- RESUMEN ESTADÍSTICO -->
+            <tr class="table-secondary">
+              <td colspan="16" class="text-center">
+                <div class="row">
+                  <div class="col-md-3">
+                    <small><strong>Créditos Activos:</strong> {{ contarCreditosActivos() }}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <small><strong>Al Día:</strong> {{ contarCreditosAlDia() }}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <small><strong>Con Atraso:</strong> {{ contarCreditosAtrasados() }}</small>
+                  </div>
+                  <div class="col-md-2">
+                    <small><strong>Vencidos:</strong> {{ contarCreditosVencidos() }}</small>
+                  </div>
+                  <div class="col-md-3">
+                    <small><strong>% Cartera Atrasada:</strong> {{ calcularPorcentajeAtrasado() | number:'1.2-2'
+                      }}%</small>
                   </div>
                 </div>
               </td>
             </tr>
-            </ng-container>
-            </tbody>
+          </tfoot>
         </table>
       </div>
 
@@ -323,20 +311,24 @@
         <h4><i class="fas fa-exclamation-triangle"></i> SITUACIÓN ACTUAL</h4>
         <div class="info-grid">
           <div class="info-item">
+            <strong>Frecuencia de pago:</strong>
+            <span class="badge ms-2" [ngClass]="{
+                    'bg-primary': getTipoCalendario(creditoSeleccionado) === 'Mensual',
+                    'bg-warning': getTipoCalendario(creditoSeleccionado) === 'Quincenal',
+                    'bg-info': getTipoCalendario(creditoSeleccionado) === 'Semanal'
+                  }">
+              {{ getTipoCalendario(creditoSeleccionado) }}
+            </span>
+          </div>
+          <div class="info-item">
             <strong>Próxima Fecha de Pago:</strong>
             <span [ngClass]="{'text-success': diasAtraso === 0, 'text-danger': diasAtraso > 0}">
-              {{ formatearFecha(proximaFechaPago?.toISOString() || '') }}
+              {{ proximaFechaPago ? formatearFecha(proximaFechaPago.toISOString()) : 'N/A' }}
             </span>
           </div>
           <div class="info-item">
-            <strong>Días de Atraso:</strong>
-            <span [ngClass]="{'text-success': diasAtraso === 0, 'text-danger': diasAtraso > 0}">
-              {{ diasAtraso }} días
-            </span>
-          </div>
-          <div class="info-item">
-            <strong>Semanas Atrasadas:</strong>
-            <span class="text-danger">{{ semanasAtraso }}</span>
+            <strong>Periodos Atrasados:</strong>
+            <span class="text-danger">{{ periodosAtrasados }}</span>
           </div>
           <div class="info-item">
             <strong>Cartera Atrasada:</strong>
@@ -352,11 +344,11 @@
           </div>
           <div class="info-item">
             <strong>Saldo Pendiente:</strong>
-            <span class="monto-total">{{ formatearMoneda(creditoSeleccionado.saldo_pendiente) }}</span>
+            <span class="monto-total">{{ formatearMoneda(creditoSeleccionado?.saldo_pendiente || 0) }}</span>
           </div>
           <div class="info-item">
-            <strong>Pago Semanal:</strong>
-            <span>{{ formatearMoneda(creditoSeleccionado.pago_semanal) }}</span>
+            <strong>Monto por Periodo:</strong>
+            <span>{{ formatearMoneda(creditoSeleccionado?.pago_semanal || 0) }}</span>
           </div>
           <div class="info-item">
             <strong>Próximo Pago N°:</strong>
@@ -365,7 +357,7 @@
           </div>
           <div class="info-item">
             <strong>Pagos Completados:</strong>
-            <span>{{ calcularPagosRealizados(creditoSeleccionado) }}</span>
+            <span>{{ ultimoPagoCompleto }}</span>
           </div>
           <div class="info-item">
             <strong>Adeudo (Mora):</strong>
@@ -390,13 +382,13 @@
             <p>Pago normal o atrasado</p>
             <div class="opcion-details">
               <span class="monto-sugerido">
-                {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
+                {{ formatearMoneda(creditoSeleccionado?.pago_semanal || 0) }}
               </span>
               <span class="text-danger" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
                 + {{ formatearMoneda(calcularMoraPendiente(creditoSeleccionado)) }} de mora
               </span>
-              <span class="text-danger" *ngIf="semanasAtraso > 0">
-                {{ semanasAtraso }} semana(s) atrasada(s)
+              <span class="text-danger" *ngIf="periodosAtrasados > 0">
+                {{ periodosAtrasados }} {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }}(s) atrasado(s)
               </span>
             </div>
           </div>
@@ -415,10 +407,10 @@
           </div>
           <div class="opcion-content">
             <h4>ADELANTO</h4>
-            <p>Pago de semana futura</p>
+            <p>Pago de periodo futuro</p>
             <div class="opcion-details">
               <span class="text-success" *ngIf="calcularMoraPendiente(creditoSeleccionado) === 0">
-                Aplica automáticamente a próxima semana
+                Aplica automáticamente a próximo {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }}
               </span>
               <span class="text-danger" *ngIf="calcularMoraPendiente(creditoSeleccionado) > 0">
                 No disponible (mora pendiente)
@@ -451,6 +443,9 @@
         <div class="modal-header-text">
           <h3 class="modal-title">PAGO</h3>
           <p class="modal-subtitle">{{ getNombreCliente(creditoSeleccionado) }}</p>
+          <small class="text-muted">
+            Frecuencia: {{ getTipoCalendario(creditoSeleccionado) }}
+          </small>
         </div>
       </div>
       <button class="modal-close" (click)="cerrarModalPago()" [disabled]="procesandoPago">
@@ -465,17 +460,11 @@
         <div class="info-grid">
           <div class="info-item">
             <strong>Próxima Fecha:</strong>
-            <span>{{ formatearFecha(proximaFechaPago?.toISOString() || '') }}</span>
+            <span>{{ proximaFechaPago ? formatearFecha(proximaFechaPago.toISOString()) : 'N/A' }}</span>
           </div>
           <div class="info-item">
-            <strong>Días de Atraso:</strong>
-            <span [ngClass]="{'text-success': diasAtraso === 0, 'text-danger': diasAtraso > 0}">
-              {{ diasAtraso }} días
-            </span>
-          </div>
-          <div class="info-item">
-            <strong>Semanas Atrasadas:</strong>
-            <span class="text-danger">{{ semanasAtraso }}</span>
+            <strong>{{ getTipoCalendario(creditoSeleccionado) }}s Atrasados:</strong>
+            <span class="text-danger">{{ periodosAtrasados }}</span>
           </div>
           <div class="info-item">
             <strong>Mora Pendiente:</strong>
@@ -483,7 +472,7 @@
           </div>
           <div class="info-item">
             <strong>Saldo Pendiente:</strong>
-            <span class="monto-total">{{ formatearMoneda(creditoSeleccionado.saldo_pendiente) }}</span>
+            <span class="monto-total">{{ formatearMoneda(creditoSeleccionado?.saldo_pendiente || 0) }}</span>
           </div>
           <div class="info-item">
             <strong>Próximo Pago N°:</strong>
@@ -496,29 +485,31 @@
       <!-- Formulario de pago -->
       <div class="form-section">
         <div class="form-grid">
-          <!-- Selector de número de semana/pago SOLO PARA PAGO -->
+          <!-- Selector de número de periodo -->
           <div class="form-group full-width">
             <label class="form-label">
-              <i class="fas fa-calendar-alt"></i> SELECCIONE LA SEMANA *
+              <i class="fas fa-calendar-alt"></i> SELECCIONE EL {{ getTipoCalendario(creditoSeleccionado).toUpperCase()
+              }} *
             </label>
             <select class="form-control" [(ngModel)]="numeroPagoSeleccionado" [disabled]="procesandoPago">
               <option *ngFor="let semana of obtenerSemanasDisponibles()" [value]="semana.numero"
                 [disabled]="semana.disabled">
-                Sem {{ semana.numero }}/{{ obtenerTotalSemanas(creditoSeleccionado) }} - {{
-                getEstadoSemana(semana.numero).texto }} ({{
-                formatearFecha(calcularFechaSemana(creditoSeleccionado, semana.numero).toISOString()) }})
+                {{ getTipoCalendario(creditoSeleccionado) }} {{ semana.numero }}/{{
+                obtenerTotalSemanas(creditoSeleccionado) }} -
+                {{ getEstadoSemana(semana.numero).texto }} ({{
+                formatearFecha(semana.fecha.toISOString()) }})
               </option>
             </select>
             <small class="form-text text-info">
               <i class="fas fa-info-circle"></i>
               <span *ngIf="numeroPagoSeleccionado === calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta es la próxima semana que debe pagarse
+                Este es el próximo {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }} que debe pagarse
               </span>
               <span *ngIf="numeroPagoSeleccionado < calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta semana está atrasada
+                Este {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }} está atrasado
               </span>
               <span *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
-                Esta es una semana futura
+                Este es un {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }} futuro
               </span>
             </small>
           </div>
@@ -531,7 +522,7 @@
                 [disabled]="procesandoPago">
             </div>
             <small class="form-text">
-              Sugerido: {{ formatearMoneda(creditoSeleccionado.pago_semanal) }}
+              Sugerido: {{ formatearMoneda(creditoSeleccionado?.pago_semanal || 0) }}
             </small>
           </div>
 
@@ -564,7 +555,7 @@
           <h5><i class="fas fa-calculator"></i> RESUMEN DEL PAGO</h5>
           <div class="resumen-detalle">
             <div class="resumen-item">
-              <span>APLICAR A SEMANA:</span>
+              <span>APLICAR A {{ getTipoCalendario(creditoSeleccionado).toUpperCase() }}:</span>
               <span class="font-weight-bold">{{ numeroPagoSeleccionado }}/{{ obtenerTotalSemanas(creditoSeleccionado)
                 }}</span>
             </div>
@@ -586,8 +577,10 @@
         <div class="alert alert-info mt-3"
           *ngIf="numeroPagoSeleccionado > calcularProximoNumeroPago(creditoSeleccionado)">
           <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> Este pago se aplicará a la semana {{ numeroPagoSeleccionado }}.
-          Si hay semanas atrasadas, primero se cubrirán las semanas en mora.
+          <strong>Nota:</strong> Este pago se aplicará al {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }} {{
+          numeroPagoSeleccionado }}.
+          Si hay {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }}s atrasados, primero se cubrirán los periodos
+          en mora.
         </div>
       </div>
     </div>
@@ -616,6 +609,9 @@
         <div class="modal-header-text">
           <h3 class="modal-title">ADELANTO</h3>
           <p class="modal-subtitle">{{ getNombreCliente(creditoSeleccionado) }}</p>
+          <small class="text-muted">
+            Frecuencia: {{ getTipoCalendario(creditoSeleccionado) }}
+          </small>
         </div>
       </div>
       <button class="modal-close" (click)="cerrarModalPago()" [disabled]="procesandoPago">
@@ -631,12 +627,6 @@
           <div class="info-item">
             <strong>Próxima Fecha:</strong>
             <span>{{ formatearFecha(proximaFechaPago?.toISOString() || '') }}</span>
-          </div>
-          <div class="info-item">
-            <strong>Días de Atraso:</strong>
-            <span [ngClass]="{'text-success': diasAtraso === 0, 'text-danger': diasAtraso > 0}">
-              {{ diasAtraso }} días
-            </span>
           </div>
           <div class="info-item">
             <strong>Mora Pendiente:</strong>
@@ -658,10 +648,12 @@
       <div class="form-section">
         <div class="alert alert-info">
           <i class="fas fa-info-circle"></i>
-          <h5>ADELANTO A SEMANA FUTURA</h5>
-          <p>Este pago se aplicará como adelanto. El sistema automáticamente lo asignará a la próxima semana pendiente
+          <h5>ADELANTO A {{ getTipoCalendario(creditoSeleccionado).toUpperCase() }} FUTURO</h5>
+          <p>Este pago se aplicará como adelanto. El sistema automáticamente lo asignará al próximo {{
+            getTipoCalendario(creditoSeleccionado).toLowerCase() }} pendiente
             según el calendario.</p>
-          <p><strong>No es necesario seleccionar semana.</strong></p>
+          <p><strong>No es necesario seleccionar {{ getTipoCalendario(creditoSeleccionado).toLowerCase() }}.</strong>
+          </p>
         </div>
 
         <div class="form-grid">
@@ -694,7 +686,8 @@
           <div class="resumen-detalle">
             <div class="resumen-item">
               <span>TIPO:</span>
-              <span class="font-weight-bold">ADELANTO A SEMANA FUTURA</span>
+              <span class="font-weight-bold">ADELANTO A {{ getTipoCalendario(creditoSeleccionado).toUpperCase() }}
+                FUTURO</span>
             </div>
             <div class="resumen-item">
               <span>MONTO:</span>
@@ -709,7 +702,8 @@
 
         <div class="alert alert-success mt-3">
           <i class="fas fa-info-circle"></i>
-          <strong>Nota:</strong> El sistema asignará automáticamente este adelanto a la próxima semana pendiente en el
+          <strong>Nota:</strong> El sistema asignará automáticamente este adelanto al próximo {{
+          getTipoCalendario(creditoSeleccionado).toLowerCase() }} pendiente en el
           calendario.
         </div>
       </div>

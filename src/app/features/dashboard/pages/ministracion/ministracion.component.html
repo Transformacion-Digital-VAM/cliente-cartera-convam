@@ -126,7 +126,13 @@
                 <tr *ngFor="let solicitud of clientesFiltrados">
                   <td class="id_solicitud text-center">{{ solicitud.id_solicitud }}</td>
                   <td class="id_solicitud text-center">{{ solicitud.cliente_id || 'N/A' }}</td>
-                  <td>{{ getNombreCompleto(solicitud) }}</td>
+                  <td>
+                    {{ getNombreCompleto(solicitud) }}
+                    <span *ngIf="tieneCreditoActivo(solicitud.cliente_id)" class="badge bg-warning text-dark ms-2"
+                      title="El cliente tiene un crédito vigente que debe liquidar antes de esta nueva ministración">
+                      <i class="fas fa-exclamation-triangle"></i> CRÉDITO VIGENTE
+                    </span>
+                  </td>
                   <td>{{ formatearMoneda(solicitud.monto_aprobado) }}</td>
                   <td>{{ solicitud.tasa_fija_formateada || (solicitud.tasa_fija ? ((solicitud.tasa_fija *
                     100).toFixed(0)) + '%' : '0%')}}</td>
@@ -144,7 +150,7 @@
             <!-- Contador de solicitudes -->
             <div class="mt-3 text-center">
               <span class="badge badge-info">
-                Mostrando {{ clientesFiltrados.length }} de {{ solicitudesRecientes.length }} solicitudes recientes
+                Mostrando {{ clientesFiltrados.length }} de {{ solicitudesAprobadas.length }} solicitudes
               </span>
             </div>
           </div>
@@ -247,7 +253,14 @@
                   </td>
                   <td class="text-center">
                     <div class="btn-group-vertical btn-group-sm" role="group">
-                      <button class="btn btn-success btn-sm mb-1" (click)="marcarComoEntregado(credito)">
+                      <button class="btn btn-warning btn-sm mb-1" (click)="editarFechasCredito(credito)">
+                        <i class="fas fa-calendar-edit"></i> Editar Fechas
+                      </button>
+                      <button class="btn btn-primary btn-sm mb-1" (click)="abrirModalGenerarPagareDesdeCredito(credito)">
+                        <i class="fas fa-file-contract"></i> Pagaré
+                      </button>
+                      <button class="btn btn-success btn-sm mb-1" (click)="marcarComoEntregado(credito)"
+                        [disabled]="tieneOtrosCreditosActivos(credito.cliente_id, credito.id_credito)">
                         <i class="fas fa-check-circle"></i> Entregar
                       </button>
                       <button class="btn btn-danger btn-sm" (click)="marcarComoDevolucion(credito)">
@@ -396,7 +409,7 @@
                     <span class="badge badge-secondary">{{ credito.nom_aliado || 'Sin aliado' }}</span>
                   </td>
                   <td class="text-center">
-                    <button class="btn btn-success btn-sm" (click)="marcarComoPendiente(credito)">
+                    <button class="btn btn-success btn-sm" (click)="editarFechasCredito(credito)">
                       <i class="fas fa-check-circle"></i> Re-entregar
                     </button>
                   </td>
@@ -423,8 +436,8 @@
       <!-- Formulario de datos del crédito (si no se ha creado el crédito) -->
       <div *ngIf="!creditoRecienCreado">
         <div class="form-section">
-          <h4>Completar Datos del Crédito</h4>
-          <p class="text-muted">Complete los datos faltantes para crear el crédito y generar los documentos.</p>
+          <h4>Completar Datos para el Pagaré</h4>
+          <p class="text-muted">Ingrese los datos faltantes para generar el pagaré y hoja de control.</p>
 
           <div class="row">
             <div class="col-md-6">
@@ -442,41 +455,21 @@
               </div>
             </div>
           </div>
-
-          <!-- Resumen del crédito -->
-          <div class="resumen-credito mt-3">
-            <h5>Resumen del Crédito</h5>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label><strong>Fecha de Ministración *</strong></label>
-                  <input type="date" class="form-control" [(ngModel)]="fechaMinistracion" (change)="onValorCambiado()"
-                    required>
-                </div>
-              </div>
-
-              <div class="col-md-6">
-                <div class="form-group">
-                  <label><strong>Fecha Primer Pago *</strong></label>
-                  <input type="date" class="form-control" [(ngModel)]="fechaPrimerPago" (change)="onValorCambiado()"
-                    required>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         <div class="resumen-credito">
           <h5>Resumen del Crédito</h5>
           <table class="table table-sm table-bordered">
             <tr>
-              <td class="resumen-credito">Capital:</td>
+              <td>Capital solicitado:</td>
               <td class="text-right">{{ formatearMoneda(totalCapital) }}</td>
             </tr>
             <tr>
+              <td>Plazo:</td>
+              <td class="text-right">{{ solicitudSeleccionada?.plazo_meses }} meses</td>
+            </tr>
+            <tr>
               <td>Interés ({{ convertirTasaAporcentaje(solicitudSeleccionada?.tasa_fija || 0) }}):</td>
-              <!-- <td>{{ solicitudSeleccionada.tasa_fija_formateada || (solicitudSeleccionada.tasa_fija ? ((solicitudSeleccionada.tasa_fija * 100).toFixed(0)) + '%' : '0%')}}</td> -->
               <td class="text-right">{{ formatearMoneda(totalInteres) }}</td>
-              <!-- <td>{{ convertirTasaAporcentaje(solicitud.tasa_fija) }}</td> -->
             </tr>
             <tr class="total-row">
               <td>TOTAL A PAGAR:</td>
@@ -488,7 +481,7 @@
               <td class="text-right">{{ formatearMoneda(pagoSemanal) }}</td>
             </tr>
             <!-- Pago inicial -->
-            <tr *ngIf="seguro">
+            <tr *ngIf="totalSeguro > 0">
               <td>Seguro:</td>
               <td class="text-right">{{ formatearMoneda(totalSeguro) }}</td>
             </tr>
@@ -502,232 +495,205 @@
             </tr>
           </table>
         </div>
-
-        <!-- <div class="row">
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Referencia Bancaria</label>
-                <input type="text" class="form-control" [(ngModel)]="referenciaBancaria"
-                  placeholder="Ingrese referencia bancaria">
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="form-group">
-                <label>Cuenta Bancaria</label>
-                <input type="text" class="form-control" [(ngModel)]="cuentaBancaria"
-                  placeholder="Ingrese cuenta bancaria">
-              </div>
-            </div>
-          </div> -->
-
         <div class="modal-footer">
           <button class="btn btn-outline" (click)="cerrarModalGenerarCredito()">Cancelar</button>
           <button class="btn btn-primary" (click)="crearCredito()"
-            [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoGeneracion">
-            <i class="fas" [ngClass]="procesandoGeneracion ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-            {{ procesandoGeneracion ? 'Creando...' : 'Guardar' }}
+            [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoEntrega">
+            <i class="fas" [ngClass]="procesandoEntrega ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+            {{ procesandoEntrega ? 'Creando...' : 'Guardar' }}
           </button>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
 
-    <!-- MODAL PARA GENERAR PAGARÉ -->
-    <div class="modal-backdrop" *ngIf="modalGenerarPagareAbierto">
-      <div class="modal-container modal-lg">
-        <!-- Cabecera del modal -->
-        <div class="modal-header">
-          <h5 class="modal-title">
+<!-- MODAL PARA GENERAR PAGARÉ -->
+<div class="modal-backdrop" *ngIf="modalGenerarPagareAbierto">
+  <div class="modal-container modal-lg">
+    <!-- Cabecera del modal -->
+    <div class="modal-header">
+      <h5 class="modal-title">
+        <i class="fas fa-file-contract me-2"></i>
+        Generar Documentos - {{getNombreCompleto(solicitudSeleccionada || creditoSeleccionado)}}
+      </h5>
+      <button type="button" class="btn-close" (click)="cerrarModalGenerarPagare()">&times;</button>
+    </div>
+
+    <!-- Cuerpo del modal -->
+    <div class="modal-body">
+      <!-- Controles de navegación entre documentos -->
+      <div class="document-nav mb-4">
+        <div class="nav-buttons">
+          <button class="btn btn-outline-primary" [class.active]="documentoActual === 'pagare'"
+            (click)="cambiarDocumento('pagare')" [disabled]="generandoPagare">
             <i class="fas fa-file-contract me-2"></i>
-            Generar Documentos - {{getNombreCompleto(solicitudSeleccionada)}}
-          </h5>
-          <button type="button" class="btn-close" (click)="cerrarModalGenerarPagare()">&times;</button>
+            Pagaré
+          </button>
+
+          <button class="btn btn-outline-primary" [class.active]="documentoActual === 'hojaControl'"
+            (click)="cambiarDocumento('hojaControl')" [disabled]="generandoHojaControl">
+            <i class="fas fa-clipboard-list me-2"></i>
+            Hoja de Control
+          </button>
+        </div>
+      </div>
+
+      <!-- Área de vista previa -->
+      <div class="preview-area">
+        <!-- Loader general del documento -->
+        <div *ngIf="documentoCargando" class="loader-overlay">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2">Generando documento...</p>
         </div>
 
-        <!-- Cuerpo del modal -->
-        <div class="modal-body">
-          <!-- Controles de navegación entre documentos -->
-          <div class="document-nav mb-4">
-            <div class="nav-buttons">
-              <button class="btn btn-outline-primary" [class.active]="documentoActual === 'pagare'"
-                (click)="cambiarDocumento('pagare')" [disabled]="generandoPagare">
-                <i class="fas fa-file-contract me-2"></i>
-                Pagaré
-              </button>
+        <!-- Vista previa del PDF -->
+        <div *ngIf="!documentoCargando && (pdfPagareUrl || pdfHojaControlUrl)" class="pdf-preview">
+          <iframe [src]="documentoActual === 'pagare' ? pdfPagareUrl : pdfHojaControlUrl" width="100%"
+            height="500px" style="border: 1px solid #dee2e6; border-radius: 4px;">
+          </iframe>
+        </div>
 
-              <button class="btn btn-outline-primary" [class.active]="documentoActual === 'hojaControl'"
-                (click)="cambiarDocumento('hojaControl')" [disabled]="generandoHojaControl">
-                <i class="fas fa-clipboard-list me-2"></i>
-                Hoja de Control
-              </button>
-            </div>
-          </div>
+        <!-- Mensaje cuando no hay documentos generados -->
+        <div *ngIf="!documentoCargando && !pdfPagareUrl && !pdfHojaControlUrl" class="no-document">
+          <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
+          <p>Presiona "Generar" para crear el documento</p>
+        </div>
+      </div>
 
-          <!-- Área de vista previa -->
-          <div class="preview-area">
-            <!-- Loader general del documento -->
-            <div *ngIf="documentoCargando" class="loader-overlay">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-              </div>
-              <p class="mt-2">Generando documento...</p>
-            </div>
+      <!-- Botones de acción -->
+      <div class="modal-footer">
+        <!-- BOTONES DE GENERACIÓN INICIAL -->
+        <div class="action-buttons" *ngIf="!documentosGenerados">
+          <button class="btn btn-primary" (click)="generarVistaPreviaPagare()"
+            [disabled]="generandoPagare || !creditoRecienCreado">
+            <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoPagare" class="fas fa-file-contract me-2"></i>
+            {{ generandoPagare ? 'Generando...' : 'Generar Pagaré' }}
+          </button>
 
-            <!-- Vista previa del PDF -->
-            <div *ngIf="!documentoCargando && (pdfPagareUrl || pdfHojaControlUrl)" class="pdf-preview">
-              <iframe [src]="documentoActual === 'pagare' ? pdfPagareUrl : pdfHojaControlUrl" width="100%"
-                height="500px" style="border: 1px solid #dee2e6; border-radius: 4px;">
-              </iframe>
-            </div>
+          <button class="btn btn-success" (click)="generarVistaPreviaHojaControl()"
+            [disabled]="generandoHojaControl || !creditoRecienCreado">
+            <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoHojaControl" class="fas fa-clipboard-list me-2"></i>
+            {{ generandoHojaControl ? 'Generando...' : 'Generar Hoja Control' }}
+          </button>
+        </div>
 
-            <!-- Mensaje cuando no hay documentos generados -->
-            <div *ngIf="!documentoCargando && !pdfPagareUrl && !pdfHojaControlUrl" class="no-document">
-              <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
-              <p>Presiona "Generar" para crear el documento</p>
-            </div>
-          </div>
+        <!-- BOTONES DE RE-GENERACIÓN Y DESCARGA -->
+        <div class="regenerar-descargar-buttons" *ngIf="documentosGenerados">
+          <!-- Botón para Volver a Generar Todo -->
+          <button class="btn btn-warning me-2" (click)="regenerarTodosDocumentos()"
+            [disabled]="generandoPagare || generandoHojaControl">
+            <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+            <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-redo me-2"></i>
+            {{ (generandoPagare || generandoHojaControl) ? 'Regenerando...' : 'Volver a Generar Todo' }}
+          </button>
 
-          <!-- Botones de acción -->
-          <div class="modal-footer">
-            <!-- BOTONES DE GENERACIÓN INICIAL -->
-            <div class="action-buttons" *ngIf="!documentosGenerados">
-              <button class="btn btn-primary" (click)="generarVistaPreviaPagare()"
-                [disabled]="generandoPagare || !creditoRecienCreado">
-                <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
-                <i *ngIf="!generandoPagare" class="fas fa-file-contract me-2"></i>
-                {{ generandoPagare ? 'Generando...' : 'Generar Pagaré' }}
-              </button>
-
-              <button class="btn btn-success" (click)="generarVistaPreviaHojaControl()"
-                [disabled]="generandoHojaControl || !creditoRecienCreado">
-                <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
-                <i *ngIf="!generandoHojaControl" class="fas fa-clipboard-list me-2"></i>
-                {{ generandoHojaControl ? 'Generando...' : 'Generar Hoja Control' }}
-              </button>
-            </div>
-
-            <!-- BOTONES DE RE-GENERACIÓN Y DESCARGA -->
-            <div class="regenerar-descargar-buttons" *ngIf="documentosGenerados">
-              <!-- Botón para Volver a Generar Todo -->
-              <button class="btn btn-warning me-2" (click)="regenerarTodosDocumentos()"
-                [disabled]="generandoPagare || generandoHojaControl">
-                <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
-                <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-redo me-2"></i>
-                {{ (generandoPagare || generandoHojaControl) ? 'Regenerando...' : 'Volver a Generar Todo' }}
-              </button>
-
-              <!-- Botones de Descarga -->
-              <div class="btn-group me-2">
-                <button class="btn btn-outline-primary" (click)="descargarPagare()" [disabled]="generandoPagare">
-                  <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
-                  <i *ngIf="!generandoPagare" class="fas fa-download me-2"></i>
-                  Pagaré
-                </button>
-
-                <button class="btn btn-outline-success" (click)="descargarHojaControl()"
-                  [disabled]="generandoHojaControl">
-                  <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
-                  <i *ngIf="!generandoHojaControl" class="fas fa-download me-2"></i>
-                  Hoja Control
-                </button>
-
-                <button class="btn btn-info" (click)="descargarAmbosDocumentos()"
-                  [disabled]="generandoPagare || generandoHojaControl">
-                  <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
-                  <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-file-archive me-2"></i>
-                  Ambos
-                </button>
-              </div>
-            </div>
-
-            <!-- Botón Cerrar -->
-            <button class="btn btn-secondary" (click)="cerrarModalGenerarPagare()">
-              <i class="fas fa-times me-2"></i>
-              Cerrar
+          <!-- Botones de Descarga -->
+          <div class="btn-group me-2">
+            <button class="btn btn-outline-primary" (click)="descargarPagare()" [disabled]="generandoPagare">
+              <i *ngIf="generandoPagare" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoPagare" class="fas fa-download me-2"></i>
+              Pagaré
             </button>
+
+            <button class="btn btn-outline-success" (click)="descargarHojaControl()"
+              [disabled]="generandoHojaControl">
+              <i *ngIf="generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoHojaControl" class="fas fa-download me-2"></i>
+              Hoja Control
+            </button>
+
+            <button class="btn btn-info" (click)="descargarAmbosDocumentos()"
+              [disabled]="generandoPagare || generandoHojaControl">
+              <i *ngIf="generandoPagare || generandoHojaControl" class="fas fa-spinner fa-spin me-2"></i>
+              <i *ngIf="!generandoPagare && !generandoHojaControl" class="fas fa-file-archive me-2"></i>
+              Ambos
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón Cerrar -->
+        <button class="btn btn-secondary" (click)="cerrarModalGenerarPagare()">
+          <i class="fas fa-times me-2"></i>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL PARA VER DETALLES DEL CRÉDITO EXISTENTE -->
+<div *ngIf="modalEditarFechasAbierto" class="modal fade show"
+  style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-calendar-edit me-2"></i>
+          Editar Fechas del Crédito
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalEditarFechas()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="creditoSeleccionado">
+          <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            Editando fechas para el crédito <strong>#{{creditoSeleccionado.id_credito}}</strong>
+            del cliente <strong>{{getNombreCompletoCredito(creditoSeleccionado)}}</strong>
+          </div>
+
+          <div class="mb-3">
+            <label for="fechaMinistracion" class="form-label">
+              <i class="fas fa-calendar-plus me-1"></i>
+              Fecha de Ministración
+            </label>
+            <input type="date" id="fechaMinistracion" class="form-control" [(ngModel)]="nuevaFechaMinistracion"
+              [min]="getFechaMinima()">
+            <small class="text-muted">
+              Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_ministracion)}}
+            </small>
+          </div>
+
+          <div class="mb-3">
+            <label for="fechaPrimerPago" class="form-label">
+              <i class="fas fa-calendar-check me-1"></i>
+              Fecha de Primer Pago
+            </label>
+            <input type="date" id="fechaPrimerPago" class="form-control" [(ngModel)]="nuevaFechaPrimerPago"
+              [min]="nuevaFechaMinistracion || getFechaMinima()">
+            <small class="text-muted">
+              Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_primer_pago)}}
+            </small>
+          </div>
+
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Importante:</strong> Al actualizar las fechas, el temporizador de 48 horas se reiniciará desde
+            la
+            nueva fecha de ministración.
           </div>
         </div>
       </div>
-    </div>
 
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarFechas()"
+          [disabled]="procesandoEntrega">
+          Cancelar
+        </button>
 
-    <!-- MODAL PARA VER DETALLES DEL CRÉDITO EXISTENTE -->
-    <div *ngIf="modalEditarFechasAbierto" class="modal fade show"
-      style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header bg-warning text-white">
-            <h5 class="modal-title">
-              <i class="fas fa-calendar-edit me-2"></i>
-              Editar Fechas del Crédito
-            </h5>
-            <button type="button" class="btn-close btn-close-white" (click)="cerrarModalEditarFechas()"></button>
-          </div>
-
-          <div class="modal-body">
-            <div *ngIf="creditoSeleccionado">
-              <div class="alert alert-info mb-3">
-                <i class="fas fa-info-circle me-2"></i>
-                Editando fechas para el crédito <strong>#{{creditoSeleccionado.id_credito}}</strong>
-                del cliente <strong>{{getNombreCompletoCredito(creditoSeleccionado)}}</strong>
-              </div>
-
-              <div class="mb-3">
-                <label for="fechaMinistracion" class="form-label">
-                  <i class="fas fa-calendar-plus me-1"></i>
-                  Fecha de Ministración
-                </label>
-                <input type="date" id="fechaMinistracion" class="form-control" [(ngModel)]="nuevaFechaMinistracion"
-                  [min]="getFechaMinima()">
-                <small class="text-muted">
-                  Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_ministracion)}}
-                </small>
-              </div>
-
-              <div class="mb-3">
-                <label for="fechaPrimerPago" class="form-label">
-                  <i class="fas fa-calendar-check me-1"></i>
-                  Fecha de Primer Pago
-                </label>
-                <input type="date" id="fechaPrimerPago" class="form-control" [(ngModel)]="nuevaFechaPrimerPago"
-                  [min]="nuevaFechaMinistracion || getFechaMinima()">
-                <small class="text-muted">
-                  Fecha actual: {{formatearFecha(creditoSeleccionado.fecha_primer_pago)}}
-                </small>
-              </div>
-
-              <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Importante:</strong> Al actualizar las fechas, el temporizador de 48 horas se reiniciará desde
-                la
-                nueva fecha de ministración.
-              </div>
-            </div>
-
-            <div class="modal-footer">
-              <button class="btn btn-secondary" (click)="cerrarModalPagare()">Cancelar</button>
-              <button class="btn btn-primary" (click)="crearCredito()"
-                [disabled]="!fechaMinistracion || !fechaPrimerPago || procesandoEntrega">
-                <i class="fas fa-save" *ngIf="!procesandoEntrega"></i>
-                <i class="fas fa-spinner fa-spin" *ngIf="procesandoEntrega"></i>
-                {{ procesandoEntrega ? 'Creando Crédito...' : 'Crear Crédito' }}
-              </button>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="cerrarModalEditarFechas()"
-              [disabled]="procesandoEntrega">
-              Cancelar
-            </button>
-
-            <button type="button" class="btn btn-success" (click)="guardarFechasCredito()"
-              [disabled]="procesandoEntrega || !nuevaFechaMinistracion || !nuevaFechaPrimerPago">
-              <i class="fas fa-save me-1"></i>
-              {{procesandoEntrega ? 'Guardando...' : 'Guardar Cambios'}}
-            </button>
-          </div>
-        </div>
+        <button type="button" class="btn btn-success" (click)="guardarFechasCredito()"
+          [disabled]="procesandoEntrega || !nuevaFechaMinistracion || !nuevaFechaPrimerPago">
+          <i class="fas fa-save me-1"></i>
+          {{procesandoEntrega ? 'Guardando...' : 'Guardar Cambios'}}
+        </button>
       </div>
     </div>
+  </div>
+</div>

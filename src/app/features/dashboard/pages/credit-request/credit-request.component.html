@@ -19,12 +19,36 @@
   <div class="main-content-vertical">
     <!-- Tabla de solicitudes confirmadas -->
     <section class="tabla-section-vertical">
-      <div class="tabla-header">
-        <h3>Listado de solicitudes nuevas</h3>
+      <!-- Tabs -->
+      <div class="tabs-container">
+        <button class="tab-btn" 
+                [class.active]="activeTab === 'PENDIENTES'" 
+                (click)="setTab('PENDIENTES')">
+          <i class="fas fa-inbox"></i> Nuevas / Pendientes
+        </button>
+        <button class="tab-btn" 
+                [class.active]="activeTab === 'APROBADO'" 
+                (click)="setTab('APROBADO')">
+          <i class="fas fa-check-circle"></i> Aprobadas
+        </button>
+      </div>
+
+      <div class="tabla-header mt-3">
+        <h3>{{ activeTab === 'PENDIENTES' ? 'Listado de solicitudes nuevas' : 'Listado de solicitudes aprobadas' }}</h3>
         <div class="botones-filtros">
-          <button class="btn btn-outline btn-sm" (click)="cargarSolicitudesPendientes()" [disabled]="cargando">
+          <button class="btn btn-outline btn-sm" 
+                  *ngIf="activeTab === 'PENDIENTES'"
+                  (click)="cargarSolicitudesPendientes()" 
+                  [disabled]="cargando">
             <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
             {{ cargando ? 'Cargando...' : 'Actualizar' }}
+          </button>
+          <button class="btn btn-outline btn-sm" 
+                  *ngIf="activeTab === 'APROBADO'"
+                  (click)="cargarSolicitudesAprobadas()" 
+                  [disabled]="cargandoAprobadas">
+            <i class="fas fa-sync-alt" [class.fa-spin]="cargandoAprobadas"></i>
+            {{ cargandoAprobadas ? 'Cargando...' : 'Actualizar' }}
           </button>
         </div>
       </div>
@@ -46,22 +70,23 @@
           </thead>
           <tbody>
             <!-- Estado de carga -->
-            <tr *ngIf="cargando">
-              <td colspan="7" class="text-center">
+            <tr *ngIf="activeTab === 'PENDIENTES' ? cargando : cargandoAprobadas">
+              <td colspan="9" class="text-center">
                 <i class="fas fa-spinner fa-spin"></i> Cargando solicitudes...
               </td>
             </tr>
 
             <!-- Sin solicitudes -->
-            <tr *ngIf="!cargando && solicitudesPendientes.length === 0">
-              <td colspan="7" class="text-center">
-                No hay solicitudes pendientes
+            <tr *ngIf="activeTab === 'PENDIENTES' ? (!cargando && solicitudesPendientes.length === 0) : (!cargandoAprobadas && solicitudesAprobadas.length === 0)">
+              <td colspan="9" class="text-center">
+                No hay solicitudes {{ activeTab === 'PENDIENTES' ? 'pendientes' : 'aprobadas' }}
               </td>
             </tr>
 
             <!-- Lista de solicitudes -->
-            <ng-container *ngFor="let solicitud of solicitudesPendientes">
-              <tr class="clickable-row" (click)="toggleFila(solicitud.id_solicitud)" style="cursor: pointer;">
+            <ng-container *ngFor="let solicitud of (activeTab === 'PENDIENTES' ? solicitudesPendientes : solicitudesAprobadas)">
+              <tr class="clickable-row" (click)="toggleFila(solicitud.id_solicitud)" style="cursor: pointer;"
+                  [ngClass]="{'row-pendiente-domicilio': activeTab === 'APROBADO' && !esDomiciliada(solicitud)}">
                 <td>
                   <i class="fas me-1" [class.fa-chevron-right]="filaExpandida !== solicitud.id_solicitud"
                     [class.fa-chevron-down]="filaExpandida === solicitud.id_solicitud"></i>
@@ -143,134 +168,163 @@
 
 
   <!-- Modal de Detalles -->
-  <div class="modal-overlay" *ngIf="modalAbierto">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">
-          <i class="fas fa-file-alt"></i>
-          Detalles de la Solicitud #{{ solicitudSeleccionada?.id_solicitud }}
-        </h3>
-        <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
-          {{ getTextoDomiciliacion(solicitudSeleccionada) }}
-        </span>
-        <button class="modal-close" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+<!-- Modal de Detalles -->
+<div class="modal-overlay" *ngIf="modalAbierto">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <i class="fas fa-file-alt"></i>
+        Detalles de la Solicitud #{{ solicitudSeleccionada?.id_solicitud }}
+      </h3>
+      <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
+        {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+      </span>
+      <button class="modal-close" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
 
-      <div class="modal-body">
-        <!-- Información de la solicitud -->
-        <div class="info-section">
-          <h4>Información de la Solicitud</h4>
+    <div class="modal-body">
+      <!-- Información de la solicitud -->
+      <section class="info-card">
+        <h4 class="section-title">
+          <i class="fas fa-info-circle me-2"></i>Información de la Solicitud
+        </h4>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Cliente:</span>
+            <span class="info-value">{{ getNombreCompleto(solicitudSeleccionada) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Monto Solicitado:</span>
+            <span class="info-value">{{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Plazo:</span>
+            <span class="info-value">{{ solicitudSeleccionada?.plazo_meses }} meses</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Número de Pagos:</span>
+            <span class="info-value">{{ solicitudSeleccionada?.no_pagos }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Tipo de Crédito:</span>
+            <span class="info-value">{{ solicitudSeleccionada?.tipo_credito }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Fecha de Creación:</span>
+            <span class="info-value">{{ solicitudSeleccionada?.fecha_creacion | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Domiciliación -->
+      <section class="info-card">
+        <h4 class="section-title">
+          <i class="fas fa-map-marker-alt me-2"></i>Información de Domiciliación
+        </h4>
+        <div *ngIf="solicitudSeleccionada?.domiciliado; else noDomiciliado">
           <div class="info-grid">
             <div class="info-item">
-              <label>Cliente:</label>
-              <span>{{ getNombreCompleto(solicitudSeleccionada) }}</span>
+              <span class="info-label">Fecha Visita:</span>
+              <span class="info-value">{{ formatearFecha(solicitudSeleccionada?.fecha_domiciliacion) }}</span>
             </div>
             <div class="info-item">
-              <label>Monto Solicitado:</label>
-              <span>{{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}</span>
+              <span class="info-label">Horario:</span>
+              <span class="info-value">{{ solicitudSeleccionada?.domiciliacion_horario || 'No registrado' }}</span>
             </div>
             <div class="info-item">
-              <label>Plazo:</label>
-              <span>{{ solicitudSeleccionada?.plazo_meses }} meses</span>
+              <span class="info-label">Recibió:</span>
+              <span class="info-value text-capitalize">{{ solicitudSeleccionada?.persona_recibio || 'No especificado' }}</span>
             </div>
-            <div class="info-item">
-              <label>Número de Pagos:</label>
-              <span>{{ solicitudSeleccionada?.no_pagos }}</span>
-            </div>
-            <div class="info-item">
-              <label>Tipo de Crédito:</label>
-              <span>{{ solicitudSeleccionada?.tipo_credito }}</span>
-            </div>
-            <div class="info-item">
-              <label>Fecha de Creación:</label>
-              <span>{{ solicitudSeleccionada?.fecha_creacion | date:'dd/MM/yyyy' }}</span>
-            </div>
-          </div>
-
-          <!-- Domiciliación -->
-          <div class="info-section">
-            <h4><i class="fas fa-map-marker-alt me-2"></i>Información de Domiciliación</h4>
-
-            <div *ngIf="solicitudSeleccionada?.domiciliado; else noDomiciliado">
-              <div class="info-grid">
-                <div class="info-item">
-                  <label>Fecha Visita:</label>
-                  <span>{{ formatearFecha(solicitudSeleccionada?.fecha_domiciliacion) }}</span>
-                </div>
-                <div class="info-item">
-                  <label>Horario:</label>
-                  <span>{{ solicitudSeleccionada?.domiciliacion_horario || 'No registrado' }}</span>
-                </div>
-                <div class="info-item">
-                  <label>Recibió:</label>
-                  <span class="text-capitalize">{{ solicitudSeleccionada?.persona_recibio || 'No especificado' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <ng-template #noDomiciliado>
-              <div class="alert alert-warning mt-2">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                Esta solicitud aún no ha sido domiciliada.
-              </div>
-            </ng-template>
           </div>
         </div>
+        <ng-template #noDomiciliado>
+          <div class="alert-message warning">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            Esta solicitud aún no ha sido domiciliada.
+          </div>
+        </ng-template>
+      </section>
 
-        <!-- Domiciliacion -->
-        <div class="info-item">
-          <label>Domiciliación:</label>
-          <span>
-            <span class="badge" [ngClass]="getClaseBadgeDomiciliacion(solicitudSeleccionada)">
-              {{ getTextoDomiciliacion(solicitudSeleccionada) }}
+      <!-- Garantías -->
+      <section class="info-card">
+        <h4 class="section-title">
+          <i class="fas fa-shield-alt me-2"></i>Información de Garantías (10%)
+        </h4>
+        <div *ngIf="cargandoGarantia" class="text-center p-3">
+          <i class="fas fa-spinner fa-spin"></i> Calculando diferencias...
+        </div>
+        <div *ngIf="!cargandoGarantia" class="guarantee-container">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Garantía Monto Actual:</span>
+              <span class="info-value fw-bold">{{ formatearMoneda(garantiaSolicitada) }}</span>
+            </div>
+            <div class="info-item" *ngIf="solicitudSeleccionada?.tipo_credito !== 'NUEVO'">
+              <span class="info-label">Garantía Anterior:</span>
+              <span class="info-value">{{ formatearMoneda(garantiaAnterior) }}</span>
+            </div>
+          </div>
+          <div class="alert-difference" [ngClass]="alertClassGarantia">
+            <div class="difference-content">
+              <div>
+                <h5 *ngIf="diferenciaGarantia > 0.01">Diferencia a Cubrir:</h5>
+                <h5 *ngIf="diferenciaGarantia < -0.01">Devolver:</h5>
+                <h5 *ngIf="diferenciaGarantia >= -0.01 && diferenciaGarantia <= 0.01">Sin Diferencia:</h5>
+
+                <p class="difference-description" *ngIf="diferenciaGarantia > 0.01">
+                  El cliente debe aportar la diferencia para completar su garantía.
+                </p>
+                <p class="difference-description" *ngIf="diferenciaGarantia < -0.01">
+                  Se debe reintegrar el excedente de garantía al cliente.
+                </p>
+                <p class="difference-description" *ngIf="diferenciaGarantia >= -0.01 && diferenciaGarantia <= 0.01">
+                  La garantía actual cubre exactamente el 10% del monto aprobado.
+                </p>
+              </div>
+              <span class="difference-amount">
+                {{ formatearMoneda(diferenciaGarantia > 0 ? diferenciaGarantia : (diferenciaGarantia < 0 ? diferenciaGarantia * -1 : 0)) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Aprobación y Monto -->
+      <section class="info-card approval-card">
+        <h4 class="section-title">Monto aprobado</h4>
+        <div class="approval-content">
+          <div class="monto-field">
+            <div class="monto-input-group">
+              <span class="currency-symbol">$</span>
+              <input type="number" class="monto-input" placeholder="0.00" min="0" step="0.01"
+                max="{{ solicitudSeleccionada?.monto_solicitado }}" [(ngModel)]="montoAprobado"
+                [disabled]="cargandoAprobacion || activeTab === 'APROBADO'">
+            </div>
+            <span class="monto-max" *ngIf="activeTab === 'PENDIENTES'">
+              Máximo: {{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}
             </span>
-            <div class="text-muted small" *ngIf="!cargandoAprobacion" style="margin-top:6px;">
-              {{ getDetalleDomiciliacion(solicitudSeleccionada) }}
-            </div>
-          </span>
-        </div>
-
-        <!-- Aprobación y Monto -->
-        <div class="md-6">
-          <div class="info-section aprobacion-section">
-            <h4>Monto aprobado</h4>
-            <div class="info-grid-detalle">
-              <div class="monto-centrado">
-                <div class="monto-input-container">
-                  <span class="currency-symbol">$</span>
-                  <input type="number" class="form-control monto-input" placeholder="0.00" min="0" step="0.01"
-                    max="{{ solicitudSeleccionada?.monto_solicitado }}" [(ngModel)]="montoAprobado"
-                    [disabled]="cargandoAprobacion">
-                </div>
-                <small class="text-muted">
-                  Máximo: {{ formatearMoneda(solicitudSeleccionada?.monto_solicitado) }}
-                </small>
-              </div>
-              <div class="acciones-aprobacion">
-                <span class="botones-accion">
-                  <button class="btn btn-success btn-action" (click)="aprobarSolicitud()"
-                    [disabled]="!montoAprobado || montoAprobado <= 0 || cargandoAprobacion">
-                    <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i>
-                    {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar Solicitud' }}
-                  </button>
-                  <button class="btn btn-rechazar btn-action" (click)="rechazarSolicitud()"
-                    [disabled]="cargandoAprobacion">
-                    <i class="fas fa-times"></i> Rechazar
-                  </button>
-                </span>
-              </div>
-            </div>
+          </div>
+          <div class="approval-actions" *ngIf="activeTab === 'PENDIENTES'">
+            <button class="btn btn-approve btn-sm" (click)="aprobarSolicitud()"
+              [disabled]="!montoAprobado || montoAprobado <= 0 || cargandoAprobacion">
+              <i class="fas fa-check" [class.fa-spin]="cargandoAprobacion"></i>
+              {{ cargandoAprobacion ? 'Procesando...' : 'Aprobar Solicitud' }}
+            </button>
+            <button class="btn btn-reject btn-sm" (click)="rechazarSolicitud()" [disabled]="cargandoAprobacion">
+              <i class="fas fa-times"></i> Rechazar
+            </button>
           </div>
         </div>
-      </div>
+      </section>
+    </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
-          <i class="fas fa-times"></i> Cerrar
-        </button>
-      </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" (click)="cerrarModal()" [disabled]="cargandoAprobacion">
+        <i class="fas fa-times"></i> Cerrar
+      </button>
     </div>
   </div>
 </div>
+</div>  

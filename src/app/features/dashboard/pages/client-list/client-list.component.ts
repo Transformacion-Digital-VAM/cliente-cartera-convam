@@ -8,7 +8,9 @@ import { AliadoService } from '../../../../services/aliado.service';
 import { AvalesService } from '../../../../services/avales.service';
 import { AuthService } from '../../../../services/auth.service';
 import Swal from 'sweetalert2';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { CalendarioPagoService } from '../../../../services/calendario-pago.service';
 
 @Component({
   selector: 'app-client-list',
@@ -66,6 +68,15 @@ export class ClientListComponent implements OnInit, OnDestroy {
   cargandoAliados = false;
   cargandoAvales = false;
 
+  // Caché de estados calculados
+  clienteStatusCache: Map<number, {
+    status: string,
+    canRequest: boolean,
+    class: string,
+    mora: number,
+    ultimaFechaPago: Date | null
+  }> = new Map();
+
   // Subscripciones
   private userSubscription: Subscription | null = null;
   private authCheckInterval: any;
@@ -76,6 +87,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
     private aliadoService: AliadoService,
     private avalesService: AvalesService,
     private authService: AuthService,
+    private calendarioService: CalendarioPagoService,
     private router: Router,
     private fb: FormBuilder
   ) { }
@@ -250,7 +262,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
 
       // Crear usuario temporal basado en Firebase
       const tempUser = {
-        id_usuario: 1, 
+        id_usuario: 1,
         nombre: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuario',
         usuario: firebaseUser.email,
         firebase_uid: firebaseUser.uid
@@ -306,7 +318,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
 
   inicializarFormularioSolicitud(): void {
     this.solicitudForm = this.fb.group({
-      monto_solicitado: ['', [Validators.required, Validators.min(5000), Validators.max(100000)]],
+      monto_solicitado: ['', [Validators.required, Validators.min(3000), Validators.max(100000)]],
       plazo_meses: [4, [Validators.required, Validators.min(1), Validators.max(60)]],
       tipo_vencimiento: ['semanal', [Validators.required]],
       tipo_credito: ['NUEVO', [Validators.required]],
@@ -320,6 +332,16 @@ export class ClientListComponent implements OnInit, OnDestroy {
 
     this.solicitudForm.get('aliado_id')?.valueChanges.subscribe(aliadoId => {
       this.actualizarTasaInteres(aliadoId);
+    });
+
+    // Listener para actualizar el número de pagos basado en el plazo de meses
+    this.solicitudForm.get('plazo_meses')?.valueChanges.subscribe(meses => {
+      if (meses) {
+        const noPagos = meses * 4;
+        this.solicitudForm.patchValue({
+          no_pagos: noPagos
+        });
+      }
     });
   }
 
@@ -420,12 +442,95 @@ export class ClientListComponent implements OnInit, OnDestroy {
         this.clientes = (data || []).filter(cliente => cliente != null);
         console.log('Clientes cargados:', this.clientes.length);
         this.cargando = false;
+        // Cargar estados para cada cliente
+        this.cargarEstadosClientes();
       },
       error: (err) => {
         this.error = 'Error al cargar los clientes';
         this.cargando = false;
         console.error('Error:', err);
       }
+    });
+  }
+
+  cargarEstadosClientes(): void {
+    if (!this.clientes || this.clientes.length === 0) return;
+
+    console.log('Cargando estados detallados para los clientes...');
+
+    // Procesar cada cliente para obtener su estado real desde el calendario
+    this.clientes.forEach(cliente => {
+      this.calendarioService.obtenerPorCliente(cliente.id_cliente).subscribe({
+        next: (calendario) => {
+          this.vincularEstadoCliente(cliente.id_cliente, calendario);
+        },
+        error: (err) => {
+          console.error(`Error al cargar calendario para cliente ${cliente.id_cliente}:`, err);
+          // Estado por defecto en caso de error
+          this.clienteStatusCache.set(cliente.id_cliente, {
+            status: 'ERROR CARGA',
+            canRequest: false,
+            class: 'estado-desconocido',
+            mora: 0,
+            ultimaFechaPago: null
+          });
+        }
+      });
+    });
+  }
+
+  vincularEstadoCliente(clienteId: number, calendario: any[]): void {
+    let status = '';
+    let canRequest = false;
+    let cssClass = '';
+    let moraAcumulada = 0;
+    let ultimaFechaPago: Date | null = null;
+
+    if (!calendario || calendario.length === 0) {
+      status = 'NUEVO';
+      canRequest = true;
+      cssClass = 'estado-sin-credito';
+    } else {
+      const totalPagos = calendario.length;
+      const pagosRealizados = calendario.filter(p => p.pagado === true).length;
+      moraAcumulada = calendario.reduce((sum, p) => sum + (parseFloat(p.mora_acumulada) || 0), 0);
+
+      // Obtener la fecha del último pago realizado (o el último vencimiento pagado)
+      const pagosHechos = calendario.filter(p => p.pagado === true);
+      if (pagosHechos.length > 0) {
+        // Ordenar por fecha de vencimiento descendente para encontrar el último
+        const ultimo = [...pagosHechos].sort((a, b) =>
+          new Date(b.fecha_vencimiento).getTime() - new Date(a.fecha_vencimiento).getTime()
+        )[0];
+        ultimaFechaPago = new Date(ultimo.fecha_vencimiento);
+      }
+
+      if (pagosRealizados === totalPagos) {
+        status = 'Disponible para renovación';
+        canRequest = moraAcumulada === 0;
+        cssClass = 'estado-disponible';
+      } else if (totalPagos - pagosRealizados <= 2) {
+        // Validar si puede renovar anticipadamente (Semana 15 y 16 pendientes)
+        status = `CA (${pagosRealizados}/${totalPagos}) - Renovación anticipada`;
+        canRequest = moraAcumulada === 0;
+        cssClass = moraAcumulada === 0 ? 'estado-disponible' : 'estado-en-ciclo';
+      } else {
+        status = `CA (${pagosRealizados}/${totalPagos})`;
+        canRequest = false;
+        cssClass = 'estado-en-ciclo';
+      }
+
+      if (moraAcumulada > 0) {
+        cssClass = 'estado-con-mora';
+      }
+    }
+
+    this.clienteStatusCache.set(clienteId, {
+      status: status,
+      canRequest: canRequest,
+      class: cssClass,
+      mora: moraAcumulada,
+      ultimaFechaPago: ultimaFechaPago
     });
   }
 
@@ -441,18 +546,19 @@ export class ClientListComponent implements OnInit, OnDestroy {
       console.log('Abriendo modal de solicitud para cliente:', cliente.nombre_cliente);
 
       // VALIDAR SI EL CLIENTE PUEDE GENERAR SOLICITUD
+      const statusInfo = this.clienteStatusCache.get(cliente.id_cliente);
       if (!this.puedeGenerarSolicitud(cliente)) {
-        const cicloActual = cliente.ciclo_actual || 0;
-        const mora = cliente.mora || 0;
-        const moraDecimal = parseFloat(mora) || 0;
-
         let mensaje = '';
-        if (cicloActual < 15) {
-          mensaje = `El cliente se encuentra en la semana ${cicloActual} de su ciclo actual. Debe esperar hasta la semana 15 para generar una nueva solicitud.`;
-        } else if (moraDecimal > 0) {
-          mensaje = `El cliente tiene una mora de $${moraDecimal}. Debe liquidar la mora para generar una nueva solicitud.`;
+        if (statusInfo) {
+          if (statusInfo.mora > 0) {
+            mensaje = `El cliente tiene una mora acumulada de $${statusInfo.mora}. Debe liquidar sus pendientes para generar una nueva solicitud.`;
+          } else if (statusInfo.status.includes('CA')) {
+            mensaje = `El cliente tiene un crédito activo (${statusInfo.status}). Debe terminar su ciclo de pagos (o estar en la semana 14) para generar una nueva solicitud.`;
+          } else {
+            mensaje = 'El cliente no cumple con las condiciones para generar una nueva solicitud.';
+          }
         } else {
-          mensaje = 'El cliente no cumple con las condiciones para generar una nueva solicitud.';
+          mensaje = 'Estamos verificando el estado del cliente. Por favor espere un momento...';
         }
 
         Swal.fire({
@@ -470,10 +576,31 @@ export class ClientListComponent implements OnInit, OnDestroy {
       this.clienteParaSolicitud = cliente;
       this.buscarAvalDelCliente(cliente);
 
+      // Determinar tipo de crédito por defecto
+      let tipoCreditoDefault = 'NUEVO';
+      if (statusInfo) {
+        if (statusInfo.status === 'NUEVO') {
+          tipoCreditoDefault = 'NUEVO';
+        } else if (statusInfo.ultimaFechaPago) {
+          const hoy = new Date();
+          const diferenciaMs = hoy.getTime() - statusInfo.ultimaFechaPago.getTime();
+          const diferenciaDias = diferenciaMs / (1000 * 60 * 60 * 24);
+
+          if (diferenciaDias > 30) {
+            tipoCreditoDefault = 'RE-INGRESO';
+          } else {
+            tipoCreditoDefault = 'RENOVACIÓN';
+          }
+        } else {
+          // Si tiene historial pero no hay fecha de último pago (raro), renovacion por defecto
+          tipoCreditoDefault = 'RENOVACIÓN';
+        }
+      }
+
       this.solicitudForm.reset({
         plazo_meses: 4,
         tipo_vencimiento: 'semanal',
-        tipo_credito: 'NUEVO',
+        tipo_credito: tipoCreditoDefault,
         no_pagos: 16,
         dia_pago: 'Lunes',
         observaciones: ''
@@ -767,6 +894,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.clientes = (data || []).filter(cliente => cliente != null);
         this.cargando = false;
+        this.cargarEstadosClientes();
       },
       error: (err) => {
         this.error = 'Error en la búsqueda';
@@ -842,122 +970,27 @@ export class ClientListComponent implements OnInit, OnDestroy {
     return 'Sin estado';
   }
 
-  esClienteValido(cliente: any): boolean {
-    return cliente != null && cliente.id_cliente != null;
-  }
-
   // Método para verificar si el cliente puede generar solicitud
-  // puedeGenerarSolicitud(cliente: any): boolean {
-  //   if (!cliente) return false;
-
-  //   // Obtener ciclo actual y mora
-  //   const cicloActual = cliente.ciclo_actual || 0;
-  //   const mora = cliente.mora || 0;
-  //   const moraDecimal = parseFloat(mora) || 0;
-
-  //   console.log(`Validación cliente ${cliente.nombre_cliente}: Ciclo=${cicloActual}, Mora=${moraDecimal}`);
-
-  //   // Validaciones según requerimientos
-  //   if (cicloActual >= 15 && moraDecimal === 0) {
-  //     return true; // Puede generar solicitud
-  //   }
-
-  //   return false; // No puede generar solicitud
-  // }
   puedeGenerarSolicitud(cliente: any): boolean {
-  if (!cliente) return false;
+    if (!cliente) return false;
+    const cache = this.clienteStatusCache.get(cliente.id_cliente);
+    if (!cache) return false; // Todavía cargando o error
 
-  // Obtener ciclo actual y mora
-  const cicloActual = cliente.ciclo_actual || 0;
-  const mora = cliente.mora || 0;
-  const moraDecimal = parseFloat(mora) || 0;
-
-  console.log(`Validación cliente ${cliente.nombre_cliente}: Ciclo=${cicloActual}, Mora=${moraDecimal}`);
-
-  // Si el cliente no tiene crédito activo (ciclo_actual = 0), puede solicitar
-  if (cicloActual === 0 && moraDecimal === 0) {
-    return true;
+    return cache.canRequest;
   }
-
-  // Si el cliente tiene crédito activo:
-  // 1. Debe estar en el pago/semana 15 o mayor
-  // 2. No debe tener mora
-  if (cicloActual >= 15 && moraDecimal === 0) {
-    return true;
-  }
-
-  return false;
-}
-
 
   // Método para obtener el estado del cliente (para mostrar en tabla)
-  // getEstadoCliente(cliente: any): string {
-  //   if (!cliente) return 'SIN DATOS';
-
-  //   const cicloActual = cliente.ciclo_actual || 0;
-  //   const mora = cliente.mora || 0;
-  //   const moraDecimal = parseFloat(mora) || 0;
-
-  //   if (cicloActual === 0) {
-  //     return 'SIN CRÉDITO ACTIVO';
-  //   }
-
-  //   if (cicloActual < 15) {
-  //     return `CA (S-${cicloActual})`;
-  //   }
-
-  //   if (moraDecimal > 0) {
-  //     return `CON MORA ($${moraDecimal})`;
-  //   }
-
-  //   if (cicloActual >= 15 && moraDecimal === 0) {
-  //     return 'DISPONIBLE PARA NUEVO CRÉDITO';
-  //   }
-
-  //   return 'ESTADO DESCONOCIDO';
-  // }
   getEstadoCliente(cliente: any): string {
-  if (!cliente) return 'SIN DATOS';
-
-  const cicloActual = cliente.ciclo_actual || 0;
-  const mora = cliente.mora || 0;
-  const moraDecimal = parseFloat(mora) || 0;
-
-  if (cicloActual === 0) {
-    return 'SIN CRÉDITO ACTIVO';
+    if (!cliente) return 'SIN DATOS';
+    const cache = this.clienteStatusCache.get(cliente.id_cliente);
+    return cache ? cache.status : 'Cargando...';
   }
-
-  if (cicloActual > 0 && cicloActual < 15) {
-    return `CA (${cicloActual}/16)`;
-  }
-
-  if (moraDecimal > 0) {
-    return `CON MORA ($${moraDecimal})`;
-  }
-
-  if (cicloActual >= 15 && moraDecimal === 0) {
-    return 'DISPONIBLE PARA NUEVO CRÉDITO';
-  }
-
-  return 'ESTADO DESCONOCIDO';
-}
 
   // Método para obtener la clase CSS según estado
   getEstadoClienteClass(cliente: any): string {
-    const estado = this.getEstadoCliente(cliente);
-
-    switch (true) {
-      case estado.includes('DISPONIBLE'):
-        return 'estado-disponible';
-      case estado.includes('EN CICLO'):
-        return 'estado-en-ciclo';
-      case estado.includes('CON MORA'):
-        return 'estado-con-mora';
-      case estado.includes('SIN CRÉDITO'):
-        return 'estado-sin-credito';
-      default:
-        return 'estado-desconocido';
-    }
+    if (!cliente) return 'estado-desconocido';
+    const cache = this.clienteStatusCache.get(cliente.id_cliente);
+    return cache ? cache.class : 'estado-desconocido';
   }
 
 
