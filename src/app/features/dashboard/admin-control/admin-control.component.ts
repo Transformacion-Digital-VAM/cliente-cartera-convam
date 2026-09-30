@@ -21,7 +21,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
   successMessage = '';
   isLoading = false;
   userForm: FormGroup;
-  
+
   private userSubscription?: Subscription;
 
   constructor(
@@ -53,9 +53,9 @@ export class AdminControlComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     try {
       this.users = await this.adminControlService.getUsers();
-      console.log('Usuarios cargados:', this.users);
+      // console.log('Usuarios cargados:', this.users);
     } catch (error: any) {
-      console.error('Error cargando usuarios:', error);
+      // console.error('Error cargando usuarios:', error);
       this.showError(error.message || 'Error al cargar los usuarios');
     } finally {
       this.isLoading = false;
@@ -68,7 +68,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       try {
         const userData = this.userForm.value;
-        
+
         await this.authService.registerWithoutLogin(
           userData.nombre,
           userData.usuario,
@@ -79,11 +79,11 @@ export class AdminControlComponent implements OnInit, OnDestroy {
         this.showSuccess('Usuario agregado exitosamente');
         this.userForm.reset({ rol_id: 2 });
         this.showAddUserForm = false;
-        
+
         // Recargar la lista de usuarios
         await this.loadUsers();
       } catch (error: any) {
-        console.error('Error agregando usuario:', error);
+        // console.error('Error agregando usuario:', error);
         this.showError(error.message || 'Error al agregar usuario');
       } finally {
         this.isLoading = false;
@@ -101,7 +101,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
         await this.adminControlService.resetUserPassword(user.usuario);
         this.showSuccess(`Se ha enviado un correo para restablecer la contraseña a ${user.usuario}`);
       } catch (error: any) {
-        console.error('Error restableciendo contraseña:', error);
+        // console.error('Error restableciendo contraseña:', error);
         this.showError(error.message || 'Error al restablecer contraseña');
       } finally {
         this.isLoading = false;
@@ -115,11 +115,11 @@ export class AdminControlComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       try {
         // USA id_usuario en lugar de id
-        await this.adminControlService.deleteUser(user.id_usuario); 
+        await this.adminControlService.deleteUser(user.id_usuario);
         this.showSuccess('Usuario eliminado exitosamente');
         await this.loadUsers();
       } catch (error: any) {
-        console.error('Error eliminando usuario:', error);
+        // console.error('Error eliminando usuario:', error);
         this.showError(error.message || 'Error al eliminar usuario');
       } finally {
         this.isLoading = false;
@@ -137,7 +137,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
   private showSuccess(message: string) {
     this.successMessage = message;
     this.showSuccessMessage = true;
-    
+
     setTimeout(() => {
       this.showSuccessMessage = false;
     }, 5000);
@@ -147,7 +147,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
   private showError(message: string) {
     this.successMessage = message;
     this.showSuccessMessage = true;
-    
+
     setTimeout(() => {
       this.showSuccessMessage = false;
     }, 5000);
@@ -181,7 +181,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
   // Obtener mensaje de error para campo
   getFieldError(fieldName: string): string {
     const field = this.userForm.get(fieldName);
-    
+
     if (field?.errors) {
       if (field.errors['required']) {
         return 'Este campo es requerido';
@@ -193,7 +193,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
         return `Mínimo ${field.errors['minlength'].requiredLength} caracteres`;
       }
     }
-    
+
     return '';
   }
 
@@ -204,7 +204,7 @@ export class AdminControlComponent implements OnInit, OnDestroy {
     }
   }
 
-    // Método para redirigir a registro
+  // Método para redirigir a registro
   goToRegister(): void {
     this.router.navigate(['/register']);
   }

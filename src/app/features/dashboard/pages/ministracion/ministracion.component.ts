@@ -499,11 +499,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       next: (response: any) => {
         this.creditoRecienCreado = response.credito;
 
-        // ACTUALIZAR EL ESTADO DE LA SOLICITUD A "ENTREGADO" (SOLO ESTE)
-        this.actualizarEstadoSolicitudAEntregado(
-          this.solicitudSeleccionada.id_solicitud,
-        );
-
         // Cerrar el modal de generar crédito
         this.modalPagareAbierto = false;
 
@@ -540,41 +535,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         this.procesandoEntrega = false;
       },
     });
-  }
-
-  actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
-    // Datos para actualizar el estado
-    const datosActualizacion = {
-      estado_solicitud: 'ENTREGADO',
-    };
-
-    // Llamar al servicio para actualizar la solicitud
-    this.solicitudService
-      .actualizarEstadoSolicitud(idSolicitud, datosActualizacion)
-      .subscribe({
-        next: (response) => {
-          console.log(
-            `Solicitud ${idSolicitud} actualizada a estado ENTREGADO`,
-            response,
-          );
-        },
-        error: (error) => {
-          console.error(
-            `Error al actualizar estado de solicitud ${idSolicitud}:`,
-            error,
-          );
-          // Mostrar alerta de advertencia pero no interrumpir el flujo
-          Swal.fire({
-            icon: 'warning',
-            title: 'Advertencia',
-            html: `El crédito se creó exitosamente, pero no se pudo actualizar el estado de la solicitud a ENTREGADO.<br><br>
-              <strong>ID Solicitud:</strong> ${idSolicitud}<br>
-              <strong>Error:</strong> ${error.error?.message || error.message}`,
-            confirmButtonText: 'Continuar',
-            confirmButtonColor: '#ffc107',
-          });
-        },
-      });
   }
 
   // Marcar crédito como ENTREGADO

@@ -56,7 +56,7 @@ export class AdminControlService {
         throw new Error(response.message);
       }
     } catch (error) {
-      console.error('Error obteniendo usuarios:', error);
+      // console.error('Error obteniendo usuarios:', error);
       throw error;
     }
   }
@@ -77,7 +77,7 @@ export class AdminControlService {
         throw new Error(response.message);
       }
     } catch (error) {
-      console.error('Error eliminando usuario:', error);
+      // console.error('Error eliminando usuario:', error);
       throw error;
     }
   }
@@ -87,7 +87,7 @@ export class AdminControlService {
     try {
       await this.authService.sendPasswordResetEmail(email);
     } catch (error) {
-      console.error('Error restableciendo contraseña:', error);
+      // console.error('Error restableciendo contraseña:', error);
       throw error;
     }
   }
@@ -101,7 +101,7 @@ export class AdminControlService {
         'Content-Type': 'application/json'
       });
     } catch (error) {
-      console.error('Error obteniendo token:', error);
+      // console.error('Error obteniendo token:', error);
       throw new Error('No se pudo obtener el token de autenticación');
     }
   }

@@ -131,24 +131,24 @@ export class ClientListComponent implements OnInit, OnDestroy {
   }
 
   diagnosticoSesion(): void {
-    console.log('=== DIAGNÓSTICO DE SESIÓN ===');
-    console.log('1. localStorage.user:', localStorage.getItem('user'));
-    console.log('2. localStorage.firebase_token:', localStorage.getItem('firebase_token'));
-    console.log('3. Firebase currentUser:', this.authService.getCurrentFirebaseUser()?.email);
-    console.log('4. AuthService currentUserSubject:', this.authService.getUserDataSync());
-    console.log('5. Ruta actual:', window.location.pathname);
-    console.log('6. Usuario logueado en otras partes:', document.querySelector('.user-info'));
+    // console.log('=== DIAGNÓSTICO DE SESIÓN ===');
+    // console.log('1. localStorage.user:', localStorage.getItem('user'));
+    // console.log('2. localStorage.firebase_token:', localStorage.getItem('firebase_token'));
+    // console.log('3. Firebase currentUser:', this.authService.getCurrentFirebaseUser()?.email);
+    // console.log('4. AuthService currentUserSubject:', this.authService.getUserDataSync());
+    // console.log('5. Ruta actual:', window.location.pathname);
+    // console.log('6. Usuario logueado en otras partes:', document.querySelector('.user-info'));
   }
 
   suscribirCambiosUsuario(): void {
     this.userSubscription = this.authService.currentUser$.subscribe(
       (user) => {
-        console.log('Cambio en usuario detectado en subscription:', user);
+        // console.log('Cambio en usuario detectado en subscription:', user);
         if (user) {
-          this.usuarioActual = user;
-          console.log('Usuario actualizado desde subscription:', user.nombre);
+          // this.usuarioActual = user;
+          // console.log('Usuario actualizado desde subscription:', user.nombre);
         } else {
-          console.log('Subscription recibió null user');
+          // console.log('Subscription recibió null user');
         }
       },
       (error) => {
@@ -350,7 +350,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.avalesService.obtenerAvales().subscribe({
       next: (data) => {
         this.avales = (data || []).filter(aval => aval != null);
-        console.log('Avales cargados:', this.avales.length);
+        // console.log('Avales cargados:', this.avales.length);
         this.cargandoAvales = false;
       },
       error: (err) => {
@@ -440,7 +440,7 @@ export class ClientListComponent implements OnInit, OnDestroy {
     this.clienteService.obtenerClientes().subscribe({
       next: (data) => {
         this.clientes = (data || []).filter(cliente => cliente != null);
-        console.log('Clientes cargados:', this.clientes.length);
+        // console.log('Clientes cargados:', this.clientes.length);
         this.cargando = false;
         // Cargar estados para cada cliente
         this.cargarEstadosClientes();
@@ -491,12 +491,16 @@ export class ClientListComponent implements OnInit, OnDestroy {
       canRequest = true;
       cssClass = 'estado-sin-credito';
     } else {
-      const totalPagos = calendario.length;
-      const pagosRealizados = calendario.filter(p => p.pagado === true).length;
-      moraAcumulada = calendario.reduce((sum, p) => sum + (parseFloat(p.mora_acumulada) || 0), 0);
+      // Filtrar únicamente los pagos del crédito más reciente en caso de que vengan múltiples créditos
+      const ultCreditoId = Math.max(...calendario.map(p => Number(p.id_credito) || 0));
+      const calendarioActual = ultCreditoId > 0 ? calendario.filter(p => Number(p.id_credito) === ultCreditoId) : calendario;
+
+      const totalPagos = calendarioActual.length;
+      const pagosRealizados = calendarioActual.filter(p => p.pagado === true).length;
+      moraAcumulada = calendarioActual.reduce((sum, p) => sum + (parseFloat(p.mora_acumulada) || 0), 0);
 
       // Obtener la fecha del último pago realizado (o el último vencimiento pagado)
-      const pagosHechos = calendario.filter(p => p.pagado === true);
+      const pagosHechos = calendarioActual.filter(p => p.pagado === true);
       if (pagosHechos.length > 0) {
         // Ordenar por fecha de vencimiento descendente para encontrar el último
         const ultimo = [...pagosHechos].sort((a, b) =>

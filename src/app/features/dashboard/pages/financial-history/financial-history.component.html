@@ -138,7 +138,8 @@
                   </small>
                 </td>
                 <!-- Monto por período -->
-                <td class="detalles-pago">{{ formatearMoneda(credito.viewData?.pagoSemanal || credito.pago_semanal || 0) }}</td>
+                <td class="detalles-pago">{{ formatearMoneda(credito.viewData?.pagoSemanal || credito.pago_semanal || 0)
+                  }}</td>
                 <td class="col-estado">{{ credito.viewData?.proximaFecha || 'N/A' }}</td>
                 <td class="col-estado">{{ formatearMoneda(credito.total_a_pagar || 0) }}</td>
                 <td class="col-estado">{{ formatearMoneda(credito.viewData?.totalPagado || 0) }}</td>
@@ -152,8 +153,7 @@
                   </span>
                 </td>
 
-                <td class="text-center"
-                  [ngClass]="{'text-danger': (credito.viewData?.periodosAtrasados || 0) > 0}">
+                <td class="text-center" [ngClass]="{'text-danger': (credito.viewData?.periodosAtrasados || 0) > 0}">
                   {{ credito.viewData?.periodosAtrasados || 0 }}
                 </td>
                 <td [ngClass]="{'text-danger': (credito.viewData?.totalAtrasado || 0) > 0}">
@@ -171,11 +171,14 @@
               <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
                 <td colspan="16">
                   <div class="detalle-pagos-container">
+                    <a class="btn btn-primary btn-sm" routerLink="/clientes">
+                      <i class="fas fa-users"></i> Ver Clientes
+                    </a>
                     <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>
                     <div class="row mb-3">
                       <!-- Columna de tabla de pagos -->
                       <div class="col-md-8">
-                        <div class="table-responsive">
+                        <div class="table-responsive">                        
                           <table class="table table-sm table-detalle">
                             <thead>
                               <tr>

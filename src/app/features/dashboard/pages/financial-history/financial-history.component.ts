@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { CreditoService } from '../../../../services/credito.service';
@@ -46,7 +47,7 @@ interface ViewData {
 @Component({
   selector: 'app-financial-history',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './financial-history.component.html',
   styleUrls: ['./financial-history.component.css']
 })
@@ -102,7 +103,11 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // Usuario
   usuarioActual: any = null;
   registradoPor: number = 0;
+  usuarios: any[] = []; // <-- Nueva
+  usuariosMap = new Map<number, any>();
+
   private subscriptions: Subscription[] = [];
+
 
   // ============================================
   // CONSTRUCTOR
@@ -132,18 +137,58 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // CARGA DE DATOS
   // ============================================
   cargarUsuarioLogueado(): void {
-    this.usuarioActual = this.authService.getUserDataSync();
-    if (this.usuarioActual?.id_usuario) {
-      this.registradoPor = this.usuarioActual.id_usuario;
-    }
+    // Nos suscribimos al Observable del usuario actual
+    const authSub = this.authService.currentUser$.subscribe({
+      next: (user) => {
+        // console.log('Usuario recibido en el historial financiero:', user); // Debug
+
+        if (user) {
+          this.usuarioActual = user;
+          this.registradoPor = user.id_usuario;
+
+
+          // es buena idea recalcular los detalles visuales cuando este cambie
+          if (this.creditos.length > 0) {
+            this.creditos.forEach(c => this.calcularViewData(c));
+          }
+        } else {
+          // Si no hay usuario (ej. sesión expirada o no ha cargado)
+          this.usuarioActual = null;
+          this.registradoPor = 0;
+        }
+      },
+      error: (err) => console.error('Error en la suscripción de usuario:', err)
+    });
+
+    // Lo agregamos al array de suscripciones para que se destruya automáticamente en ngOnDestroy
+    this.subscriptions.push(authSub);
   }
 
   cargarDatosIniciales(): void {
     this.cargarClientes();
     this.cargarAliados();
+    this.cargarUsuarios(); // <-- Nueva llamada
     this.cargarCreditos();
   }
 
+  cargarUsuarios(): void {
+    this.authService.obtenerUsuarios().subscribe({
+      next: (usuarios) => {
+        console.log('Usuarios cargados con éxito desde el backend:', usuarios);
+        this.usuarios = usuarios;
+
+        // Limpiamos y llenamos el mapa asegurando que la llave sea un número limpio
+        this.usuariosMap.clear();
+        usuarios.forEach(u => this.usuariosMap.set(Number(u.id_usuario), u));
+        if (this.creditos.length > 0) {
+          this.creditos.forEach(c => this.calcularViewData(c));
+        }
+      },
+      error: (err) => {
+        console.error('Error al cargar usuarios generales:', err);
+      }
+    });
+  }
   cargarClientes(): void {
     const sub = this.clienteService.obtenerClientes().subscribe({
       next: (clientes) => {
@@ -198,6 +243,12 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const finalizarCarga = () => {
+      this.creditos.forEach(c => this.calcularViewData(c));
+      this.verificarEstadosCreditos();
+      this.cargando = false;
+    };
+
     this.creditos.forEach(credito => {
       // Cargar calendario de pago
       const subCal = this.calendarioPagoService.obtenerPorCredito(credito.id_credito).subscribe({
@@ -211,16 +262,13 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
               completados++;
               if (completados === total) {
-                // Calcular viewData para todos
-                this.creditos.forEach(c => this.calcularViewData(c));
-                this.cargando = false;
+                finalizarCarga();
               }
             },
             error: () => {
               completados++;
               if (completados === total) {
-                this.creditos.forEach(c => this.calcularViewData(c));
-                this.cargando = false;
+                finalizarCarga();
               }
             }
           });
@@ -230,12 +278,61 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
           console.error(`Error al cargar calendario para crédito ${credito.id_credito}:`, err);
           completados++;
           if (completados === total) {
-            this.creditos.forEach(c => this.calcularViewData(c));
-            this.cargando = false;
+            finalizarCarga();
           }
         }
       });
       this.subscriptions.push(subCal);
+    });
+  }
+
+  verificarEstadosCreditos(): void {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    this.creditos.forEach(credito => {
+      const saldo = Number(credito.saldo_pendiente) || 0;
+      const estadoActual = credito.estado_credito;
+      const calendario = this.calendarioPorCredito.get(credito.id_credito) || [];
+
+      let nuevoEstado: string | null = null;
+
+      if (saldo <= 0.01) {
+        if (estadoActual !== 'FINALIZADO') {
+          nuevoEstado = 'FINALIZADO';
+        }
+      } else if (estadoActual === 'ENTREGADO') {
+        if (calendario.length > 0) {
+          const fechas = calendario.map(p => this.parsearFecha(p.fecha_vencimiento).getTime());
+          const maxFechaTime = Math.max(...fechas);
+          const ultimaFechaProgramada = new Date(maxFechaTime);
+          ultimaFechaProgramada.setHours(0, 0, 0, 0);
+
+          if (hoy > ultimaFechaProgramada) {
+            nuevoEstado = 'VENCIDO';
+          }
+        }
+      }
+
+      if (nuevoEstado) {
+        this.creditoService.actualizarEstadoCredito(credito.id_credito, nuevoEstado).subscribe({
+          next: () => {
+            console.log(`[Sincronización] Crédito ${credito.id_credito} actualizado automáticamente a ${nuevoEstado}`);
+            credito.estado_credito = nuevoEstado;
+            this.calcularViewData(credito);
+
+            // Re-filtrar para ocultar finalizados de la lista local
+            this.creditos = this.creditos.filter(c =>
+              c.estado_credito === 'ENTREGADO' || c.estado_credito === 'VENCIDO'
+            );
+            this.creditosFiltrados = [...this.creditos];
+            this.buscar();
+          },
+          error: (err) => {
+            console.error(`Error al actualizar estado del crédito ${credito.id_credito}:`, err);
+          }
+        });
+      }
     });
   }
 
@@ -672,19 +769,57 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     this.filaExpandida = this.filaExpandida === creditoId ? null : creditoId;
   }
 
+  // getDetallesPagos(creditoId: number): any[] {
+  //   const pagos = this.pagosPorCredito.get(creditoId) || [];
+  //   return pagos.map((pago, index) => ({
+  //     numeroPago: pago.numero_pago || index + 1,
+  //     fecha: pago.fecha_operacion || pago.fecha_pago,
+  //     montoTotal: (Number(pago.pago_registrado) || 0) + (Number(pago.moratorios) || 0),
+  //     capital: pago.capital_pagado || 0,
+  //     intereses: pago.interes_pagado || 0,
+  //     mora: pago.moratorios || 0,
+  //     tipoPago: pago.tipo_pago || 'NORMAL',
+  //     registradoPor: pago.registrado_por || 'Sistema'
+  //   }));
+  // }
+
+  getNombreRegistrador(idUsuario: number): string {
+    if (!idUsuario) return 'Sistema';
+
+    const idNum = Number(idUsuario);
+
+    // 1. Si lo registró el usuario actual
+    if (idNum === Number(this.usuarioActual?.id_usuario)) {
+      return this.usuarioActual?.nombre || `Usuario ID: ${idUsuario}`;
+    }
+
+    // 2. Buscar en el mapa general de usuarios
+    const usuario = this.usuariosMap.get(idNum);
+    if (usuario?.nombre) {
+      return usuario.nombre;
+    }
+
+    // 3. Fallback
+    return `Usuario ID: ${idUsuario}`;
+  }
+
   getDetallesPagos(creditoId: number): any[] {
     const pagos = this.pagosPorCredito.get(creditoId) || [];
-    return pagos.map((pago, index) => ({
-      numeroPago: pago.numero_pago || index + 1,
-      fecha: pago.fecha_operacion || pago.fecha_pago,
-      montoTotal: (Number(pago.pago_registrado) || 0) + (Number(pago.moratorios) || 0),
-      capital: pago.capital_pagado || 0,
-      intereses: pago.interes_pagado || 0,
-      mora: pago.moratorios || 0,
-      tipoPago: pago.tipo_pago || 'NORMAL',
-      registradoPor: pago.registrado_por || 'Sistema'
-    }));
+
+    return pagos.map((pago, index) => {
+      return {
+        numeroPago: pago.numero_pago || index + 1,
+        fecha: pago.fecha_operacion || pago.fecha_pago,
+        montoTotal: (Number(pago.pago_registrado) || 0) + (Number(pago.moratorios) || 0),
+        capital: pago.capital_pagado || 0,
+        intereses: pago.interes_pagado || 0,
+        mora: pago.moratorios || 0,
+        tipoPago: pago.tipo_pago || 'NORMAL',
+        registradoPor: this.getNombreRegistrador(pago.registrado_por)
+      };
+    });
   }
+
 
   // ============================================
   // FILTROS
