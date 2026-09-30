@@ -843,12 +843,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
           chartImages.evolucion = this.evolucionChartRef.nativeElement.toDataURL('image/png', 1.0);
         }
 
-        this.exportService.exportDashboardReportPDF({
-          dashboardData: this.dashboardData,
-          periodo: this.getPeriodoSeleccionado(),
-          charts: chartImages,
-          filename: `reporte_dashboard_convam_${new Date().toISOString().slice(0, 10)}.pdf`
-        });
+        // this.exportService.exportDashboardReportPDF({
+        //   dashboardData: this.dashboardData,
+        //   periodo: this.getPeriodoSeleccionado(),
+        //   charts: chartImages,
+        //   filename: `reporte_dashboard_convam_${new Date().toISOString().slice(0, 10)}.pdf`
+        // });
       } catch (err) {
         console.error('Error al generar PDF del dashboard:', err);
         alert('Hubo un inconveniente al generar el reporte PDF con las gráficas.');
