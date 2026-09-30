@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+// import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
@@ -14,7 +15,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './ministracion.component.html',
-  styleUrl: './ministracion.component.css'
+  styleUrl: './ministracion.component.css',
 })
 export class MinistracionComponent implements OnInit, OnDestroy {
   solicitudesAprobadas: any[] = [];
@@ -30,7 +31,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
   modalGenerarCreditoAbierto: boolean = false;
   modalGenerarPagareAbierto: boolean = false;
-  procesandoGeneracion: boolean = false;
 
   // Control de modals
   modalPagareAbierto: boolean = false;
@@ -71,13 +71,11 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   totalGarantia: number = 0;
   Math: any;
 
-
   // EDITAR FECHAS MINISTRACION - PRIMER PAGO
   modalEditarFechasAbierto: boolean = false;
   creditoSeleccionado: any = null;
   nuevaFechaMinistracion: string = '';
   nuevaFechaPrimerPago: string = '';
-
 
   // LOADER PARA GENERAR DOCUMENTOS
   generandoPagare: boolean = false;
@@ -88,8 +86,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     private creditoService: CreditoService,
     private aliadoService: AliadoService,
     private pagareService: PagareService,
-    private sanitizer: DomSanitizer
-
+    private sanitizer: DomSanitizer,
+    private ngZone: NgZone,
   ) { }
   private intervaloActualizacion: any;
   tiempoActual: number = Date.now();
@@ -106,8 +104,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
   }
 
-
-
   //   cargarDatosIniciales(): void {
   //   this.cargando = true;
 
@@ -118,7 +114,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   //   }).subscribe({
   //     next: (result) => {
   //       this.aliados = result.aliados;
-  //       this.creditos = result.creditos; 
+  //       this.creditos = result.creditos;
 
   //       // ASIGNAR INFORMACIÓN DEL ALIADO A CADA SOLICITUD
   //       result.solicitudes.forEach(solicitud => {
@@ -128,7 +124,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   //       // FILTRO CRUCIAL: Excluir solicitudes que YA TIENEN algún crédito (sin importar el estado)
   //       this.solicitudesAprobadas = result.solicitudes.filter(solicitud => {
   //         // Verificar si existe algún crédito asociado a esta solicitud
-  //         const tieneCredito = result.creditos.some(credito => 
+  //         const tieneCredito = result.creditos.some(credito =>
   //           credito.solicitud_id === solicitud.id_solicitud
   //         );
   //         return !tieneCredito; // Solo incluir solicitudes SIN crédito
@@ -166,23 +162,24 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
     forkJoin({
       aliados: this.aliadoService.obtenerAliados(),
-      solicitudes: this.solicitudService.obtenerSolicitudesPorEstado('APROBADO'),
-      creditos: this.creditoService.obtenerCreditos() // Agrega esto
+      solicitudes:
+        this.solicitudService.obtenerSolicitudesPorEstado('APROBADO'),
+      creditos: this.creditoService.obtenerCreditos(), // Agrega esto
     }).subscribe({
       next: (result) => {
         this.aliados = result.aliados;
         this.creditos = result.creditos;
 
         // ASIGNAR INFORMACIÓN DEL ALIADO A CADA SOLICITUD
-        result.solicitudes.forEach(solicitud => {
+        result.solicitudes.forEach((solicitud) => {
           this.asignarAliadoASolicitud(solicitud);
         });
 
         // FILTRO CRUCIAL: Excluir solicitudes que YA TIENEN algún crédito (sin importar el estado)
-        this.solicitudesAprobadas = result.solicitudes.filter(solicitud => {
+        this.solicitudesAprobadas = result.solicitudes.filter((solicitud) => {
           // Verificar si existe algún crédito asociado a esta solicitud
-          const tieneCredito = result.creditos.some(credito =>
-            credito.solicitud_id === solicitud.id_solicitud
+          const tieneCredito = result.creditos.some(
+            (credito) => credito.solicitud_id === solicitud.id_solicitud,
           );
           return !tieneCredito; // Solo incluir solicitudes SIN crédito
         });
@@ -194,7 +191,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           return idB - idA; // Orden descendente (mayor a menor)
         });
 
-        // ✅ CAMBIO CLAVE: Usar TODAS las solicitudes aprobadas, no solo 6
+        // ✅ CAMBIO CLAVE: Usar TODAS las solicitudes aprobadas
+        this.solicitudesRecientes = [...this.solicitudesAprobadas];
         this.clientesFiltrados = [...this.solicitudesAprobadas];
 
         this.cargando = false;
@@ -206,21 +204,15 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'Error',
           text: 'Error al cargar los datos iniciales',
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
         });
-      }
+      },
     });
   }
 
-
-
-
-
-
-
   // Obtener créditos por estado con ordenamiento específico
   getCreditosPorEstado(estado: string): any[] {
-    const creditosFiltrados = this.creditos.filter(credito => {
+    const creditosFiltrados = this.creditos.filter((credito) => {
       // Para créditos sin estado definido, considerar como PENDIENTE
       if (!credito.estado_credito) {
         return estado === 'PENDIENTE';
@@ -261,16 +253,26 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
   // Asignar información del aliado a la solicitud
   asignarAliadoASolicitud(solicitud: any): void {
-    if (solicitud.aliado_id !== null && solicitud.aliado_id !== undefined && solicitud.aliado_id !== '') {
-      const aliado = this.aliados.find(a => a.id_aliado == solicitud.aliado_id);
+    if (
+      solicitud.aliado_id !== null &&
+      solicitud.aliado_id !== undefined &&
+      solicitud.aliado_id !== ''
+    ) {
+      const aliado = this.aliados.find(
+        (a) => a.id_aliado == solicitud.aliado_id,
+      );
 
       if (aliado) {
-        solicitud.aliado_nombre = aliado.nom_aliado ? aliado.nom_aliado.trim() : 'Nombre no disponible';
+        solicitud.aliado_nombre = aliado.nom_aliado
+          ? aliado.nom_aliado.trim()
+          : 'Nombre no disponible';
 
         if (aliado.tasa_fija !== null && aliado.tasa_fija !== undefined) {
           const tasa = parseFloat(aliado.tasa_fija);
           solicitud.tasa_fija = !isNaN(tasa) ? tasa : 0;
-          solicitud.tasa_fija_formateada = !isNaN(tasa) ? tasa.toFixed(2) + '%' : '0%';
+          solicitud.tasa_fija_formateada = !isNaN(tasa)
+            ? tasa.toFixed(2) + '%'
+            : '0%';
         } else {
           solicitud.tasa_fija = 0;
           solicitud.tasa_fija_formateada = '0%';
@@ -293,10 +295,28 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Verificar si el cliente tiene un crédito activo (ENTREGADO)
+  tieneCreditoActivo(clienteId: number): boolean {
+    if (!clienteId || !this.creditos) return false;
+    // Consideramos activo si está en estado ENTREGADO
+    return this.creditos.some(
+      (c) => c.cliente_id === clienteId && c.estado_credito === 'ENTREGADO',
+    );
+  }
 
+  // Verificar si el cliente tiene OTROS créditos activos (excluyendo el actual)
+  tieneOtrosCreditosActivos(clienteId: number, idCreditoActual: number): boolean {
+    if (!clienteId || !this.creditos) return false;
+    return this.creditos.some(
+      (c) =>
+        c.cliente_id === clienteId &&
+        c.estado_credito === 'ENTREGADO' &&
+        c.id_credito !== idCreditoActual,
+    );
+  }
 
   abrirModalPagare(solicitud: any): void {
-    // ÚNICA VALIDACIÓN: Verificar si está domiciliado
+    // VALIDACIÓN 1: Verificar si está domiciliado
     if (!solicitud.domiciliado) {
       Swal.fire({
         icon: 'error',
@@ -304,7 +324,20 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         html: `La solicitud <strong>#${solicitud.id_solicitud}</strong> no está domiciliada.<br><br>
         Debe completar el proceso de domiciliación antes de generar el crédito.`,
         confirmButtonText: 'Entendido',
-        confirmButtonColor: '#d33'
+        confirmButtonColor: '#d33',
+      });
+      return;
+    }
+
+    // VALIDACIÓN 2: Verificar si el cliente ya tiene un crédito activo (Renovación anticipada)
+    if (this.tieneCreditoActivo(solicitud.cliente_id)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Crédito Activo Detectado',
+        html: `El cliente <strong>${this.getNombreCompleto(solicitud)}</strong> ya tiene un crédito vigente.<br><br>
+        No se puede generar un nuevo pagaré hasta que el crédito anterior sea liquidado o finalizado en el sistema.`,
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#f8bb86',
       });
       return;
     }
@@ -312,7 +345,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     // Si está domiciliada, continuar con el proceso normal
     // (Ya no necesitamos validar créditos existentes porque el filtro los excluyó)
     this.solicitudSeleccionada = solicitud;
-    this.modalGenerarCreditoAbierto = true;
+    this.modalPagareAbierto = true;
 
     // Resetear variables
     this.referenciaBancaria = '';
@@ -334,24 +367,38 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.calcularValoresCredito();
   }
 
-
   // Calcular todos los valores del crédito
   calcularValoresCredito(): void {
     if (!this.solicitudSeleccionada) return;
 
     const montoAprobado = Number(this.solicitudSeleccionada.monto_aprobado);
-    const tasa = this.solicitudSeleccionada.tasa_fija || 0.25;
+    const tasa = Number(this.solicitudSeleccionada.tasa_fija) || 0;
+    const numeroPagos = Number(this.solicitudSeleccionada.no_pagos) || 16;
+    const plazoMeses = Number(this.solicitudSeleccionada.plazo_meses) || 1;
+    const tipoVencimiento = (
+      this.solicitudSeleccionada.tipo_vencimiento || 'SEMANAL'
+    ).toUpperCase();
 
-    // Calcular valores
+    // Calcular valores principales
     this.totalCapital = montoAprobado;
-    this.totalInteres = (montoAprobado * tasa) / 4 * 16;
-    this.totalSeguro = this.seguro ? 80 : 0;
+
+    // El interés se calcula sobre el capital por la tasa mensual por el plazo en meses
+    this.totalInteres = montoAprobado * tasa * plazoMeses;
+
+    // El total a pagar es capital + interés
     this.totalAPagar = this.totalCapital + this.totalInteres;
-    this.totalGarantia = montoAprobado * 0.10;
-    this.pagoSemanal = this.totalAPagar / 16;
+
+    // El pago periódico (semanal, quincenal, etc) se divide entre el número total de pagos
+    this.pagoSemanal = this.totalAPagar / numeroPagos;
+
+    // Cálculo de montos iniciales
+    this.totalGarantia = montoAprobado * 0.1; // 10% de garantía
+    this.totalSeguro = this.seguro ? 80 : 0; // Seguro condicionado
     this.pagoInicial = this.totalGarantia + this.totalSeguro;
   }
-
+  // monto * interes / 4 (meses) * 32/ 32)
+  // monto : capital
+  // intereses: tasa de aliado
 
   //   crearCredito(): void {
   //   if (!this.solicitudSeleccionada) {
@@ -439,22 +486,21 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       solicitud_id: this.solicitudSeleccionada.id_solicitud,
       fecha_ministracion: this.fechaMinistracion,
       fecha_primer_pago: this.fechaPrimerPago,
-      referencia_bancaria: this.referenciaBancaria || `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
+      referencia_bancaria:
+        this.referenciaBancaria ||
+        `REF-${this.solicitudSeleccionada.id_solicitud}-${Date.now()}`,
       tipo_credito: this.solicitudSeleccionada.tipo_credito,
       cuenta_bancaria: this.cuentaBancaria || '',
       seguro: this.seguro,
-      tipo_servicio: "Préstamo personal"
+      tipo_servicio: 'Préstamo personal',
     };
 
     this.creditoService.crearCredito(creditoData).subscribe({
       next: (response: any) => {
         this.creditoRecienCreado = response.credito;
 
-        // ACTUALIZAR EL ESTADO DE LA SOLICITUD A "ENTREGADO" (SOLO ESTE)
-        this.actualizarEstadoSolicitudAEntregado(this.solicitudSeleccionada.id_solicitud);
-
         // Cerrar el modal de generar crédito
-        this.modalGenerarCreditoAbierto = false;
+        this.modalPagareAbierto = false;
 
         // Abrir el modal de generar pagaré
         this.modalGenerarPagareAbierto = true;
@@ -467,7 +513,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
               <strong>Cliente:</strong> ${this.getNombreCompleto(this.solicitudSeleccionada)}<br><br>
               Ahora puede generar los documentos.`,
           confirmButtonText: 'Continuar',
-          timer: 3000
+          timer: 3000,
         });
 
         this.procesandoEntrega = false;
@@ -484,39 +530,10 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'Error',
           text: `Error al crear el crédito: ${error.error?.error || error.message}`,
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
         });
         this.procesandoEntrega = false;
-      }
-    });
-  }
-
-
-
-  actualizarEstadoSolicitudAEntregado(idSolicitud: number): void {
-    // Datos para actualizar el estado
-    const datosActualizacion = {
-      estado_solicitud: 'ENTREGADO'
-    };
-
-    // Llamar al servicio para actualizar la solicitud
-    this.solicitudService.actualizarEstadoSolicitud(idSolicitud, datosActualizacion).subscribe({
-      next: (response) => {
-        console.log(`Solicitud ${idSolicitud} actualizada a estado ENTREGADO`, response);
       },
-      error: (error) => {
-        console.error(`Error al actualizar estado de solicitud ${idSolicitud}:`, error);
-        // Mostrar alerta de advertencia pero no interrumpir el flujo
-        Swal.fire({
-          icon: 'warning',
-          title: 'Advertencia',
-          html: `El crédito se creó exitosamente, pero no se pudo actualizar el estado de la solicitud a ENTREGADO.<br><br>
-              <strong>ID Solicitud:</strong> ${idSolicitud}<br>
-              <strong>Error:</strong> ${error.error?.message || error.message}`,
-          confirmButtonText: 'Continuar',
-          confirmButtonColor: '#ffc107'
-        });
-      }
     });
   }
 
@@ -530,32 +547,34 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, marcar como ENTREGADO',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#28a745',
-      cancelButtonColor: '#d33'
+      cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.creditoService.actualizarEstadoCredito(credito.id_credito, 'ENTREGADO').subscribe({
-          next: (response) => {
-            Swal.fire({
-              icon: 'success',
-              title: '¡Estado actualizado!',
-              text: 'El crédito ha sido marcado como ENTREGADO',
-              timer: 2000,
-              showConfirmButton: false
-            });
+        this.creditoService
+          .actualizarEstadoCredito(credito.id_credito, 'ENTREGADO')
+          .subscribe({
+            next: (response) => {
+              Swal.fire({
+                icon: 'success',
+                title: '¡Estado actualizado!',
+                text: 'El crédito ha sido marcado como ENTREGADO',
+                timer: 2000,
+                showConfirmButton: false,
+              });
 
-            // Recargar créditos para reflejar el cambio
-            this.cargarCreditos();
-          },
-          error: (error) => {
-            console.error('Error al actualizar estado:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo actualizar el estado del crédito',
-              confirmButtonText: 'Aceptar'
-            });
-          }
-        });
+              // Recargar créditos para reflejar el cambio
+              this.cargarCreditos();
+            },
+            error: (error) => {
+              console.error('Error al actualizar estado:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar el estado del crédito',
+                confirmButtonText: 'Aceptar',
+              });
+            },
+          });
       }
     });
   }
@@ -570,32 +589,34 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, marcar como PENDIENTE',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#28a745',
-      cancelButtonColor: '#d33'
+      cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.creditoService.actualizarEstadoCredito(credito.id_credito, 'PENDIENTE').subscribe({
-          next: (response) => {
-            Swal.fire({
-              icon: 'success',
-              title: '¡Estado actualizado!',
-              text: 'El crédito ha sido marcado como PENDIENTE',
-              timer: 2000,
-              showConfirmButton: false
-            });
+        this.creditoService
+          .actualizarEstadoCredito(credito.id_credito, 'PENDIENTE')
+          .subscribe({
+            next: (response) => {
+              Swal.fire({
+                icon: 'success',
+                title: '¡Estado actualizado!',
+                text: 'El crédito ha sido marcado como PENDIENTE',
+                timer: 2000,
+                showConfirmButton: false,
+              });
 
-            // Recargar créditos para reflejar el cambio
-            this.cargarCreditos();
-          },
-          error: (error) => {
-            console.error('Error al actualizar estado:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo actualizar el estado del crédito',
-              confirmButtonText: 'Aceptar'
-            });
-          }
-        });
+              // Recargar créditos para reflejar el cambio
+              this.cargarCreditos();
+            },
+            error: (error) => {
+              console.error('Error al actualizar estado:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar el estado del crédito',
+                confirmButtonText: 'Aceptar',
+              });
+            },
+          });
       }
     });
   }
@@ -609,62 +630,67 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, marcar como DEVOLUCIÓN',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#dc3545',
-      cancelButtonColor: '#6c757d'
+      cancelButtonColor: '#6c757d',
     }).then((result) => {
       if (result.isConfirmed) {
         // Obtener fecha actual para la devolución
         const fechaDevolucion = new Date().toISOString();
 
-        this.creditoService.actualizarEstadoCredito(credito.id_credito, 'DEVOLUCION', { fecha_devolucion: fechaDevolucion }).subscribe({
-          next: (response) => {
-            Swal.fire({
-              icon: 'success',
-              title: '¡Estado actualizado!',
-              html: `
+        this.creditoService
+          .actualizarEstadoCredito(credito.id_credito, 'DEVOLUCION', {
+            fecha_devolucion: fechaDevolucion,
+          })
+          .subscribe({
+            next: (response) => {
+              Swal.fire({
+                icon: 'success',
+                title: '¡Estado actualizado!',
+                html: `
               <div style="text-align: left;">
                 <p>El crédito ha sido marcado como DEVOLUCIÓN.</p>
-                <p><strong>Nota:</strong> Si no se reingresa en 5 días, será cancelado.</p>
+                <p><strong>Nota:</strong> Si no se reingresa en 5 días, su estado cambiará a FINALIZADO.</p>
               </div>
             `,
-              timer: 3000,
-              showConfirmButton: false
-            });
+                timer: 3000,
+                showConfirmButton: false,
+              });
 
-            // Recargar créditos para reflejar el cambio
-            this.cargarCreditos();
-          },
-          error: (error) => {
-            console.error('Error al actualizar estado:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error',
-              text: 'No se pudo actualizar el estado del crédito',
-              confirmButtonText: 'Aceptar'
-            });
-          }
-        });
+              // Recargar créditos para reflejar el cambio
+              this.cargarCreditos();
+            },
+            error: (error) => {
+              console.error('Error al actualizar estado:', error);
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar el estado del crédito',
+                confirmButtonText: 'Aceptar',
+              });
+            },
+          });
       }
     });
   }
-
 
   // ----------------------------------------------------------
   // MÉTODOS PARA CANCELAR CREDITO
   // ----------------------------------------------------------
   // Después de marcarComoDevolucion() agrega:
 
-  // Método para verificar y actualizar créditos en DEVOLUCION a CANCELADO después de 5 días
-  verificarDevolucionesParaCancelar(): void {
+  // Método para verificar y actualizar créditos en DEVOLUCION a FINALIZADO después de 5 días
+  verificarDevolucionesParaFinalizar(): void {
     const hoy = new Date();
 
-    this.creditos.forEach(credito => {
+    this.creditos.forEach((credito) => {
       if (credito.estado_credito === 'DEVOLUCION' && credito.fecha_devolucion) {
         const fechaDevolucion = new Date(credito.fecha_devolucion);
-        const diferenciaDias = Math.floor((hoy.getTime() - fechaDevolucion.getTime()) / (1000 * 60 * 60 * 24));
+        const diferenciaDias = Math.floor(
+          (hoy.getTime() - fechaDevolucion.getTime()) / (1000 * 60 * 60 * 24),
+        );
 
         if (diferenciaDias >= 5) {
-          // Actualizar automáticamente a CANCELADO
-          this.actualizarACanceladoAutomaticamente(credito);
+          // Actualizar automáticamente a FINALIZADO
+          this.actualizarAFinalizadoAutomaticamente(credito);
         }
       }
     });
@@ -695,7 +721,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
             <p style="color: #d33; font-weight: bold;">Faltan aproximadamente ${diasFaltantes} días.</p>
           </div>
         `,
-        confirmButtonText: 'Entendido'
+        confirmButtonText: 'Entendido',
       });
       return;
     }
@@ -714,61 +740,77 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, cancelar crédito',
       cancelButtonText: 'No, mantener',
       confirmButtonColor: '#d33',
-      cancelButtonColor: '#3085d6'
+      cancelButtonColor: '#3085d6',
     }).then((result) => {
       if (result.isConfirmed) {
         const fechaCancelacion = new Date().toISOString();
-        this.creditoService.actualizarEstadoCredito(credito.id_credito, 'CANCELADO', { fecha_cancelacion: fechaCancelacion }).subscribe({
-          next: (response) => {
-            Swal.fire('Cancelado', 'El crédito ha sido cancelado exitosamente.', 'success');
-            this.cargarCreditos();
-          },
-          error: (error) => {
-            console.error('Error al cancelar crédito:', error);
-            Swal.fire('Error', 'No se pudo cancelar el crédito', 'error');
+        this.creditoService
+          .actualizarEstadoCredito(credito.id_credito, 'CANCELADO', {
+            fecha_cancelacion: fechaCancelacion,
+          })
+          .subscribe({
+            next: (response) => {
+              Swal.fire(
+                'Cancelado',
+                'El crédito ha sido cancelado exitosamente.',
+                'success',
+              );
+              this.cargarCreditos();
+            },
+            error: (error) => {
+              console.error('Error al cancelar crédito:', error);
+              Swal.fire('Error', 'No se pudo cancelar el crédito', 'error');
+            },
+          });
+      }
+    });
+  }
+
+  // Método para actualizar automáticamente a FINALIZADO
+  actualizarAFinalizadoAutomaticamente(credito: any): void {
+    const fechaActualizacion = new Date().toISOString();
+
+    this.creditoService
+      .actualizarEstadoCredito(credito.id_credito, 'FINALIZADO', {
+        fecha_actualizacion: fechaActualizacion,
+      })
+      .subscribe({
+        next: (response) => {
+          // console.log(
+          //   `Crédito ${credito.id_credito} actualizado a FINALIZADO (pasaron 5 días de devolución)`,
+          // );
+
+          // Actualizar el estado localmente
+          credito.estado_credito = 'FINALIZADO';
+
+          // Opcional: Notificación al usuario
+          if (this.notificarCancelaciones) {
+            this.mostrarNotificacionFinalizacion(credito);
           }
-        });
-      }
-    });
+        },
+        error: (error) => {
+          // console.error(
+          //   `Error al actualizar crédito ${credito.id_credito} a FINALIZADO:`,
+          //   error,
+          // );
+        },
+      });
   }
 
-  // Método para actualizar automáticamente a CANCELADO
-  actualizarACanceladoAutomaticamente(credito: any): void {
-    const fechaCancelacion = new Date().toISOString();
-
-    this.creditoService.actualizarEstadoCredito(credito.id_credito, 'CANCELADO', { fecha_cancelacion: fechaCancelacion }).subscribe({
-      next: (response) => {
-        console.log(`Crédito ${credito.id_credito} actualizado a CANCELADO (pasaron 5 días de devolución)`);
-
-        // Actualizar el estado localmente
-        credito.estado_credito = 'CANCELADO';
-        credito.fecha_cancelacion = fechaCancelacion;
-
-        // Opcional: Notificación al usuario
-        if (this.notificarCancelaciones) {
-          this.mostrarNotificacionCancelacion(credito);
-        }
-      },
-      error: (error) => {
-        console.error(`Error al actualizar crédito ${credito.id_credito} a CANCELADO:`, error);
-      }
-    });
-  }
-
-  // Método para mostrar notificación cuando se cancela automáticamente
-  mostrarNotificacionCancelacion(credito: any): void {
+  // Método para mostrar notificación cuando se finaliza automáticamente
+  mostrarNotificacionFinalizacion(credito: any): void {
     Swal.fire({
       icon: 'info',
-      title: 'Crédito Cancelado Automáticamente',
+      title: 'Crédito Finalizado Automáticamente',
       html: `
       <div style="text-align: left;">
-        <p>El crédito <strong>#${credito.id_credito}</strong> ha sido cancelado automáticamente.</p>
+        <p>El crédito <strong>#${credito.id_credito}</strong> ha sido finalizado automáticamente.</p>
         <p><strong>Razón:</strong> Han pasado 5 días desde que se marcó como DEVOLUCIÓN.</p>
         <p><strong>Cliente:</strong> ${this.getNombreCompletoCredito(credito)}</p>
       </div>
     `,
       timer: 3000,
-      showConfirmButton: false
+      showConfirmButton: false,
     });
   }
 
@@ -780,7 +822,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
 
     // Actualizar referencia del crédito si existe en la lista actualizada
-    const creditoActualizado = this.creditos.find(c => c.id_credito === this.creditoRecienCreado.id_credito);
+    const creditoActualizado = this.creditos.find(
+      (c) => c.id_credito === this.creditoRecienCreado.id_credito,
+    );
     if (creditoActualizado) {
       this.creditoRecienCreado = creditoActualizado;
     }
@@ -801,34 +845,37 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       showConfirmButton: false,
       didOpen: () => {
         Swal.showLoading();
-      }
-    });
-
-    this.pagareService.generarPagare(this.creditoRecienCreado.id_credito).subscribe({
-      next: (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        this.pdfPagareUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-        this.documentoCargando = false;
-        this.generandoPagare = false;
-        this.documentosGenerados = true;
-
-        // Cerrar alerta de carga y mostrar éxito
-        Swal.close();
-        this.mostrarNotificacionExito('Pagaré generado correctamente');
       },
-      error: (error) => {
-        console.error('Error al generar pagaré:', error);
-        Swal.close();
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo generar el pagaré',
-          confirmButtonText: 'Aceptar'
-        });
-        this.documentoCargando = false;
-        this.generandoPagare = false;
-      }
     });
+
+    this.pagareService
+      .generarPagare(this.creditoRecienCreado.id_credito)
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          this.pdfPagareUrl =
+            this.sanitizer.bypassSecurityTrustResourceUrl(url);
+          this.documentoCargando = false;
+          this.generandoPagare = false;
+          this.documentosGenerados = true;
+
+          // Cerrar alerta de carga y mostrar éxito
+          Swal.close();
+          this.mostrarNotificacionExito('Pagaré generado correctamente');
+        },
+        error: (error) => {
+          console.error('Error al generar pagaré:', error);
+          Swal.close();
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo generar el pagaré',
+            confirmButtonText: 'Aceptar',
+          });
+          this.documentoCargando = false;
+          this.generandoPagare = false;
+        },
+      });
   }
 
   // Generar y mostrar vista previa de la hoja de control
@@ -839,7 +886,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
 
     // Actualizar referencia del crédito si existe en la lista actualizada
-    const creditoActualizado = this.creditos.find(c => c.id_credito === this.creditoRecienCreado.id_credito);
+    const creditoActualizado = this.creditos.find(
+      (c) => c.id_credito === this.creditoRecienCreado.id_credito,
+    );
     if (creditoActualizado) {
       this.creditoRecienCreado = creditoActualizado;
     }
@@ -860,34 +909,39 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       showConfirmButton: false,
       didOpen: () => {
         Swal.showLoading();
-      }
-    });
-
-    this.pagareService.generarHojaControl(this.creditoRecienCreado.id_credito).subscribe({
-      next: (blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        this.pdfHojaControlUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-        this.documentoCargando = false;
-        this.generandoHojaControl = false;
-        this.documentosGenerados = true;
-
-        // Cerrar alerta de carga y mostrar éxito
-        Swal.close();
-        this.mostrarNotificacionExito('Hoja de Control generada correctamente');
       },
-      error: (error) => {
-        console.error('Error al generar hoja de control:', error);
-        Swal.close();
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo generar la hoja de control',
-          confirmButtonText: 'Aceptar'
-        });
-        this.documentoCargando = false;
-        this.generandoHojaControl = false;
-      }
     });
+
+    this.pagareService
+      .generarHojaControl(this.creditoRecienCreado.id_credito)
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          this.pdfHojaControlUrl =
+            this.sanitizer.bypassSecurityTrustResourceUrl(url);
+          this.documentoCargando = false;
+          this.generandoHojaControl = false;
+          this.documentosGenerados = true;
+
+          // Cerrar alerta de carga y mostrar éxito
+          Swal.close();
+          this.mostrarNotificacionExito(
+            'Hoja de Control generada correctamente',
+          );
+        },
+        error: (error) => {
+          console.error('Error al generar hoja de control:', error);
+          Swal.close();
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo generar la hoja de control',
+            confirmButtonText: 'Aceptar',
+          });
+          this.documentoCargando = false;
+          this.generandoHojaControl = false;
+        },
+      });
   }
 
   // Método para mostrar notificación de éxito (opcional)
@@ -899,10 +953,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       timer: 2000,
       showConfirmButton: false,
       position: 'top-end',
-      toast: true
+      toast: true,
     });
   }
-
 
   // Método para regenerar todos los documentos
   regenerarTodosDocumentos(): void {
@@ -922,7 +975,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         this.creditos = creditos;
 
         // 2. Actualizar la referencia del crédito actual con los datos frescos
-        const creditoFresco = this.creditos.find(c => c.id_credito === this.creditoRecienCreado.id_credito);
+        const creditoFresco = this.creditos.find(
+          (c) => c.id_credito === this.creditoRecienCreado.id_credito,
+        );
         if (creditoFresco) {
           this.creditoRecienCreado = creditoFresco;
         }
@@ -942,13 +997,14 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         console.error('Error al actualizar datos para regenerar:', error);
         this.generandoPagare = false;
         this.generandoHojaControl = false;
-        Swal.fire('Error', 'No se pudieron actualizar los datos antes de regenerar', 'error');
-      }
+        Swal.fire(
+          'Error',
+          'No se pudieron actualizar los datos antes de regenerar',
+          'error',
+        );
+      },
     });
   }
-
-
-
 
   // Cambiar entre documentos en la vista previa
   cambiarDocumento(tipo: string): void {
@@ -961,7 +1017,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
   }
 
-
   descargarPagare(): void {
     if (!this.creditoRecienCreado?.id_credito || !this.solicitudSeleccionada) {
       Swal.fire('Advertencia', 'Primero debe crear el crédito', 'warning');
@@ -970,20 +1025,24 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
     this.generandoPagare = true;
 
-    this.pagareService.generarPagare(this.creditoRecienCreado.id_credito).subscribe({
-      next: (blob: Blob) => {
-        const nombreCliente = this.getNombreCompleto(this.solicitudSeleccionada);
-        const nombreArchivo = `pagare_${this.creditoRecienCreado.id_credito}_${nombreCliente.replace(/\s+/g, '_')}.pdf`;
-        this.descargarDocumento(blob, nombreArchivo);
-        this.generandoPagare = false;
-        Swal.fire('Éxito', 'Pagaré descargado correctamente', 'success');
-      },
-      error: (error) => {
-        console.error('Error al descargar pagaré:', error);
-        this.generandoPagare = false;
-        Swal.fire('Error', 'No se pudo descargar el pagaré', 'error');
-      }
-    });
+    this.pagareService
+      .generarPagare(this.creditoRecienCreado.id_credito)
+      .subscribe({
+        next: (blob: Blob) => {
+          const nombreCliente = this.getNombreCompleto(
+            this.solicitudSeleccionada,
+          );
+          const nombreArchivo = `pagare_${this.creditoRecienCreado.id_credito}_${nombreCliente.replace(/\s+/g, '_')}.pdf`;
+          this.descargarDocumento(blob, nombreArchivo);
+          this.generandoPagare = false;
+          Swal.fire('Éxito', 'Pagaré descargado correctamente', 'success');
+        },
+        error: (error) => {
+          console.error('Error al descargar pagaré:', error);
+          this.generandoPagare = false;
+          Swal.fire('Error', 'No se pudo descargar el pagaré', 'error');
+        },
+      });
   }
 
   descargarHojaControl(): void {
@@ -994,23 +1053,33 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
     this.generandoHojaControl = true;
 
-    this.pagareService.generarHojaControl(this.creditoRecienCreado.id_credito).subscribe({
-      next: (blob: Blob) => {
-        const nombreCliente = this.getNombreCompleto(this.solicitudSeleccionada);
-        const nombreArchivo = `hoja_control_${this.creditoRecienCreado.id_credito}_${nombreCliente.replace(/\s+/g, '_')}.pdf`;
-        this.descargarDocumento(blob, nombreArchivo);
-        this.generandoHojaControl = false;
-        Swal.fire('Éxito', 'Hoja de control descargada correctamente', 'success');
-      },
-      error: (error) => {
-        console.error('Error al descargar hoja de control:', error);
-        this.generandoHojaControl = false;
-        Swal.fire('Error', 'No se pudo descargar la hoja de control', 'error');
-      }
-    });
+    this.pagareService
+      .generarHojaControl(this.creditoRecienCreado.id_credito)
+      .subscribe({
+        next: (blob: Blob) => {
+          const nombreCliente = this.getNombreCompleto(
+            this.solicitudSeleccionada,
+          );
+          const nombreArchivo = `hoja_control_${this.creditoRecienCreado.id_credito}_${nombreCliente.replace(/\s+/g, '_')}.pdf`;
+          this.descargarDocumento(blob, nombreArchivo);
+          this.generandoHojaControl = false;
+          Swal.fire(
+            'Éxito',
+            'Hoja de control descargada correctamente',
+            'success',
+          );
+        },
+        error: (error) => {
+          console.error('Error al descargar hoja de control:', error);
+          this.generandoHojaControl = false;
+          Swal.fire(
+            'Error',
+            'No se pudo descargar la hoja de control',
+            'error',
+          );
+        },
+      });
   }
-
-
 
   // Descargar ambos documentos
   descargarAmbosDocumentos(): void {
@@ -1053,7 +1122,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       window.URL.revokeObjectURL(url);
     }
 
-    // this.modalPagareAbierto = false;
+    this.modalPagareAbierto = false;
     this.solicitudSeleccionada = null;
     this.creditoRecienCreado = null;
     this.pdfPagareUrl = null;
@@ -1061,6 +1130,10 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.documentoActual = 'pagare';
     this.documentosGenerados = false;
   }
+
+  // cerrarModalGenerarCredito(): void {
+  //   this.cerrarModalPagare();
+  // }
 
   // Modifica el método buscar para mantener el orden por ID:
   // buscar(): void {
@@ -1082,9 +1155,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   //   });
   // }
   buscar(): void {
-
     // ✅ CORRECCIÓN: Cambia solicitudesRecientes por solicitudesAprobadas
-    let resultados = this.solicitudesAprobadas.filter(solicitud => {
+    let resultados = this.solicitudesAprobadas.filter((solicitud) => {
       // Verificar si la solicitud tiene datos
       if (!solicitud) return false;
 
@@ -1100,15 +1172,16 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       }
 
       // Verificar coincidencias
-      const coincideNombre = filtroNombre ?
-        nombreCliente.includes(filtroNombre) : true;
+      const coincideNombre = filtroNombre
+        ? nombreCliente.includes(filtroNombre)
+        : true;
 
-      const coincideApPaterno = filtroApPaterno ?
-        apPaternoCliente.includes(filtroApPaterno) : true;
+      const coincideApPaterno = filtroApPaterno
+        ? apPaternoCliente.includes(filtroApPaterno)
+        : true;
 
       return coincideNombre && coincideApPaterno;
     });
-
 
     // Ordenar resultados por ID de mayor a menor
     this.clientesFiltrados = resultados.sort((a, b) => {
@@ -1143,13 +1216,18 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       return idB - idA;
     });
 
-    console.log('Filtros limpiados. Mostrando:', this.clientesFiltrados.length, 'registros');
+    // console.log(
+    //   'Filtros limpiados. Mostrando:',
+    //   this.clientesFiltrados.length,
+    //   'registros',
+    // );
   }
-
 
   eliminarSolicitudDeTabla(idSolicitud: number): void {
     // También podrías marcar visualmente la solicitud como finalizada
-    const solicitudIndex = this.solicitudesRecientes.findIndex(s => s.id_solicitud === idSolicitud);
+    const solicitudIndex = this.solicitudesRecientes.findIndex(
+      (s) => s.id_solicitud === idSolicitud,
+    );
     if (solicitudIndex !== -1) {
       // Opcional: Marcar como finalizada antes de eliminar
       this.solicitudesRecientes[solicitudIndex].estado_solicitud = 'FINALIZADA';
@@ -1162,21 +1240,31 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
 
     // También eliminar de solicitudesAprobadas
-    const indexOriginal = this.solicitudesAprobadas.findIndex(s => s.id_solicitud === idSolicitud);
+    const indexOriginal = this.solicitudesAprobadas.findIndex(
+      (s) => s.id_solicitud === idSolicitud,
+    );
     if (indexOriginal !== -1) {
       this.solicitudesAprobadas.splice(indexOriginal, 1);
     }
 
     // Actualizar clientesFiltrados
-    const indexFiltrado = this.clientesFiltrados.findIndex(s => s.id_solicitud === idSolicitud);
+    const indexFiltrado = this.clientesFiltrados.findIndex(
+      (s) => s.id_solicitud === idSolicitud,
+    );
     if (indexFiltrado !== -1) {
       this.clientesFiltrados.splice(indexFiltrado, 1);
     }
 
     // Si tenemos menos de 6 solicitudes recientes, podemos agregar una más de la lista completa
-    if (this.solicitudesRecientes.length < 6 && this.solicitudesAprobadas.length > 0) {
-      const siguienteSolicitud = this.solicitudesAprobadas.find(s =>
-        !this.solicitudesRecientes.some(r => r.id_solicitud === s.id_solicitud)
+    if (
+      this.solicitudesRecientes.length < 6 &&
+      this.solicitudesAprobadas.length > 0
+    ) {
+      const siguienteSolicitud = this.solicitudesAprobadas.find(
+        (s) =>
+          !this.solicitudesRecientes.some(
+            (r) => r.id_solicitud === s.id_solicitud,
+          ),
       );
 
       if (siguienteSolicitud) {
@@ -1201,7 +1289,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Sí, marcar',
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33'
+      cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
         Swal.fire({
@@ -1210,7 +1298,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           text: 'Crédito marcado para re-ingreso exitosamente',
           confirmButtonText: 'Aceptar',
           timer: 2000,
-          timerProgressBar: true
+          timerProgressBar: true,
         });
       }
     });
@@ -1233,7 +1321,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     }
 
     // Si no, intentar obtenerlo de las solicitudes aprobadas
-    const solicitud = this.solicitudesAprobadas.find(s => s.id_solicitud === credito.solicitud_id);
+    const solicitud = this.solicitudesAprobadas.find(
+      (s) => s.id_solicitud === credito.solicitud_id,
+    );
     if (solicitud) {
       return this.getNombreCompleto(solicitud);
     }
@@ -1255,7 +1345,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       nombre: credito.nombre_cliente || 'N/A',
       apellidoPaterno: credito.app_cliente || 'N/A',
       apellidoMaterno: credito.apm_cliente || '',
-      clienteId: credito.cliente_id || 'N/A'
+      clienteId: credito.cliente_id || 'N/A',
     };
   }
 
@@ -1264,7 +1354,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     if (!monto) return '$0.00';
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN'
+      currency: 'MXN',
     }).format(monto);
   }
 
@@ -1272,7 +1362,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     if (!fecha) return 'No especificada';
     return new Date(fecha).toLocaleDateString('es-MX');
   }
-
 
   // Obtener clase CSS para estado del crédito
   getClaseEstado(estado: string): string {
@@ -1295,9 +1384,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     return this.creditos.length > 0;
   }
 
-  // Verificar si hay solicitudes aprobadas 
+  // Verificar si hay solicitudes aprobadas
   get haySolicitudes(): boolean {
-    return this.solicitudesRecientes.length > 0;
+    return this.solicitudesAprobadas.length > 0;
   }
 
   // Calcular cuando cambia algún valor
@@ -1312,7 +1401,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         texto: 'N/A',
         esCritico: false,
         esAdvertencia: false,
-        porcentaje: 0
+        porcentaje: 0,
       };
     }
 
@@ -1332,20 +1421,22 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         esCritico: true,
         esAdvertencia: false,
         porcentaje: 100,
-        tiempoExpirado: true
+        tiempoExpirado: true,
       };
     }
 
     // Cálculo exacto
     const horas = Math.floor(tiempoRestanteMs / (1000 * 60 * 60));
-    const minutos = Math.floor((tiempoRestanteMs % (1000 * 60 * 60)) / (1000 * 60));
+    const minutos = Math.floor(
+      (tiempoRestanteMs % (1000 * 60 * 60)) / (1000 * 60),
+    );
     const segundos = Math.floor((tiempoRestanteMs % (1000 * 60)) / 1000);
 
     const texto = `${this.padZero(horas)}:${this.padZero(minutos)}:${this.padZero(segundos)}`;
 
     const porcentaje = Math.min(
       (tiempoTranscurridoMs / tiempoTotalMs) * 100,
-      100
+      100,
     ).toFixed(2);
 
     return {
@@ -1355,7 +1446,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       esAdvertencia: horas >= 12 && horas < 24,
       porcentaje,
       horasRestantes: horas,
-      tiempoExpirado: false
+      tiempoExpirado: false,
     };
   }
 
@@ -1370,15 +1461,15 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.creditoService.obtenerCreditos().subscribe({
       next: (creditos) => {
         // Asegurarse de que cada crédito tenga fecha_ministracion
-        this.creditos = creditos.map(credito => {
+        this.creditos = creditos.map((credito) => {
           if (!credito.fecha_ministracion && credito.fecha_creacion) {
             return { ...credito, fecha_ministracion: credito.fecha_creacion };
           }
           return credito;
         });
 
-        // Verificar créditos en DEVOLUCION para ver si deben cancelarse
-        this.verificarDevolucionesParaCancelar();
+        // Verificar créditos en DEVOLUCION para ver si deben finalizarse
+        this.verificarDevolucionesParaFinalizar();
 
         // Ordenar créditos por tiempo restante (más crítico primero)
         this.creditos.sort((a, b) => {
@@ -1402,9 +1493,9 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'Error',
           text: 'Error al cargar los créditos',
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
         });
-      }
+      },
     });
   }
 
@@ -1412,7 +1503,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   verificarAlertasTemporizador(): void {
     const creditosPendientes = this.getCreditosPorEstado('PENDIENTE');
 
-    creditosPendientes.forEach(credito => {
+    creditosPendientes.forEach((credito) => {
       const tiempoRestante = this.getTiempoRestante(credito);
 
       if (tiempoRestante.tiempoExpirado) {
@@ -1425,7 +1516,10 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         // Menos de 12 horas - alerta crítica
         this.mostrarAlertaCritica(credito, tiempoRestante.horasRestantes);
         credito.alertaCriticaMostrada = true;
-      } else if (tiempoRestante.esAdvertencia && !credito.alertaAdvertenciaMostrada) {
+      } else if (
+        tiempoRestante.esAdvertencia &&
+        !credito.alertaAdvertenciaMostrada
+      ) {
         // Menos de 24 horas - alerta de advertencia
         this.mostrarAlertaAdvertencia(credito, tiempoRestante.horasRestantes);
         credito.alertaAdvertenciaMostrada = true;
@@ -1447,7 +1541,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         </div>
       `,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#dc3545'
+      confirmButtonColor: '#dc3545',
     });
   }
 
@@ -1464,7 +1558,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         </div>
       `,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#ffc107'
+      confirmButtonColor: '#ffc107',
     });
   }
 
@@ -1481,26 +1575,35 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         </div>
       `,
       confirmButtonText: 'Entendido',
-      confirmButtonColor: '#17a2b8'
+      confirmButtonColor: '#17a2b8',
     });
   }
 
   // Actualizar el método para verificar alertas periódicamente
   private iniciarActualizacionTemporizador(): void {
-    this.intervaloActualizacion = setInterval(() => {
-      this.tiempoActual = Date.now();
+    // OPTIMIZACIÓN: Ejecutar fuera de la zona de Angular para evitar change detection cada segundo
+    this.ngZone.runOutsideAngular(() => {
+      this.intervaloActualizacion = setInterval(() => {
+        const ahora = new Date();
+        const segundos = ahora.getSeconds();
+        const minutos = ahora.getMinutes();
 
-      // Verificar alertas cada 80 segundos
-      const ahora = new Date();
-      if (ahora.getSeconds() % 80 === 0) {
-        this.verificarAlertasTemporizador();
-      }
+        // Verificar alertas cada 80 segundos
+        if (segundos % 80 === 0) {
+          this.ngZone.run(() => {
+            this.verificarAlertasTemporizador();
+          });
+        }
 
-      // Verificar cancelaciones cada 5 minutos (300 segundos)
-      if (ahora.getSeconds() % 300 === 0) {
-        this.verificarDevolucionesParaCancelar();
-      }
-    }, 1000);
+        // Verificar cancelaciones cada 5 minutos (300 segundos)
+        // Para evitar múltiples ejecuciones en el mismo minuto, también verificamos minutos
+        if (segundos === 0 && minutos % 5 === 0) {
+          this.ngZone.run(() => {
+            this.verificarDevolucionesParaFinalizar();
+          });
+        }
+      }, 1000); // Verificar cada segundo
+    });
   }
 
   // ------------------------------------------------------
@@ -1525,10 +1628,10 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'Error',
           text: 'No se pudo cargar el pagaré generado anteriormente',
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
         });
         this.cargando = false;
-      }
+      },
     });
   }
 
@@ -1539,7 +1642,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.pagareService.generarHojaControl(credito.id_credito).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
-        this.pdfHojaControlUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.pdfHojaControlUrl =
+          this.sanitizer.bypassSecurityTrustResourceUrl(url);
 
         // Abrir modal o nueva ventana con el PDF
         this.abrirModalDocumentoExistente(credito, 'hojaControl', url);
@@ -1551,21 +1655,26 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           icon: 'error',
           title: 'Error',
           text: 'No se pudo cargar la hoja de control generada anteriormente',
-          confirmButtonText: 'Aceptar'
+          confirmButtonText: 'Aceptar',
         });
         this.cargando = false;
-      }
+      },
     });
   }
 
   // Abrir modal para ver documento existente
-  abrirModalDocumentoExistente(credito: any, tipoDocumento: string, pdfUrl: string): void {
+  abrirModalDocumentoExistente(
+    credito: any,
+    tipoDocumento: string,
+    pdfUrl: string,
+  ): void {
     this.documentoActual = tipoDocumento;
 
     if (tipoDocumento === 'pagare') {
       this.pdfPagareUrl = this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
     } else {
-      this.pdfHojaControlUrl = this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
+      this.pdfHojaControlUrl =
+        this.sanitizer.bypassSecurityTrustResourceUrl(pdfUrl);
     }
 
     // Mostrar modal con el documento
@@ -1575,7 +1684,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   // Mostrar modal con SweetAlert
   mostrarModalDocumentoExistente(credito: any, tipoDocumento: string): void {
     const nombreCliente = this.getNombreCompletoCredito(credito);
-    const tipoDocumentoTitulo = tipoDocumento === 'pagare' ? 'Pagaré' : 'Hoja de Control';
+    const tipoDocumentoTitulo =
+      tipoDocumento === 'pagare' ? 'Pagaré' : 'Hoja de Control';
 
     Swal.fire({
       title: `${tipoDocumentoTitulo} - ${nombreCliente}`,
@@ -1598,7 +1708,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       confirmButtonText: 'Descargar',
       cancelButtonText: 'Cerrar',
       showDenyButton: true,
-      denyButtonText: tipoDocumento === 'pagare' ? 'Ver Hoja Control' : 'Ver Pagaré',
+      denyButtonText:
+        tipoDocumento === 'pagare' ? 'Ver Hoja Control' : 'Ver Pagaré',
       width: '800px',
       didOpen: () => {
         // Asegurarse de que el iframe se cargue correctamente
@@ -1608,7 +1719,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
             console.log('Documento cargado correctamente');
           };
         }
-      }
+      },
     }).then((result) => {
       if (result.isConfirmed) {
         // Descargar documento
@@ -1639,7 +1750,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error al descargar pagaré:', error);
         Swal.fire('Error', 'No se pudo descargar el pagaré', 'error');
-      }
+      },
     });
   }
 
@@ -1649,15 +1760,18 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       next: (blob: Blob) => {
         const nombreArchivo = `hoja_control_${credito.id_credito}_${this.getNombreCompletoCredito(credito).replace(/\s+/g, '_')}.pdf`;
         this.descargarDocumento(blob, nombreArchivo);
-        Swal.fire('Éxito', 'Hoja de control descargada correctamente', 'success');
+        Swal.fire(
+          'Éxito',
+          'Hoja de control descargada correctamente',
+          'success',
+        );
       },
       error: (error) => {
         console.error('Error al descargar hoja de control:', error);
         Swal.fire('Error', 'No se pudo descargar la hoja de control', 'error');
-      }
+      },
     });
   }
-
 
   // Métodos para abrir modales
   abrirModalGenerarCredito(solicitud: any) {
@@ -1689,8 +1803,14 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       tasa_fija_formateada: credito.tasa_interes,
       aliado_nombre: credito.nom_aliado,
       tipo_credito: credito.tipo_credito,
-      dia_pago: credito.dia_pago
+      dia_pago: credito.dia_pago,
     };
+
+    // Forzar estado de documentos generados para mostrar opciones de regenerar/descargar
+    this.documentosGenerados = true;
+    this.pdfPagareUrl = null;
+    this.pdfHojaControlUrl = null;
+
     this.modalGenerarPagareAbierto = true;
   }
 
@@ -1712,8 +1832,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
   }
 
   verDetallesCreditoExistente(solicitud: any): void {
-    const creditoExistente = this.creditos.find(c =>
-      c.solicitud_id === solicitud.id_solicitud
+    const creditoExistente = this.creditos.find(
+      (c) => c.solicitud_id === solicitud.id_solicitud,
     );
 
     if (!creditoExistente) {
@@ -1721,7 +1841,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         icon: 'info',
         title: 'Sin Crédito',
         text: 'No se encontró ningún crédito para esta solicitud',
-        confirmButtonText: 'Entendido'
+        confirmButtonText: 'Entendido',
       });
       return;
     }
@@ -1764,19 +1884,23 @@ export class MinistracionComponent implements OnInit, OnDestroy {
           </h5>
           <p><strong>Fecha Ministración:</strong> ${this.formatearFecha(creditoExistente.fecha_ministracion)}</p>
           <p><strong>Fecha Primer Pago:</strong> ${this.formatearFecha(creditoExistente.fecha_primer_pago)}</p>
-          ${estadoCredito === 'PENDIENTE' || !estadoCredito ?
-          `<p><strong>Tiempo Restante:</strong> <span style="color: ${tiempoRestante.esCritico ? '#dc3545' : tiempoRestante.esAdvertencia ? '#ffc107' : '#28a745'}; font-weight: bold;">
+          ${estadoCredito === 'PENDIENTE' || !estadoCredito
+          ? `<p><strong>Tiempo Restante:</strong> <span style="color: ${tiempoRestante.esCritico ? '#dc3545' : tiempoRestante.esAdvertencia ? '#ffc107' : '#28a745'}; font-weight: bold;">
               <i class="fas fa-clock"></i> ${tiempoRestante.texto}
-            </span></p>` : ''}
+            </span></p>`
+          : ''
+        }
         </div>
 
-        ${creditoExistente.nom_aliado ?
-          `<div class="mb-3">
+        ${creditoExistente.nom_aliado
+          ? `<div class="mb-3">
             <h5 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 5px;">
               <i class="fas fa-handshake"></i> Aliado
             </h5>
             <p><strong>Aliado:</strong> ${creditoExistente.nom_aliado}</p>
-          </div>` : ''}
+          </div>`
+          : ''
+        }
       </div>
     `,
       width: '600px',
@@ -1784,7 +1908,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       // confirmButtonText: '<i class="fas fa-file-pdf"></i> Ver Documentos',
       cancelButtonText: 'Cerrar',
       // confirmButtonColor: '#17a2b8',
-      cancelButtonColor: '#6c757d'
+      cancelButtonColor: '#6c757d',
     }).then((result) => {
       if (result.isConfirmed) {
         // Mostrar opciones de documentos
@@ -1825,11 +1949,12 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       showDenyButton: true,
       showCancelButton: true,
       confirmButtonText: '<i class="fas fa-file-contract"></i> Ver Pagaré',
-      denyButtonText: '<i class="fas fa-clipboard-list"></i> Ver Hoja de Control',
+      denyButtonText:
+        '<i class="fas fa-clipboard-list"></i> Ver Hoja de Control',
       cancelButtonText: 'Cerrar',
       confirmButtonColor: '#28a745',
       denyButtonColor: '#17a2b8',
-      cancelButtonColor: '#6c757d'
+      cancelButtonColor: '#6c757d',
     }).then((result) => {
       if (result.isConfirmed) {
         this.verPagareExistente(credito);
@@ -1838,7 +1963,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       }
     });
   }
-
 
   // getClaseBotonGenerarCredito(solicitud: any): string {
   //   if (!solicitud.domiciliado) {
@@ -1917,8 +2041,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     return 'Generar Pagaré';
   }
 
-
-
   // puedeGenerarCredito(solicitud: any): boolean {
   //   // Buscar si existe CUALQUIER crédito para esta solicitud
   //   const creditoExistente = this.creditos.find(c =>
@@ -1934,8 +2056,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
 
   obtenerEstadoCreditoExistente(solicitud: any): string {
     // Buscar en la lista de créditos cargados
-    const creditoExistente = this.creditos.find(c =>
-      c.solicitud_id === solicitud.id_solicitud
+    const creditoExistente = this.creditos.find(
+      (c) => c.solicitud_id === solicitud.id_solicitud,
     );
 
     if (creditoExistente) {
@@ -1949,12 +2071,10 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     return 'DESCONOCIDO';
   }
 
-
-
   // Método para obtener el ID del crédito existente
   obtenerIdCreditoExistente(solicitud: any): number | null {
-    const creditoExistente = this.creditos.find(c =>
-      c.solicitud_id === solicitud.id_solicitud
+    const creditoExistente = this.creditos.find(
+      (c) => c.solicitud_id === solicitud.id_solicitud,
     );
 
     return creditoExistente ? creditoExistente.id_credito : null;
@@ -1965,8 +2085,6 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     const porcentajeEntero = Math.round(tasa * 100);
     return `${porcentajeEntero}%`;
   }
-
-
 
   // ------------------------------------------------------
   // EDITAR FECHA MINISTRACION Y PRIMER PAGO
@@ -1987,16 +2105,18 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.modalEditarFechasAbierto = true;
   }
 
-
-
   // Método para guardar las nuevas fechas
   guardarFechasCredito(): void {
-    if (!this.creditoSeleccionado || !this.nuevaFechaMinistracion || !this.nuevaFechaPrimerPago) {
+    if (
+      !this.creditoSeleccionado ||
+      !this.nuevaFechaMinistracion ||
+      !this.nuevaFechaPrimerPago
+    ) {
       Swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'Debe completar ambas fechas',
-        confirmButtonText: 'Aceptar'
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -2010,7 +2130,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
         icon: 'error',
         title: 'Error',
         text: 'La fecha del primer pago debe ser posterior a la fecha de ministración',
-        confirmButtonText: 'Aceptar'
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -2018,40 +2138,61 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     this.procesandoEntrega = true;
 
     // Datos a actualizar
-    const datosActualizacion = {
+    const datosActualizacion: any = {
       fecha_ministracion: this.nuevaFechaMinistracion,
-      fecha_primer_pago: this.nuevaFechaPrimerPago
+      fecha_primer_pago: this.nuevaFechaPrimerPago,
     };
+
+    // Si viene de devolución, marcar como pendiente automáticamente al actualizar fechas
+    if (this.creditoSeleccionado.estado_credito === 'DEVOLUCION') {
+      datosActualizacion.estado_credito = 'PENDIENTE';
+    }
 
     // Aquí necesitarás un método en tu servicio para actualizar solo las fechas
     // Suponiendo que tienes un método updateCredito o similar
-    this.creditoService.actualizarCredito(this.creditoSeleccionado.id_credito, datosActualizacion).subscribe({
-      next: (response) => {
-        Swal.fire({
-          icon: 'success',
-          title: '¡Fechas actualizadas!',
-          text: 'Las fechas han sido actualizadas correctamente',
-          timer: 2000,
-          showConfirmButton: false
-        });
+    this.creditoService
+      .actualizarCredito(
+        this.creditoSeleccionado.id_credito,
+        datosActualizacion,
+      )
+      .subscribe({
+        next: (response) => {
+          Swal.fire({
+            icon: 'success',
+            title: '¡Fechas actualizadas!',
+            text: 'Las fechas han sido actualizadas correctamente',
+            timer: 2000,
+            showConfirmButton: false,
+          });
 
-        this.modalEditarFechasAbierto = false;
-        this.procesandoEntrega = false;
+          this.modalEditarFechasAbierto = false;
+          this.procesandoEntrega = false;
 
-        // Recargar créditos para reflejar los cambios
-        this.cargarCreditos();
-      },
-      error: (error) => {
-        console.error('Error al actualizar fechas:', error);
-        this.procesandoEntrega = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudieron actualizar las fechas',
-          confirmButtonText: 'Aceptar'
-        });
-      }
-    });
+          // Guardar el crédito como "recién creado" para que el modal de pagaré lo reconozca
+          this.creditoRecienCreado = this.creditoSeleccionado;
+
+          // Resetear estado de documentos para permitir generarlos con las nuevas fechas
+          this.documentosGenerados = false;
+          this.pdfPagareUrl = null;
+          this.pdfHojaControlUrl = null;
+
+          // Abrir el modal de generar pagaré
+          this.modalGenerarPagareAbierto = true;
+
+          // Recargar créditos para reflejar los cambios en la lista principal
+          this.cargarCreditos();
+        },
+        error: (error) => {
+          console.error('Error al actualizar fechas:', error);
+          this.procesandoEntrega = false;
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudieron actualizar las fechas',
+            confirmButtonText: 'Aceptar',
+          });
+        },
+      });
   }
 
   // Método para cerrar el modal de edición
@@ -2087,7 +2228,7 @@ export class MinistracionComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       confirmButtonColor: '#28a745',
       // denyButtonColor: '#ffc107',
-      cancelButtonColor: '#d33'
+      cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
         // Marcar directamente como pendiente
@@ -2099,13 +2240,8 @@ export class MinistracionComponent implements OnInit, OnDestroy {
     });
   }
 
-
   // Método auxiliar para obtener fecha mínima (hoy)
   getFechaMinima(): string {
     return new Date().toISOString().split('T')[0];
   }
-
-
 }
-
-

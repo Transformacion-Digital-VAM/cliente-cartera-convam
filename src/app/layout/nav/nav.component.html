@@ -20,8 +20,8 @@
         <a class="nav-link text-dark fw-semibold" routerLink="/clientes">Clientes</a>
       </li>
 
-      <!-- Solicitudes: tesoreria, coordinador, admin -->
-      <li class="nav-item" *ngIf="isTesoreria || isCoordinador || isAdmin">
+      <!-- Solicitudes: tesoreria, admin -->
+      <li class="nav-item" *ngIf="isTesoreria || isAdmin">
         <a class="nav-link text-dark fw-semibold" routerLink="/solicitud">Solicitudes</a>
       </li>
 
