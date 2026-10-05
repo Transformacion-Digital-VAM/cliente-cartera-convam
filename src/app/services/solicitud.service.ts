@@ -205,7 +205,7 @@ export class SolicitudService {
         console.log('=== RESPUESTA DE AVALES (RAW) ===');
         console.log('Tipo:', typeof response);
         console.log('Es array?:', Array.isArray(response));
-        console.log('Contenido:', response);
+        // console.log('Contenido:', response);
 
         // NORMALIZACIÓN: Convertir diferentes formatos a array
         let avalesArray: any[] = [];
@@ -213,30 +213,30 @@ export class SolicitudService {
         if (Array.isArray(response)) {
           // Caso 1: Ya es un array directamente
           avalesArray = response;
-          console.log('✓ Formato: Array directo');
+          console.log(' Formato: Array directo');
         } else if (response && typeof response === 'object') {
           // Caso 2: Es un objeto que contiene un array
           if (response.avales && Array.isArray(response.avales)) {
             avalesArray = response.avales;
-            console.log('✓ Formato: { avales: [...] }');
+            console.log(' Formato: { avales: [...] }');
           } else if (response.data && Array.isArray(response.data)) {
             avalesArray = response.data;
-            console.log('✓ Formato: { data: [...] }');
+            console.log(' Formato: { data: [...] }');
           } else if (response.rows && Array.isArray(response.rows)) {
             avalesArray = response.rows;
-            console.log('✓ Formato: { rows: [...] }');
+            console.log(' Formato: { rows: [...] }');
           } else {
             // Caso 3: Es un objeto único, convertir a array de 1 elemento
             avalesArray = [response];
-            console.log('✓ Formato: Objeto único convertido a array');
+            console.log(' Formato: Objeto único convertido a array');
           }
         }
 
-        console.log('Array normalizado:', avalesArray);
-        console.log('Total de avales:', avalesArray.length);
+        // console.log('Array normalizado:', avalesArray);
+        // console.log('Total de avales:', avalesArray.length);
 
         if (avalesArray.length > 0) {
-          console.log('Primer aval:', avalesArray[0]);
+          // console.log('Primer aval:', avalesArray[0]);
         }
 
         return avalesArray;

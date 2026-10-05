@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { DashboardService, DashboardData } from '../../../../services/dashboard.service';
+import { ExportService } from '../../../../services/export.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -24,6 +25,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   periodoDashboard: string = 'sin-filtro';
   cargandoDashboard: boolean = false;
   fechaActual: Date = new Date();
+  protected readonly Math = Math;
 
 
   // Filtros de fecha
@@ -54,7 +56,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   private refreshInterval: any;
 
-  constructor(private dashboardService: DashboardService) {
+  constructor(
+    private dashboardService: DashboardService,
+    private exportService: ExportService
+  ) {
     this.inicializarDatosVacios();
     this.inicializarFechasPorDefecto();
   }
@@ -63,8 +68,8 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.actualizarDashboard();
 
     // Configurar actualización automática cada 1 minuto
+    // Configurar actualización automática cada 1 minuto
     this.refreshInterval = setInterval(() => {
-      console.log('Actualizando dashboard automáticamente...');
       this.actualizarDashboard();
     }, 60000); // 60,000 ms = 1 minuto
   }
@@ -87,12 +92,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   private formatearFechaInput(fecha: Date): string {
-    return fecha.toISOString().split('T')[0];
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // Obtener fecha de hoy en formato YYYY-MM-DD
   getToday(): string {
-    return new Date().toISOString().split('T')[0];
+    return this.formatearFechaInput(new Date());
   }
 
   // Cambio en el selector de período
@@ -182,6 +190,20 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.actualizarDashboard();
   }
 
+  // Título dinámico para la sección de ingresos
+  getTituloIngresos(): string {
+    switch (this.periodoDashboard) {
+      case 'sin-filtro': return 'Ingresos Totales Acumulados';
+      case 'hoy': return 'Ingresos de Hoy';
+      case 'semana': return 'Ingresos de Esta Semana';
+      case 'mes': return 'Ingresos de Este Mes';
+      case 'trimestre': return 'Ingresos del Trimestre';
+      case 'anio': return 'Ingresos de Este Año';
+      case 'personalizado': return 'Ingresos del Período Seleccionado';
+      default: return 'Ingresos Totales Acumulados';
+    }
+  }
+
   // Actualizar dashboard con filtros
   actualizarDashboard(): void {
     this.cargandoDashboard = true;
@@ -203,10 +225,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
           this.cargandoDashboard = false;
           this.crearGraficos();
-
-          console.log('Datos recibidos:', data);
-          console.log('Vencimientos:', this.todosVencimientos);
-          console.log('Vencimientos filtrados:', this.vencimientosFiltrados);
         },
         error: (error) => {
           console.error('Error al cargar dashboard:', error);
@@ -229,8 +247,6 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   filtrarVencimientos(): void {
-    console.log('Filtrando vencimientos. Días seleccionados:', this.diasVencimiento);
-    console.log('Total vencimientos:', this.todosVencimientos.length);
 
     if (this.diasVencimiento === 999) {
       // Mostrar todos los vencimientos futuros
@@ -243,7 +259,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
       );
       this.mostrarTodosVencimientos = false;
 
-      console.log('Vencimientos filtrados:', this.vencimientosFiltrados);
+      this.mostrarTodosVencimientos = false;
     }
   }
 
@@ -296,6 +312,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   private formatearFechaParaMostrar(fechaStr: string): string {
     if (!fechaStr) return '';
+    const parts = fechaStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+    }
     const fecha = new Date(fechaStr);
     return fecha.toLocaleDateString('es-MX', {
       day: '2-digit',
@@ -342,7 +362,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
       distribucionIngresos: { capital: 0, intereses: 0, moratorios: 0 },
       moraPorAliadoChart: { labels: [], data: [] },
       totalCreditosCount: 0,
-      totalPagosCount: 0
+      totalPagosCount: 0,
+      resumenEntregado: { cantidad: 0, monto: 0 },
+      resumenVencido: { cantidad: 0, monto: 0 },
+      resumenDevolucion: { cantidad: 0, monto: 0 }
     };
   }
 
@@ -473,6 +496,15 @@ export class HomeComponent implements OnInit, AfterViewInit {
           title: {
             display: false,
             text: 'Ingresos Mensuales'
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.raw as number;
+                return `${label}: ${this.formatearMoneda(value)}`;
+              }
+            }
           }
         },
         scales: {
@@ -751,7 +783,18 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   formatearFecha(fecha: Date | string): string {
-    const date = typeof fecha === 'string' ? new Date(fecha) : fecha;
+    if (!fecha) return '';
+    let date: Date;
+    if (typeof fecha === 'string') {
+      const parts = fecha.split('T')[0].split('-');
+      if (parts.length === 3) {
+        date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      } else {
+        date = new Date(fecha);
+      }
+    } else {
+      date = fecha;
+    }
     return date.toLocaleDateString('es-MX', {
       year: 'numeric',
       month: 'long',
@@ -779,7 +822,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
 
   contactarCliente(alerta: any): void {
     if (alerta.telefono) {
-      window.open(`tel:${alerta.telefono}`, '_self');
+      const confirmar = confirm(`Teléfono de ${alerta.cliente}: ${alerta.telefono}\n\n¿Desea abrir la aplicación de llamadas para contactar al cliente?`);
+      if (confirmar) {
+        window.open(`tel:${alerta.telefono}`, '_self');
+      }
     } else {
       alert(`No hay teléfono registrado para ${alerta.cliente}`);
     }
@@ -790,6 +836,54 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   exportarDashboard(tipo: 'pdf' | 'excel' | 'csv') {
+    if (!this.dashboardData) {
+      alert('Los datos del dashboard aún se están cargando.');
+      return;
+    }
+
+    if (tipo === 'pdf') {
+      try {
+        const chartImages: any = {};
+        if (this.distribucionChartRef?.nativeElement) {
+          chartImages.distribucion = this.distribucionChartRef.nativeElement.toDataURL('image/png', 1.0);
+        }
+        if (this.ingresosChartRef?.nativeElement) {
+          chartImages.ingresos = this.ingresosChartRef.nativeElement.toDataURL('image/png', 1.0);
+        }
+        if (this.moraAliadoChartRef?.nativeElement) {
+          chartImages.moraAliado = this.moraAliadoChartRef.nativeElement.toDataURL('image/png', 1.0);
+        }
+        if (this.evolucionChartRef?.nativeElement) {
+          chartImages.evolucion = this.evolucionChartRef.nativeElement.toDataURL('image/png', 1.0);
+        }
+
+        // this.exportService.exportDashboardReportPDF({
+        //   dashboardData: this.dashboardData,
+        //   periodo: this.getPeriodoSeleccionado(),
+        //   charts: chartImages,
+        //   filename: `reporte_dashboard_convam_${new Date().toISOString().slice(0, 10)}.pdf`
+        // });
+      } catch (err) {
+        console.error('Error al generar PDF del dashboard:', err);
+        alert('Hubo un inconveniente al generar el reporte PDF con las gráficas.');
+      }
+      return;
+    }
+
+    if (tipo === 'excel') {
+      try {
+        const exportData = this.dashboardService.prepareExportData(this.dashboardData, this.periodoDashboard);
+        this.exportService.exportToExcel(exportData, {
+          format: 'excel',
+          filename: `reporte_dashboard_convam_${new Date().toISOString().slice(0, 10)}.xlsx`
+        });
+      } catch (err) {
+        console.error('Error al generar Excel del dashboard:', err);
+        alert('Hubo un inconveniente al generar el reporte Excel.');
+      }
+      return;
+    }
+
     const params: any = {
       tipo,
       periodo: this.periodoDashboard,
@@ -799,16 +893,20 @@ export class HomeComponent implements OnInit, AfterViewInit {
     };
 
     this.dashboardService.exportarDashboard(params)
-      .subscribe((blob: Blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte_dashboard_${new Date().toISOString().slice(0, 10)}.${tipo === 'excel' ? 'xlsx' : tipo}`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+      .subscribe({
+        next: (blob: Blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `reporte_dashboard_${new Date().toISOString().slice(0, 10)}.${tipo}`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        error: (err) => {
+          console.error('Error al exportar reporte:', err);
+          alert('Hubo un inconveniente al generar el reporte. Verifique la conexión con el servidor.');
+        }
       });
   }
-
-
 
 }

@@ -1,0 +1,897 @@
+<div class="admin-container">
+  <!-- Migajas de Pan -->
+  <nav class="breadcrumb-nav" aria-label="Migajas de pan">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a routerLink="/dashboard" class="breadcrumb-link">INICIO</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">
+        GASTOS E INGRESOS
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Encabezado Principal -->
+  <header class="admin-header">
+    <h1 class="reset-title">CONTROL FINANCIERO CONVAM</h1>
+    <p class="signup-prompt">Gestión integral de ingresos por cobranza, gastos operativos y balance general</p>
+
+    <!-- NAVEGACIÓN POR PESTAÑAS (TABS) -->
+    <div class="financial-tabs-nav">
+
+      <button type="button" class="tab-nav-btn" [class.active]="tabActiva === 'ingresos'"
+        (click)="cambiarTab('ingresos')">
+        <i class="fas fa-hand-holding-usd me-2"></i> INGRESOS (COBRANZA)
+        <span class="tab-badge badge-ingreso">{{ totales.cantidad_pagos }}</span>
+      </button>
+
+      <button type="button" class="tab-nav-btn" [class.active]="tabActiva === 'gastos'" (click)="cambiarTab('gastos')">
+        <i class="fas fa-receipt me-2"></i> GASTOS OPERATIVOS
+        <span class="tab-badge badge-gasto">{{ totalesGastos.cantidad_gastos }}</span>
+      </button>
+
+      <button type="button" class="tab-nav-btn" [class.active]="tabActiva === 'balance'"
+        (click)="cambiarTab('balance')">
+        <i class="fas fa-balance-scale me-2"></i> BALANCE GENERAL
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <div class="admin-content">
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 1: GASTOS OPERATIVOS                                        -->
+    <!-- =================================================================== -->
+    <ng-container *ngIf="tabActiva === 'gastos'">
+      <!-- KPI CARDS GASTOS -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-expense">
+          <div class="kpi-icon icon-expense">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">TOTAL GASTOS</span>
+            <h2 class="kpi-value text-danger">{{ formatearMoneda(totalesGastos.total_gastos) }}</h2>
+            <small class="kpi-subtext">Total de egresos registrados</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-count-expense">
+          <div class="kpi-icon icon-count-expense">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">REGISTROS</span>
+            <h2 class="kpi-value text-dark">{{ totalesGastos.cantidad_gastos }}</h2>
+            <small class="kpi-subtext">Gastos contabilizados</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-cat">
+          <div class="kpi-icon icon-cat">
+            <i class="fas fa-tags"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">CATEGORÍA PRINCIPAL</span>
+            <h2 class="kpi-value text-primary cat-title">{{ totalesGastos.categoria_principal }}</h2>
+            <small class="kpi-subtext">Mayor volumen de egreso</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-average">
+          <div class="kpi-icon icon-average">
+            <i class="fas fa-calculator"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">PROMEDIO POR GASTO</span>
+            <h2 class="kpi-value text-info">{{ formatearMoneda(calcularPromedioGasto()) }}</h2>
+            <small class="kpi-subtext">Monto medio por operación</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE FILTROS GASTOS -->
+      <div class="filtros-section">
+        <div class="filtros-card">
+          <!-- Selector rápido de período -->
+          <div class="periodo-tabs-container">
+            <span class="periodo-label"><i class="fas fa-calendar-alt"></i> PERÍODO:</span>
+            <div class="periodo-tabs">
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'todos'"
+                (click)="seleccionarPeriodoGastos('todos')">
+                Todos
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'hoy'"
+                (click)="seleccionarPeriodoGastos('hoy')">
+                Hoy
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'semana'"
+                (click)="seleccionarPeriodoGastos('semana')">
+                Esta Semana
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'quincena'"
+                (click)="seleccionarPeriodoGastos('quincena')">
+                Esta Quincena
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'mes'"
+                (click)="seleccionarPeriodoGastos('mes')">
+                Este Mes
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodoGastos === 'rango'"
+                (click)="seleccionarPeriodoGastos('rango')">
+                Rango Personalizado
+              </button>
+            </div>
+          </div>
+
+          <!-- Formulario de filtros -->
+          <div class="filtros-form">
+            <div class="form-group">
+              <label class="form-label">DESDE (FECHA INICIO)</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaInicioGastos" (change)="aplicarFiltrosGastos()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">HASTA (FECHA FIN)</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaFinGastos" (change)="aplicarFiltrosGastos()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CATEGORÍA</label>
+              <select class="form-control" [(ngModel)]="filtroCategoriaGasto" (change)="aplicarFiltrosGastos()">
+                <option value="">TODAS LAS CATEGORÍAS</option>
+                <option *ngFor="let cat of categorias" [value]="cat.id_categoria_gasto">
+                  {{ cat.nombre }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">MÉTODO DE PAGO</label>
+              <select class="form-control" [(ngModel)]="filtroMetodoPagoGasto" (change)="aplicarFiltrosGastos()">
+                <option value="">TODOS LOS MÉTODOS</option>
+                <option *ngFor="let met of metodosPago" [value]="met">
+                  {{ met }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ESTATUS</label>
+              <select class="form-control" [(ngModel)]="filtroEstatusGasto" (change)="aplicarFiltrosGastos()">
+                <option value="">TODOS</option>
+                <option value="PAGADO">PAGADO</option>
+                <option value="PENDIENTE">PENDIENTE</option>
+                <option value="CANCELADO">CANCELADO</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">BÚSQUEDA</label>
+              <input type="text" class="form-control" placeholder="Concepto, referencia, notas..."
+                [(ngModel)]="busquedaGasto" (keyup.enter)="aplicarFiltrosGastos()">
+            </div>
+
+            <div class="botones-filtros">
+              <button class="btn btn-primary" (click)="aplicarFiltrosGastos()">
+                <i class="fas fa-search"></i> BUSCAR
+              </button>
+              <button class="btn btn-outline" (click)="limpiarFiltrosGastos()">
+                <i class="fas fa-undo"></i> LIMPIAR
+              </button>
+              <button class="btn btn-success" (click)="abrirModalNuevoGasto()">
+                <i class="fas fa-plus-circle"></i> NUEVO GASTO
+              </button>
+              <button class="btn btn-export-excel" (click)="exportarGastosExcel()" [disabled]="gastos.length === 0">
+                <i class="fas fa-file-excel"></i> EXCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLA DE GASTOS -->
+      <div class="tabla-section-vertical">
+        <div class="tabla-header">
+          <div class="tabla-header-info">
+            <h3><i class="fas fa-list-alt me-2"></i> REGISTRO DE GASTOS OPERATIVOS</h3>
+            <span class="badge badge-info ms-2">{{ gastos.length }} registro(s)</span>
+          </div>
+          <div class="botones-filtros">
+            <button class="btn btn-success btn-sm" (click)="abrirModalNuevoGasto()">
+              <i class="fas fa-plus"></i> REGISTRAR GASTO
+            </button>
+            <button class="btn btn-outline btn-sm" (click)="cargarGastos()" [disabled]="cargandoGastos">
+              <i class="fas fa-sync-alt" [class.fa-spin]="cargandoGastos"></i>
+              {{ cargandoGastos ? 'Cargando...' : 'ACTUALIZAR' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container-vertical">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="text-center">ID</th>
+                <th class="text-center">FECHA</th>
+                <th>CATEGORÍA</th>
+                <th>CONCEPTO Y DESCRIPCIÓN</th>
+                <th class="text-center">MÉTODO</th>
+                <th>REFERENCIA</th>
+                <th>REGISTRADO POR</th>
+                <th class="text-right th-gasto">MONTO</th>
+                <th class="text-center">ESTATUS</th>
+                <th class="text-center">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Estado de carga -->
+              <tr *ngIf="cargandoGastos">
+                <td colspan="10" class="text-center py-4">
+                  <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                  <p class="text-muted">Cargando gastos...</p>
+                </td>
+              </tr>
+
+              <!-- Sin resultados -->
+              <tr *ngIf="!cargandoGastos && gastos.length === 0">
+                <td colspan="10" class="text-center py-5">
+                  <i class="fas fa-receipt fa-2x text-muted mb-2"></i>
+                  <p class="text-muted mb-2">No se encontraron gastos con los filtros aplicados.</p>
+                  <button class="btn btn-primary btn-sm" (click)="abrirModalNuevoGasto()">
+                    <i class="fas fa-plus-circle me-1"></i> Registrar Primer Gasto
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Lista de Gastos -->
+              <tr *ngFor="let g of gastos" [class.row-cancelado]="g.estatus === 'CANCELADO'">
+                <td class="text-center id-cell">#{{ g.id_gasto }}</td>
+                <td class="text-center">
+                  <span class="fecha-badge">
+                    <i class="far fa-calendar-alt me-1"></i> {{ formatearFecha(g.fecha_gasto) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="categoria-badge">
+                    <i class="fas fa-tag me-1"></i> {{ g.categoria_nombre }}
+                  </span>
+                </td>
+                <td>
+                  <strong class="concepto-texto">{{ g.concepto }}</strong>
+                  <small class="text-muted d-block" *ngIf="g.descripcion">{{ g.descripcion }}</small>
+                </td>
+                <td class="text-center">
+                  <span class="metodo-badge">{{ g.metodo_pago || 'EFECTIVO' }}</span>
+                </td>
+                <td>
+                  <span class="referencia-texto" *ngIf="g.referencia">
+                    <i class="fas fa-barcode me-1 text-muted"></i>{{ g.referencia }}
+                  </span>
+                  <span class="text-muted" *ngIf="!g.referencia">-</span>
+                </td>
+                <td>
+                  <span class="usuario-badge">
+                    <i class="fas fa-user-circle me-1"></i>{{ g.registrado_por_nombre || 'Sistema' }}
+                  </span>
+                </td>
+                <td class="text-right td-monto-gasto">
+                  <strong>-{{ formatearMoneda(g.monto) }}</strong>
+                </td>
+                <td class="text-center">
+                  <span class="badge" [class.badge-success]="g.estatus === 'PAGADO'"
+                    [class.badge-warning]="g.estatus === 'PENDIENTE'" [class.badge-danger]="g.estatus === 'CANCELADO'">
+                    {{ g.estatus }}
+                  </span>
+                </td>
+                <td class="text-center actions-cell">
+                  <button class="btn-action-table btn-edit" title="Editar gasto" (click)="abrirModalEditarGasto(g)">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn-action-table btn-delete" title="Eliminar gasto"
+                    (click)="confirmarEliminarGasto(g)">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+
+            <!-- Totales en pie de tabla -->
+            <tfoot *ngIf="!cargandoGastos && gastos.length > 0">
+              <tr class="table-totals-row">
+                <td colspan="7" class="text-right font-bold">TOTAL DE GASTOS:</td>
+                <td class="text-right font-bold text-danger td-gasto-total">-{{
+                  formatearMoneda(totalesGastos.total_gastos) }}</td>
+                <td colspan="2" class="text-center"><span class="badge badge-info">{{ totalesGastos.cantidad_gastos }}
+                    registros</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </ng-container>
+
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 2: INGRESOS (COBRANZA)                                      -->
+    <!-- =================================================================== -->
+    <ng-container *ngIf="tabActiva === 'ingresos'">
+      <!-- KPI CARDS INGRESOS -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-income">
+          <div class="kpi-icon">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">TOTAL INGRESOS (INTERÉS)</span>
+            <h2 class="kpi-value text-success">{{ formatearMoneda(totales.total_ingresos) }}</h2>
+            <small class="kpi-subtext">Ganancia por intereses cobrados</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-capital">
+          <div class="kpi-icon">
+            <i class="fas fa-coins"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">CAPITAL RECUPERADO</span>
+            <h2 class="kpi-value text-primary">{{ formatearMoneda(totales.total_capital) }}</h2>
+            <small class="kpi-subtext">Capital retornado a cartera</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon">
+            <i class="fas fa-wallet"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">TOTAL RECAUDADO</span>
+            <h2 class="kpi-value text-dark">{{ formatearMoneda(totales.total_recaudado) }}</h2>
+            <small class="kpi-subtext">Capital + Interés + Moras</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-count">
+          <div class="kpi-icon">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">PAGOS REGISTRADOS</span>
+            <h2 class="kpi-value text-info">{{ totales.cantidad_pagos }}</h2>
+            <small class="kpi-subtext" *ngIf="totales.total_mora > 0">
+              Moras: {{ formatearMoneda(totales.total_mora) }}
+            </small>
+            <small class="kpi-subtext" *ngIf="totales.total_mora === 0">
+              Transacciones procesadas
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE FILTROS INGRESOS -->
+      <div class="filtros-section">
+        <div class="filtros-card">
+          <!-- Selector rápido de período -->
+          <div class="periodo-tabs-container">
+            <span class="periodo-label"><i class="fas fa-calendar-alt"></i> PERÍODO:</span>
+            <div class="periodo-tabs">
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'todos'"
+                (click)="seleccionarPeriodo('todos')">
+                Todos
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'hoy'"
+                (click)="seleccionarPeriodo('hoy')">
+                Hoy
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'semana'"
+                (click)="seleccionarPeriodo('semana')">
+                Esta Semana
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'quincena'"
+                (click)="seleccionarPeriodo('quincena')">
+                Esta Quincena
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'mes'"
+                (click)="seleccionarPeriodo('mes')">
+                Este Mes
+              </button>
+              <button type="button" class="btn-periodo" [class.active]="filtroPeriodo === 'rango'"
+                (click)="seleccionarPeriodo('rango')">
+                Rango Personalizado
+              </button>
+            </div>
+          </div>
+
+          <!-- Campos de filtros detallados -->
+          <div class="filtros-form">
+            <div class="form-group">
+              <label class="form-label">DESDE (FECHA INICIO)</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaInicio" (change)="aplicarFiltros()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">HASTA (FECHA FIN)</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaFin" (change)="aplicarFiltros()">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CLIENTE</label>
+              <input type="text" class="form-control" placeholder="Buscar por nombre o apellido..."
+                [(ngModel)]="filtroCliente" (keyup.enter)="aplicarFiltros()">
+            </div>
+
+            <div class="form-group" (document:click)="cerrarDropdownAliados()">
+              <label class="form-label">ALIADO</label>
+              <div class="multiselect-aliados" [class.open]="dropdownAliadosAbierto">
+                <!-- Botón disparador -->
+                <button type="button" class="multiselect-trigger" (click)="toggleDropdownAliados($event)">
+                  <span class="multiselect-label" [class.has-selection]="filtrosAliados.length > 0">
+                    <i class="fas fa-users me-1"></i>
+                    {{ etiquetaFiltroAliados() }}
+                  </span>
+                  <span class="multiselect-badges" *ngIf="filtrosAliados.length > 0">
+                    <span class="badge-count">{{ filtrosAliados.length }}</span>
+                  </span>
+                  <i class="fas fa-chevron-down multiselect-arrow"></i>
+                </button>
+
+                <!-- Panel desplegable -->
+                <div class="multiselect-dropdown" *ngIf="dropdownAliadosAbierto" (click)="$event.stopPropagation()">
+                  <!-- Opción: Todos -->
+                  <label class="multiselect-option multiselect-option-all"
+                    [class.active]="filtrosAliados.length === 0"
+                    (click)="filtrosAliados = []; aplicarFiltros()">
+                    <span class="check-circle" [class.checked]="filtrosAliados.length === 0">
+                      <i class="fas fa-check" *ngIf="filtrosAliados.length === 0"></i>
+                    </span>
+                    <span class="option-text">TODOS LOS ALIADOS</span>
+                  </label>
+
+                  <div class="multiselect-divider"></div>
+
+                  <!-- Lista de aliados -->
+                  <label class="multiselect-option"
+                    *ngFor="let aliado of aliados"
+                    [class.active]="esAliadoSeleccionado(aliado.nom_aliado)"
+                    (click)="toggleAliado(aliado.nom_aliado); aplicarFiltros()">
+                    <span class="check-circle" [class.checked]="esAliadoSeleccionado(aliado.nom_aliado)">
+                      <i class="fas fa-check" *ngIf="esAliadoSeleccionado(aliado.nom_aliado)"></i>
+                    </span>
+                    <span class="option-text">{{ aliado.nom_aliado.trim() }}</span>
+                  </label>
+
+                  <!-- Vacío -->
+                  <div class="multiselect-empty" *ngIf="aliados.length === 0">
+                    <i class="fas fa-info-circle me-1"></i> Sin aliados registrados
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="botones-filtros">
+              <button class="btn btn-primary" (click)="aplicarFiltros()">
+                <i class="fas fa-search"></i> BUSCAR
+              </button>
+              <button class="btn btn-outline" (click)="limpiarFiltros()">
+                <i class="fas fa-undo"></i> LIMPIAR
+              </button>
+              <button class="btn btn-success" (click)="exportarExcel()" [disabled]="ingresos.length === 0">
+                <i class="fas fa-file-excel"></i> EXCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLA DE INGRESOS -->
+      <div class="tabla-section-vertical">
+        <div class="tabla-header">
+          <div class="tabla-header-info">
+            <h3><i class="fas fa-table me-2"></i> DETALLE DE INGRESOS POR PAGO</h3>
+            <span class="badge badge-info ms-2">{{ ingresos.length }} registro(s)</span>
+          </div>
+          <div class="botones-filtros">
+            <button class="btn btn-outline btn-sm" (click)="cargarIngresos()" [disabled]="cargando">
+              <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+              {{ cargando ? 'Cargando...' : 'ACTUALIZAR' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container-vertical">
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="text-center">ID CRÉDITO</th>
+                <th class="text-center">FECHA PAGO</th>
+                <th>CLIENTE</th>
+                <th>ALIADO</th>
+                <th class="text-center">NO. PAGO</th>
+                <th class="text-right">CAPITAL</th>
+                <th class="text-right th-ingreso">INGRESO (INTERÉS)</th>
+                <th class="text-right">MORA</th>
+                <th class="text-right">TOTAL PAGADO</th>
+                <th class="text-center">ESTATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Estado de carga -->
+              <tr *ngIf="cargando">
+                <td colspan="10" class="text-center py-4">
+                  <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                  <p class="text-muted">Cargando ingresos...</p>
+                </td>
+              </tr>
+
+              <!-- Sin resultados -->
+              <tr *ngIf="!cargando && ingresos.length === 0">
+                <td colspan="10" class="text-center py-5">
+                  <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                  <p class="text-muted mb-0">No se encontraron pagos con los filtros seleccionados.</p>
+                </td>
+              </tr>
+
+              <!-- Lista de Ingresos -->
+              <tr *ngFor="let item of ingresos; trackBy: trackByIngreso">
+                <td class="text-center id-cell">#{{ item.id_credito }}</td>
+                <td class="text-center">
+                  <span class="fecha-badge">
+                    <i class="far fa-calendar-check me-1"></i> {{ item.fecha_pago | formatoFecha }}
+                  </span>
+                </td>
+                <td>
+                  <strong class="cliente-nombre">{{ item.nombre_completo }}</strong>
+                  <small class="text-muted d-block" *ngIf="item.id_solicitud">
+                    Solicitud #{{ item.id_solicitud }}
+                  </small>
+                </td>
+                <td>
+                  <span class="aliado-badge">{{ item.nom_aliado }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge badge-secondary">
+                    {{ item.numero_pago }}/{{ item.no_pagos }}
+                  </span>
+                  <small class="d-block text-muted">{{ item.tipo_vencimiento | titlecase }}</small>
+                </td>
+                <td class="text-right text-muted">
+                  {{ item.capital | formatoMoneda }}
+                </td>
+                <td class="text-right td-ingreso">
+                  <strong>+{{ item.interes | formatoMoneda }}</strong>
+                </td>
+                <td class="text-right" [class.text-danger]="item.mora_acumulada > 0">
+                  {{ item.mora_acumulada | formatoMoneda }}
+                </td>
+                <td class="text-right fw-bold text-dark">
+                  {{ item.monto_pagado | formatoMoneda }}
+                </td>
+                <td class="text-center">
+                  <span class="badge badge-success">
+                    <i class="fas fa-check-circle me-1"></i> {{ item.estatus }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+
+            <!-- Pie de tabla con totales -->
+            <tfoot *ngIf="!cargando && ingresos.length > 0">
+              <tr class="table-totals-row">
+                <td colspan="5" class="text-right font-bold">TOTALES DEL PERÍODO:</td>
+                <td class="text-right font-bold text-primary">{{ totales.total_capital | formatoMoneda }}</td>
+                <td class="text-right font-bold text-success td-ingreso-total">+{{ totales.total_ingresos |
+                  formatoMoneda }}</td>
+                <td class="text-right font-bold text-danger">{{ totales.total_mora | formatoMoneda }}</td>
+                <td class="text-right font-bold text-dark">{{ totales.total_recaudado | formatoMoneda }}</td>
+                <td class="text-center"><span class="badge badge-info">{{ totales.cantidad_pagos }} pagos</span></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </ng-container>
+
+
+    <!-- =================================================================== -->
+    <!-- PESTAÑA 3: BALANCE GENERAL                                          -->
+    <!-- =================================================================== -->
+    <ng-container *ngIf="tabActiva === 'balance'">
+      <!-- KPI BALANCE CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card kpi-income">
+          <div class="kpi-icon">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">INGRESOS (INTERESES)</span>
+            <h2 class="kpi-value text-success">+{{ formatearMoneda(totales.total_ingresos) }}</h2>
+            <small class="kpi-subtext">Rendimiento por colocación</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-expense">
+          <div class="kpi-icon icon-expense">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">GASTOS OPERATIVOS</span>
+            <h2 class="kpi-value text-danger">-{{ formatearMoneda(totalesGastos.total_gastos) }}</h2>
+            <small class="kpi-subtext">Egresos operativos totales</small>
+          </div>
+        </div>
+
+        <div class="kpi-card" [class.kpi-utilidad-positiva]="calcularBalanceNeto() >= 0"
+          [class.kpi-utilidad-negativa]="calcularBalanceNeto() < 0">
+          <div class="kpi-icon" [class.text-success]="calcularBalanceNeto() >= 0"
+            [class.text-danger]="calcularBalanceNeto() < 0">
+            <i class="fas" [class.fa-arrow-trend-up]="calcularBalanceNeto() >= 0"
+              [class.fa-arrow-trend-down]="calcularBalanceNeto() < 0"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">UTILIDAD OPERATIVA NETA</span>
+            <h2 class="kpi-value" [class.text-success]="calcularBalanceNeto() >= 0"
+              [class.text-danger]="calcularBalanceNeto() < 0">
+              {{ formatearMoneda(calcularBalanceNeto()) }}
+            </h2>
+            <small class="kpi-subtext">Ingresos por interés - Gastos</small>
+          </div>
+        </div>
+
+        <div class="kpi-card kpi-total">
+          <div class="kpi-icon">
+            <i class="fas fa-wallet"></i>
+          </div>
+          <div class="kpi-details">
+            <span class="kpi-label">FLUJO DE INGRESO NETO</span>
+            <h2 class="kpi-value text-primary">{{ formatearMoneda(calcularFlujoEfectivoNeto()) }}</h2>
+            <small class="kpi-subtext">Total Recaudado - Total Gastos</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESGLOSE COMPARATIVO -->
+      <div class="balance-grid-sections">
+        <!-- Desglose de Gastos por Categoría -->
+        <div class="balance-card">
+          <div class="balance-card-header">
+            <h3><i class="fas fa-chart-pie me-2 text-primary"></i> DESGLOSE DE GASTOS POR CATEGORÍA</h3>
+          </div>
+          <div class="balance-card-body">
+            <div *ngIf="totalesGastos.por_categoria.length === 0" class="text-center py-4 text-muted">
+              <i class="fas fa-info-circle fa-2x mb-2"></i>
+              <p>No hay gastos registrados para analizar.</p>
+            </div>
+
+            <div class="categoria-progress-list" *ngIf="totalesGastos.por_categoria.length > 0">
+              <div class="categoria-progress-item" *ngFor="let item of totalesGastos.por_categoria">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="fw-bold">{{ item.categoria }}</span>
+                  <span class="text-danger fw-bold">
+                    {{ formatearMoneda(item.total) }}
+                    <small class="text-muted font-normal">({{ item.cantidad }} ops)</small>
+                  </span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill"
+                    [style.width.%]="(item.total / (totalesGastos.total_gastos || 1)) * 100"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted xsmall mt-1">
+                  <span>Participación</span>
+                  <span>{{ ((item.total / (totalesGastos.total_gastos || 1)) * 100) | number:'1.1-1' }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen Financiero General -->
+        <div class="balance-card">
+          <div class="balance-card-header">
+            <h3><i class="fas fa-file-invoice me-2 text-success"></i> RESUMEN</h3>
+          </div>
+          <div class="balance-card-body">
+            <table class="table-resumen-balance">
+              <tbody>
+                <tr>
+                  <td><i class="fas fa-coins text-primary me-2"></i> Capital Recuperado</td>
+                  <td class="text-right fw-bold">{{ formatearMoneda(totales.total_capital) }}</td>
+                </tr>
+                <tr>
+                  <td><i class="fas fa-percentage text-success me-2"></i> Rendimiento por Interés</td>
+                  <td class="text-right fw-bold text-success">+{{ formatearMoneda(totales.total_ingresos) }}</td>
+                </tr>
+                <tr>
+                  <td><i class="fas fa-exclamation-circle text-warning me-2"></i> Moratorios Cobrados</td>
+                  <td class="text-right fw-bold text-warning">+{{ formatearMoneda(totales.total_mora) }}</td>
+                </tr>
+                <tr class="tr-subtotal">
+                  <td><strong>TOTAL CONTROL DE INGRESOS</strong></td>
+                  <td class="text-right font-bold text-dark">{{ formatearMoneda(totales.total_recaudado) }}</td>
+                </tr>
+                <tr>
+                  <td><i class="fas fa-money-bill-wave text-danger me-2"></i> Gastos y Egresos Operativos</td>
+                  <td class="text-right fw-bold text-danger">-{{ formatearMoneda(totalesGastos.total_gastos) }}</td>
+                </tr>
+                <tr class="tr-total-balance">
+                  <td>
+                    <strong>RESULTADO FINAL</strong>
+                    <small class="d-block text-muted">Intereses menos Gastos</small>
+                  </td>
+                  <td class="text-right font-bold" [class.text-success]="calcularBalanceNeto() >= 0"
+                    [class.text-danger]="calcularBalanceNeto() < 0">
+                    {{ formatearMoneda(calcularBalanceNeto()) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- MODAL: REGISTRAR / EDITAR GASTO                                     -->
+<!-- =================================================================== -->
+<div class="modal-overlay" *ngIf="modalGastoAbierto">
+  <div class="modal-content modal-gasto-form">
+    <div class="modal-header">
+      <div class="modal-header-content">
+        <div class="modal-icon bg-danger-icon">
+          <i class="fas fa-money-bill-wave"></i>
+        </div>
+        <div class="modal-header-text">
+          <h3 class="modal-title">{{ modoEdicionGasto ? 'EDITAR GASTO' : 'REGISTRAR NUEVO GASTO' }}</h3>
+          <p class="modal-subtitle">Control de egresos y facturación operativa CONVAM</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="cerrarModalGasto()" [disabled]="guardandoGasto">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form (ngSubmit)="guardarGasto()" #formGasto="ngForm">
+        <!-- Fila 1: Categoría y Monto -->
+        <div class="form-row-2">
+          <div class="form-group-modal">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="modal-label">CATEGORÍA *</label>
+              <button type="button" class="btn-link-action" (click)="abrirModalNuevaCategoria()">
+                <i class="fas fa-plus"></i> Nueva
+              </button>
+            </div>
+            <select class="form-control-modal" [(ngModel)]="formularioGasto.categoria_id" name="categoria_id" required>
+              <option value="0" disabled>-- Selecciona categoría --</option>
+              <option *ngFor="let cat of categorias" [value]="cat.id_categoria_gasto">
+                {{ cat.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group-modal">
+            <label class="modal-label">MONTO ($ MXN) *</label>
+            <div class="input-money-container">
+              <span class="currency-symbol">$</span>
+              <input type="number" step="0.01" min="0.01" placeholder="0.00" class="form-control-modal input-money"
+                [(ngModel)]="formularioGasto.monto" name="monto" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fila 2: Concepto -->
+        <div class="form-group-modal">
+          <label class="modal-label">CONCEPTO / MOTIVO *</label>
+          <input type="text" class="form-control-modal"
+            placeholder="Ej. Pago de luz sucursal Centro, Renta oficina, etc." [(ngModel)]="formularioGasto.concepto"
+            name="concepto" required>
+        </div>
+
+        <!-- Fila 3: Fecha del Gasto y Método de Pago -->
+        <div class="form-row-2">
+          <div class="form-group-modal">
+            <label class="modal-label">FECHA DEL GASTO *</label>
+            <input type="date" class="form-control-modal" [(ngModel)]="formularioGasto.fecha_gasto" name="fecha_gasto"
+              required>
+          </div>
+
+          <div class="form-group-modal">
+            <label class="modal-label">MÉTODO DE PAGO</label>
+            <select class="form-control-modal" [(ngModel)]="formularioGasto.metodo_pago" name="metodo_pago">
+              <option *ngFor="let met of metodosPago" [value]="met">
+                {{ met }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 4: Referencia / Folio y Estatus -->
+        <div class="form-row-2">
+          <div class="form-group-modal">
+            <label class="modal-label">REFERENCIA / FOLIO / FACTURA</label>
+            <input type="text" class="form-control-modal" placeholder="Ej. TR-12345, Factura A-552"
+              [(ngModel)]="formularioGasto.referencia" name="referencia">
+          </div>
+
+          <div class="form-group-modal">
+            <label class="modal-label">ESTATUS</label>
+            <select class="form-control-modal" [(ngModel)]="formularioGasto.estatus" name="estatus">
+              <option value="PAGADO">PAGADO</option>
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="CANCELADO">CANCELADO</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Fila 5: Descripción u Observaciones -->
+        <div class="form-group-modal">
+          <label class="modal-label">OBSERVACIONES O DETALLES ADICIONALES</label>
+          <textarea class="form-control-modal" rows="3"
+            placeholder="Notas adicionales, justificación del gasto o detalles del proveedor..."
+            [(ngModel)]="formularioGasto.descripcion" name="descripcion">
+          </textarea>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalGasto()" [disabled]="guardandoGasto">
+        <i class="fas fa-times"></i> CANCELAR
+      </button>
+      <button type="button" class="btn btn-success" (click)="guardarGasto()" [disabled]="guardandoGasto">
+        <i class="fas" [class.fa-spinner]="guardandoGasto" [class.fa-spin]="guardandoGasto"
+          [class.fa-save]="!guardandoGasto"></i>
+        {{ guardandoGasto ? 'GUARDANDO...' : (modoEdicionGasto ? 'ACTUALIZAR GASTO' : 'REGISTRAR GASTO') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<!-- MODAL: NUEVA CATEGORÍA RÁPIDA                                       -->
+<!-- =================================================================== -->
+<div class="modal-overlay modal-overlay-secondary" *ngIf="modalCategoriaAbierto">
+  <div class="modal-content modal-cat-small">
+    <div class="modal-header">
+      <div class="modal-header-content">
+        <div class="modal-icon bg-primary">
+          <i class="fas fa-tag"></i>
+        </div>
+        <div class="modal-header-text">
+          <h3 class="modal-title">NUEVA CATEGORÍA</h3>
+          <p class="modal-subtitle">Agregar concepto al catálogo de gastos</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="cerrarModalNuevaCategoria()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group-modal">
+        <label class="modal-label">NOMBRE DE LA CATEGORÍA *</label>
+        <input type="text" class="form-control-modal" placeholder="Ej. Papelería, Viáticos, etc."
+          [(ngModel)]="nuevaCategoria.nombre" (keyup.enter)="guardarNuevaCategoria()">
+      </div>
+
+      <div class="form-group-modal">
+        <label class="modal-label">DESCRIPCIÓN (OPCIONAL)</label>
+        <input type="text" class="form-control-modal" placeholder="Descripción breve..."
+          [(ngModel)]="nuevaCategoria.descripcion">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModalNuevaCategoria()">
+        CANCELAR
+      </button>
+      <button type="button" class="btn btn-primary" (click)="guardarNuevaCategoria()" [disabled]="guardandoCategoria">
+        <i class="fas fa-save me-1"></i> GUARDAR
+      </button>
+    </div>
+  </div>
+</div>

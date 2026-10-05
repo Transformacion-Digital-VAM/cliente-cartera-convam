@@ -32,7 +32,7 @@ interface Solicitud {
   persona_recibio?: string;
   coordinador_id?: number;
   fecha_domiciliacion?: string;
-  
+
   // Campos adicionales del JOIN
   nombre_cliente?: string;
   app_cliente?: string;
@@ -63,7 +63,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   // Estados
   solicitudes: Solicitud[] = [];
   solicitudSeleccionada: Solicitud | null = null;
-  filtroEstado: string = 'PENDIENTE'; // CORREGIDO: Cambiar a APROBADO (no PENDIENTE)
+  filtroEstado: string = 'PENDIENTE_DOM';
   loading: boolean = true;
   modalVisible: boolean = false;
   horario: string = '';
@@ -73,13 +73,13 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   filtroAliado: string = '';
   aliados: string[] = [];
   usuarioActual: User | null = null;
-  
+
   // Suscripciones
   private usuarioSubscription: Subscription | null = null;
-  
+
   // Estados disponibles - CORREGIDO
   estados: Estado[] = [
-    { valor: 'PENDIENTE', texto: 'Aprobadas por domiciliar' }, // Cambiado de PENDIENTE a APROBADO
+    { valor: 'PENDIENTE_DOM', texto: 'Pendientes de domiciliación' },
     { valor: 'DOMICILIADA', texto: 'Domiciliadas' },
     { valor: 'todos', texto: 'Todas' }
   ];
@@ -88,7 +88,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   constructor(
     private solicitudService: SolicitudService,
     private authService: AuthService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.obtenerUsuarioActual();
@@ -120,11 +120,10 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
 
   obtenerUsuarioDeFormaDirecta(): void {
     const usuario = this.authService.getCurrentUser();
-    
+
     if (usuario) {
       this.actualizarUsuario(usuario);
-      console.log('Usuario obtenido de forma directa:', usuario);
-      
+
       // Verificar que tenga token de Firebase
       this.verificarTokenDisponible();
     } else {
@@ -154,7 +153,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
     if (usuario) {
       this.usuarioActual = usuario;
       this.coordinadorId = usuario.id_usuario;
-      
+
       // Verificar si es coordinador (rol_id 3 según tus logs)
       if (usuario.rol_id !== 3) {
         console.warn('El usuario no es coordinador. Rol ID:', usuario.rol_id);
@@ -175,23 +174,23 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   // Método para cargar solicitudes - CORREGIDO (estado APROBADO)
   cargarSolicitudes(): void {
     this.loading = true;
-    
+
     this.solicitudService.obtenerSolicitudes().subscribe({
       next: (solicitudes: Solicitud[]) => {
-        // FILTRAR SOLO SOLICITUDES APROBADAS NO DOMICILIADAS
-        this.solicitudes = solicitudes.filter(s => 
-          s.estado === 'PENDIENTE' && 
+        // FILTRAR SOLO SOLICITUDES NO DOMICILIADAS (PENDIENTES O APROBADAS)
+        this.solicitudes = solicitudes.filter(s =>
+          (s.estado === 'PENDIENTE' || s.estado === 'APROBADO') &&
           (s.domiciliado === false || s.domiciliado === null)
         );
-        
+
         console.log(`Solicitudes PENDIENTES no domiciliadas: ${this.solicitudes.length}`);
-        
+
         this.procesarSolicitudes(this.solicitudes);
         this.loading = false;
       },
       error: (error: HttpErrorResponse) => {
         console.error('Error al cargar solicitudes:', error);
-        
+
         Swal.fire({
           icon: 'error',
           title: 'Error al cargar',
@@ -201,7 +200,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
         }).then(() => {
           this.cargarSolicitudes();
         });
-        
+
         this.loading = false;
       }
     });
@@ -218,13 +217,13 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
       }
     });
     this.aliados = Array.from(aliadosUnicos);
-    
+
     // Ordenar por fecha de aprobación más reciente primero
     this.solicitudes.sort((a, b) => {
-      const fechaA = a.fecha_aprobacion ? new Date(a.fecha_aprobacion).getTime() : 
-                    a.fecha_creacion ? new Date(a.fecha_creacion).getTime() : 0;
-      const fechaB = b.fecha_aprobacion ? new Date(b.fecha_aprobacion).getTime() : 
-                    b.fecha_creacion ? new Date(b.fecha_creacion).getTime() : 0;
+      const fechaA = a.fecha_aprobacion ? new Date(a.fecha_aprobacion).getTime() :
+        a.fecha_creacion ? new Date(a.fecha_creacion).getTime() : 0;
+      const fechaB = b.fecha_aprobacion ? new Date(b.fecha_aprobacion).getTime() :
+        b.fecha_creacion ? new Date(b.fecha_creacion).getTime() : 0;
       return fechaB - fechaA;
     });
   }
@@ -232,7 +231,16 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   // Filtrar solicitudes según estado y aliado
   get solicitudesFiltradas(): Solicitud[] {
     return this.solicitudes.filter(solicitud => {
-      const coincideEstado = this.filtroEstado === 'todos' || solicitud.estado === this.filtroEstado;
+      let coincideEstado = false;
+      if (this.filtroEstado === 'todos') {
+        coincideEstado = true;
+      } else if (this.filtroEstado === 'PENDIENTE_DOM') {
+        // En nuestro contexto, PENDIENTE_DOM significa cualquier solicitud no domiciliada
+        coincideEstado = (solicitud.estado === 'PENDIENTE' || solicitud.estado === 'APROBADO');
+      } else {
+        coincideEstado = solicitud.estado === this.filtroEstado;
+      }
+
       const nombreAliado = solicitud.nombre_aliado || solicitud.nom_aliado || '';
       const coincideAliado = !this.filtroAliado || nombreAliado === this.filtroAliado;
       return coincideEstado && coincideAliado;
@@ -245,16 +253,16 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
     if (!this.verificarPermisosCoordinador()) {
       return;
     }
-    
+
     this.solicitudSeleccionada = solicitud;
-    
+
     // Inicializar campos
     this.horario = solicitud.domiciliacion_horario || '';
     this.personaRecibio = solicitud.persona_recibio || '';
-    this.fechaDomiciliacion = solicitud.fecha_domiciliacion || 
-                             solicitud.domiciliacion_fecha || 
-                             this.obtenerFechaActual();
-    
+    this.fechaDomiciliacion = solicitud.fecha_domiciliacion ||
+      solicitud.domiciliacion_fecha ||
+      this.obtenerFechaActual();
+
     this.modalVisible = true;
   }
 
@@ -270,12 +278,12 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
       });
       return false;
     }
-    
+
     if (this.usuarioActual.rol_id !== 3) {
       this.mostrarErrorPermisos();
       return false;
     }
-    
+
     return true;
   }
 
@@ -384,33 +392,33 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   }
 
   procesarDomiciliacion(): void {
-  if (!this.solicitudSeleccionada) return;
+    if (!this.solicitudSeleccionada) return;
 
-  const datosDomiciliacion = {
-    horario: this.horario,
-    persona_recibio: this.personaRecibio,
-    fecha_domiciliacion: this.fechaDomiciliacion
-  };
+    const datosDomiciliacion = {
+      horario: this.horario,
+      persona_recibio: this.personaRecibio,
+      fecha_domiciliacion: this.fechaDomiciliacion
+    };
 
-  this.solicitudService.actualizarDomiciliacion(
-    this.solicitudSeleccionada.id_solicitud,
-    datosDomiciliacion
-  ).subscribe({
-    next: (response) => {
-      this.actualizarSolicitudLocalmente(response.data || response);
-      this.mostrarExito('¡Domiciliación exitosa!', response.message);
-      this.cerrarModal();
-    },
-    error: (error) => this.mostrarErrorDomiciliacion(error)
-  });
-}
+    this.solicitudService.actualizarDomiciliacion(
+      this.solicitudSeleccionada.id_solicitud,
+      datosDomiciliacion
+    ).subscribe({
+      next: (response) => {
+        this.actualizarSolicitudLocalmente(response.data || response);
+        this.mostrarExito('¡Domiciliación exitosa!', response.message);
+        this.cerrarModal();
+      },
+      error: (error) => this.mostrarErrorDomiciliacion(error)
+    });
+  }
 
 
   // Manejar errores de domiciliación
   mostrarErrorDomiciliacion(error: HttpErrorResponse): void {
     let mensajeError = 'Error desconocido';
     let tituloError = 'Error al domiciliar';
-    
+
     if (error.status === 401) {
       tituloError = 'No autorizado (401)';
       mensajeError = 'No tiene permisos para realizar esta acción. El token de autenticación puede ser inválido o haber expirado. Por favor, inicie sesión nuevamente.';
@@ -429,7 +437,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
     } else {
       mensajeError = error.error?.detalle || error.message || 'Error del servidor';
     }
-    
+
     Swal.fire({
       icon: 'error',
       title: tituloError,
@@ -451,7 +459,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
     const indice = this.solicitudes.findIndex(
       s => s.id_solicitud === this.solicitudSeleccionada!.id_solicitud
     );
-    
+
     if (indice !== -1) {
       // Actualizar con los datos del servidor
       this.solicitudes[indice] = {
@@ -460,7 +468,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
         domiciliado: true, // Asegurar que se marque como domiciliado
         estado: 'PENDIENTE' // Mantener estado como PENDIENTE 
       };
-      
+
       // Remover de la lista (ya está domiciliada)
       this.solicitudes.splice(indice, 1);
     }
@@ -482,13 +490,13 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
 
   // Limpiar filtros
   limpiarFiltros(): void {
-    this.filtroEstado = 'PENDIENTE'; 
+    this.filtroEstado = 'PENDIENTE_DOM';
     this.filtroAliado = '';
   }
 
   // Métodos auxiliares
   getEstadoClass(estado: string): string {
-    switch(estado) {
+    switch (estado) {
       case 'PENDIENTE': return 'estado-pendiente';
       case 'APROBADO': return 'estado-aprobada';
       case 'DOMICILIADA': return 'estado-domiciliada';
@@ -497,7 +505,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   }
 
   getEstadoText(estado: string): string {
-    switch(estado) {
+    switch (estado) {
       case 'PENDIENTE': return 'Pendiente';
       case 'APROBADO': return 'Aprobada';
       case 'DOMICILIADA': return 'Domiciliada';
@@ -526,7 +534,7 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
     if (!telefono) return 'N/A';
     const cleaned = telefono.toString().replace(/\D/g, '');
     if (cleaned.length === 10) {
-      return `(${cleaned.substring(0,3)}) ${cleaned.substring(3,6)}-${cleaned.substring(6)}`;
+      return `(${cleaned.substring(0, 3)}) ${cleaned.substring(3, 6)}-${cleaned.substring(6)}`;
     }
     return telefono;
   }
@@ -574,9 +582,9 @@ export class CreditAddressComponent implements OnInit, OnDestroy {
   }
 
   mostrarError(titulo: string, error: any): void {
-    const mensaje = typeof error === 'string' ? error : 
-                   error?.error?.detalle || error?.error?.error || error?.message || 'Error desconocido';
-    
+    const mensaje = typeof error === 'string' ? error :
+      error?.error?.detalle || error?.error?.error || error?.message || 'Error desconocido';
+
     Swal.fire({
       icon: 'error',
       title: titulo,

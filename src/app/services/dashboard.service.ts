@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '../environments/environment';
 
 export interface PeriodoDashboard {
@@ -62,6 +63,11 @@ export interface DashboardData {
   tendenciaMorosidad?: string;
   incomeTrend?: any[];
   portfolioTrend?: any[];
+
+  // Resumen de Entregas
+  resumenEntregado?: { cantidad: number, monto: number };
+  resumenVencido?: { cantidad: number, monto: number };
+  resumenDevolucion?: { cantidad: number, monto: number };
 }
 
 @Injectable({
@@ -105,6 +111,10 @@ export class DashboardService {
         }
       });
     }
+
+    // CACHE BUSTER: Forzar nueva petición siempre
+    params = params.append('_t', new Date().getTime().toString());
+
     return this.http.get(`${this.baseUrl}/detalle-pagos`, { params });
   }
 
@@ -125,7 +135,33 @@ export class DashboardService {
     return this.http.get(`${this.baseUrl}/dashboard-trends`, { params });
   }
 
+  getIngresosReport(filters?: any): Observable<any> {
+    let params = new HttpParams();
+    if (filters) {
+      if (filters.startDate) params = params.set('fecha_inicio', filters.startDate);
+      if (filters.endDate) params = params.set('fecha_fin', filters.endDate);
+      if (filters.aliadoId) params = params.set('aliado', filters.aliadoId);
+    }
 
+    params = params.set('_t', new Date().getTime().toString());
+
+    return this.http.get<any>(`${environment.apiUrl}/ingresos`, { params }).pipe(
+      catchError(error => {
+        console.error('Error al obtener reporte de ingresos:', error);
+        return of({
+          success: false,
+          data: [],
+          totales: {
+            total_ingresos: 0,
+            total_capital: 0,
+            total_mora: 0,
+            total_recaudado: 0,
+            cantidad_pagos: 0
+          }
+        });
+      })
+    );
+  }
 
   private getFiltersByPeriod(filtros: any): any {
     if (filtros.startDate && filtros.endDate) {
@@ -176,20 +212,30 @@ export class DashboardService {
     return new Observable(observer => {
       const filters = this.getFiltersByPeriod(filtros);
 
+      // Para los indicadores de CARTERA (Mora, Vencida, Corriente), necesitamos TODO el universo de créditos activos,
+      // no solo los del periodo seleccionado. Por eso pedimos capital y pagos sin filtros de fecha.
+      const globalFilters = { ...filters };
+      delete globalFilters.startDate;
+      delete globalFilters.endDate;
+      // Mantener filtros de aliado/ubicación si existen, pero quitar fechas para ver la foto completa
+
       Promise.all([
-        this.getCapitalCarteraReport(filters).toPromise(),
-        this.getMinistracionesReport(filters).toPromise(),
-        this.getDetallePagosReport(filters).toPromise(),
-        this.getResumenCarteraReport(filters).toPromise(),
-        this.getDashboardTrends(filtros.periodo === 'anio' ? '1Y' : '6M').toPromise()
-      ]).then(([capitalData, ministracionesData, pagosData, resumenData, trendsData]) => {
+        this.getCapitalCarteraReport(globalFilters).toPromise(), // Global para cartera completa
+        this.getMinistracionesReport(filters).toPromise(),       // APLICA FILTRO: Este sí respeta el periodo (ministraciones del mes)
+        this.getDetallePagosReport(globalFilters).toPromise(),   // Global para calcular mora de todos (Ingresos se filtra internamente)
+        this.getResumenCarteraReport(globalFilters).toPromise(), // Global para cartera completa
+        this.getDashboardTrends(filtros.periodo === 'anio' ? '1Y' : '6M').toPromise(),
+        this.getIngresosReport(filters).toPromise()              // Datos REALES de pagos desde /api/ingresos
+      ]).then(([capitalData, ministracionesData, pagosData, resumenData, trendsData, ingresosData]) => {
         const dashboardData = this.transformToDashboardData(
           capitalData,
           ministracionesData,
           pagosData,
           resumenData,
           trendsData,
-          filtros.periodo || 'mes'
+          ingresosData,
+          filtros.periodo || 'mes',
+          filters
         );
         observer.next(dashboardData);
         observer.complete();
@@ -206,7 +252,9 @@ export class DashboardService {
     pagosData: any,
     resumenData: any,
     trendsData: any,
-    periodo: string
+    ingresosData: any,
+    periodo: string,
+    filters: any
   ): DashboardData {
     // Transformar datos del reporte de capital
     const summary = capitalData?.summary;
@@ -238,14 +286,93 @@ export class DashboardService {
       countVencida
     } = this.calculateCarteraByCycle(capitalRows);
 
+    // Obtener IDs válidos de créditos (existentes en capitalRows)
+    // FILTRO EXACTO FINANCIAL HISTORY: Solo 'ENTREGADO' o 'VENCIDO'
+    // Los demás (LIQUIDADO, CANCELADO, ETC) no suman.
+    const validCreditIds = new Set<number>(
+      capitalRows
+        .filter((c: any) => c.estado_credito === 'ENTREGADO' || c.estado_credito === 'VENCIDO')
+        .map((c: any) => Number(c.id_credito))
+    );
+
     // Calcular Mora de Cartera Corriente (solo pagos vencidos de créditos corrientes)
-    const moraCorriente = this.calculateMoraCorriente(pagos, idsVencidos);
+    const moraCorriente = this.calculateMoraCorriente(pagos, idsVencidos, validCreditIds);
 
     // Cartera Vencida (Personalizada: Cliente terminó ciclo y sigue debiendo)
     const carteraVencida = vencida;
 
     // Cartera en Mora (Total Vencida + Mora de Corrientes)
-    const carteraMora = carteraVencida + moraCorriente;
+    const carteraMora = Math.round((carteraVencida + moraCorriente) * 100) / 100;
+
+    // --- DEBUG LOGS FOR USER ---
+    try {
+      // console.group('--- DETALLE DE MORA DASHBOARD ---');
+      // console.log('Mora Vencida (Fuera de Ciclo):', this.formatearMonedaDebugging(carteraVencida));
+      // console.log('Mora Corriente (En Ciclo):', this.formatearMonedaDebugging(moraCorriente));
+      // console.log('Total Mora:', this.formatearMonedaDebugging(carteraMora));
+
+      // Créditos Vencidos (Fuera de Ciclo)
+      const detalleVencidos = capitalRows
+        .filter((c: any) => c.id_credito && idsVencidos.has(Number(c.id_credito)))
+        .map((c: any) => ({
+          ID: c.id_credito,
+          Cliente: (c.nombre_cliente || c.cliente_nombre || '').trim(),
+          Saldo: parseFloat(c.saldo_total_pendiente || 0),
+          Estado: c.estado_cartera
+        }));
+
+      // if (detalleVencidos.length > 0) {
+      //   // console.log('1. CRÉDITOS EN CARTERA VENCIDA (Fuera de Ciclo):');
+      //   // console.table(detalleVencidos);
+      // }
+
+      // Créditos en Mora Corriente (Dentro de Ciclo)
+      const idsMoraCorriente = new Set(pagos
+        .filter((p: any) => {
+          const idNum = Number(p.id_credito);
+          const diasAtraso = Number(p.dias_atraso || 0);
+          const pendiente = (parseFloat(p.total_semana || 0) - parseFloat(p.monto_pagado || 0)) + parseFloat(p.mora_acumulada || 0);
+          return idNum && diasAtraso > 0 && pendiente > 0.01 && !idsVencidos.has(idNum);
+        })
+        .map((p: any) => Number(p.id_credito))
+      );
+
+      const detalleCorrientes = capitalRows
+        .filter((c: any) => c.id_credito && idsMoraCorriente.has(Number(c.id_credito)))
+        .map((c: any) => {
+          const idNum = Number(c.id_credito);
+          const pagosAtrasados = pagos.filter((p: any) => {
+            const idInt = Number(p.id_credito);
+            const diasAtraso = Number(p.dias_atraso || 0);
+            const pendiente = (parseFloat(p.total_semana || 0) - parseFloat(p.monto_pagado || 0)) + parseFloat(p.mora_acumulada || 0);
+            return idInt === idNum && diasAtraso > 0 && pendiente > 0.01;
+          });
+
+          const montoAtraso = pagosAtrasados.reduce((sum: number, p: any) =>
+            sum + (parseFloat(p.total_semana || 0) - parseFloat(p.monto_pagado || 0)) + parseFloat(p.mora_acumulada || 0), 0
+          );
+
+          return {
+            ID: c.id_credito,
+            Cliente: (c.nombre_cliente || c.cliente_nombre || '').trim(),
+            'Monto Atraso': Math.round(montoAtraso * 100) / 100,
+            '# Pagos Atrasados': pagosAtrasados.length,
+            'Máx Días Atraso': pagosAtrasados.length > 0 ? Math.max(...pagosAtrasados.map((p: any) => p.dias_atraso || 0)) : 0,
+            Detalle: pagosAtrasados.map((p: any) => `${p.estatus || '?'}`).join(', ')
+          };
+        });
+
+      // if (detalleCorrientes.length > 0) {
+      //   console.log('2. CRÉDITOS CON MORA CORRIENTE (Dentro de Ciclo):');
+      //   console.table(detalleCorrientes);
+      // }
+
+      console.groupEnd();
+    } catch (e) {
+      console.error('Error en logs de debugging:', e);
+      if (console.groupEnd) console.groupEnd();
+    }
+    // ----------------------------
 
     // Calcular Clientes Únicos en Mora (Vencidos + Corrientes con atraso)
     const clientsMoraSet = new Set<string>();
@@ -266,10 +393,19 @@ export class DashboardService {
 
     const clientesMoraCount = clientsMoraSet.size;
 
+    // Totales de ingresos reales (fuente de verdad: tabla pago via /api/ingresos)
+    const totalesIngresos = ingresosData?.totales || {
+      total_ingresos: 0,
+      total_capital: 0,
+      total_mora: 0,
+      total_recaudado: 0,
+      cantidad_pagos: 0
+    };
+
     // Calcular datos del dashboard
     const dashboardData: DashboardData = {
       // 1. TOTAL DE CRÉDITOS ENTREGADOS (de resumen-cartera)
-      totalCreditosCount: resumenTotals?.totalCreditos || 0,
+      totalCreditosCount: capitalRows.length || 0,
 
       // 2. Cartera Total (suma de saldo_total_pendiente de créditos ENTREGADOS)
       carteraTotal: totals?.saldoPendiente || 0,
@@ -284,7 +420,7 @@ export class DashboardService {
       carteraMora: carteraMora,
 
       // 6. Totales de créditos por estado (calculados por ciclo)
-      totalCreditos: resumenTotals?.totalCreditos || 0,
+      totalCreditos: capitalRows.length || 0,
       creditosVigentes: countCorriente,
       creditosVencidos: countVencida,
 
@@ -297,9 +433,9 @@ export class DashboardService {
         carteraVencida,
         totals?.saldoPendiente || 0
       ),
-      moraCorriente: moraCorriente,
+      moraCorriente: Math.round(moraCorriente * 100) / 100,
       porcentajeMoraCorriente: this.calculatePorcentaje(
-        moraCorriente,
+        Math.round(moraCorriente * 100) / 100,
         totals?.saldoPendiente || 0
       ),
       porcentajeCarteraMora: this.calculatePorcentaje(
@@ -313,11 +449,11 @@ export class DashboardService {
 
       // 9. Créditos por estado (de ministraciones)
 
-      // Ingresos (basado en pagos realizados)
-      ingresosTotalGeneral: this.calculateTotalIngresos(pagos),
-      ingresosCapitalTotal: this.calculateCapitalPagado(pagos),
-      ingresosInteresesTotal: this.calculateInteresesPagados(pagos),
-      ingresosMoratoriosTotal: this.calculateMoratoriosPagados(pagos),
+      // Ingresos (basado en pagos reales realizados)
+      ingresosTotalGeneral: Math.round((Number(totalesIngresos.total_recaudado) || 0) * 100) / 100,
+      ingresosCapitalTotal: Math.round((Number(totalesIngresos.total_capital) || 0) * 100) / 100,
+      ingresosInteresesTotal: Math.round((Number(totalesIngresos.total_ingresos) || 0) * 100) / 100,
+      ingresosMoratoriosTotal: Math.round((Number(totalesIngresos.total_mora) || 0) * 100) / 100,
       totalDeudaAtrasada: carteraMora,
 
       // Ministraciones
@@ -341,11 +477,15 @@ export class DashboardService {
         carteraMora,
         totals?.saldoPendiente || 0
       ),
-      ingresosPeriodo: this.calculateIngresosPeriodo(pagos, periodo),
+      ingresosPeriodo: Math.round((Number(totalesIngresos.total_recaudado) || 0) * 100) / 100,
 
       // Datos para gráficos (serán procesados en el componente)
       distribucionCartera: this.getDistribucionCarteraDataPersonalizada({ corriente, vencida, enCurso: 0, mora: carteraMora }),
-      distribucionIngresos: this.getDistribucionIngresosData(pagos),
+      distribucionIngresos: {
+        capital: Math.round((Number(totalesIngresos.total_capital) || 0) * 100) / 100,
+        intereses: Math.round((Number(totalesIngresos.total_ingresos) || 0) * 100) / 100,
+        moratorios: Math.round((Number(totalesIngresos.total_mora) || 0) * 100) / 100
+      },
       moraPorAliadoChart: this.getMoraPorAliadoChartData(capitalRows, pagos, idsVencidos),
 
       // Tendencias reales
@@ -353,8 +493,22 @@ export class DashboardService {
       portfolioTrend: trendsData?.data?.portfolioTrend || [],
 
       // Totales generales
-      totalPagosCount: pagos.length || 0,
-      clientesDia: this.getUniqueClients(todosCreditosPeriodo)
+      totalPagosCount: Number(totalesIngresos.cantidad_pagos) || (pagos.length || 0),
+      clientesDia: this.getUniqueClients(todosCreditosPeriodo),
+
+      // Resumen de Entregas (Totales e Importes)
+      resumenEntregado: {
+        cantidad: todosCreditosPeriodo.filter((c: any) => c.estado_credito === 'ENTREGADO').length,
+        monto: todosCreditosPeriodo.filter((c: any) => c.estado_credito === 'ENTREGADO').reduce((sum: number, c: any) => sum + parseFloat(c.total_a_pagar || 0), 0)
+      },
+      resumenVencido: {
+        cantidad: capitalRows.filter((c: any) => c.estado_credito === 'VENCIDO').length,
+        monto: capitalRows.filter((c: any) => c.estado_credito === 'VENCIDO').reduce((sum: number, c: any) => sum + parseFloat(c.saldo_total_pendiente || 0), 0)
+      },
+      resumenDevolucion: {
+        cantidad: todosCreditosPeriodo.filter((c: any) => c.estado_credito === 'DEVOLUCIÓN' || c.estado_credito === 'DEVOLUCION').length,
+        monto: todosCreditosPeriodo.filter((c: any) => c.estado_credito === 'DEVOLUCIÓN' || c.estado_credito === 'DEVOLUCION').reduce((sum: number, c: any) => sum + parseFloat(c.total_a_pagar || 0), 0)
+      }
     };
 
     return dashboardData;
@@ -571,6 +725,7 @@ export class DashboardService {
           fecha: p.fecha_vencimiento,
           dias: diasRestantes,
           aliado: p.nom_aliado?.trim(),
+          telefono: p.telefono,
           estado: this.getEstadoVencimiento(diasRestantes)
         };
       })
@@ -808,7 +963,7 @@ export class DashboardService {
       if (c.estado_cartera === 'CARTERA VENCIDA') {
         carteraVencida += saldo;
         countVencida++;
-        if (id) idsVencidos.add(id);
+        if (id) idsVencidos.add(Number(id));
         return;
       }
 
@@ -831,7 +986,7 @@ export class DashboardService {
         if (hoy > fechaLimiteGracia && (c.pagos_vencidos > 0 || c.estado_cartera === 'CARTERA VENCIDA')) {
           carteraVencida += saldo;
           countVencida++;
-          if (id) idsVencidos.add(id);
+          if (id) idsVencidos.add(Number(id));
         } else {
           carteraCorriente += saldo;
           countCorriente++;
@@ -863,7 +1018,7 @@ export class DashboardService {
           // Fuera del ciclo: Es cartera vencida
           carteraVencida += saldo;
           countVencida++;
-          if (id) idsVencidos.add(id);
+          if (id) idsVencidos.add(Number(id));
         }
       } else {
         // Fallback total si no hay ni estado ni fecha
@@ -873,8 +1028,8 @@ export class DashboardService {
     });
 
     return {
-      corriente: carteraCorriente,
-      vencida: carteraVencida,
+      corriente: Math.round(carteraCorriente * 100) / 100,
+      vencida: Math.round(carteraVencida * 100) / 100,
       enCurso: 0,
       idsVencidos,
       countCorriente,
@@ -882,10 +1037,120 @@ export class DashboardService {
     };
   }
 
-  private calculateMoraCorriente(pagos: any[], idsVencidos: Set<number>): number {
-    return pagos
-      .filter(p => !p.pagado && (p.dias_atraso > 0) && !idsVencidos.has(p.id_credito))
-      .reduce((sum, p) => sum + (parseFloat(p.total_semana || 0) - parseFloat(p.monto_pagado || 0)), 0);
+  private calculateMoraCorriente(pagos: any[], idsVencidos: Set<number>, validCreditIds: Set<number>): number {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    // console.group('=== MORA CORRIENTE ===');
+    // console.log(`Total pagos recibidos del backend: ${pagos.length}`);
+
+    // 1. Agrupar pagos por crédito (créditos ENTREGADO no vencidos con pagos atrasados)
+    const pagosPorCredito = new Map<number, Map<number, any>>();
+
+    pagos.forEach(p => {
+      const idCredito = Number(p.id_credito);
+      const numPago = Number(p.numero_pago);
+      if (!idCredito || !numPago) return;
+
+      // Excluir créditos VENCIDO
+      const estadoCredito = String(p.estado_credito || '').toUpperCase();
+      if (estadoCredito === 'VENCIDO') return;
+
+      // Solo créditos válidos (ENTREGADO u otros activos)
+      if (!validCreditIds.has(idCredito)) return;
+
+      // Para el dashboard, cualquier pago atrasado con al menos 1 día de atraso
+      // de un crédito ENTREGADO debe contarse como mora corriente.
+      // No excluimos aquí créditos porque el ciclo terminó, solo excluimos créditos VENCIDO.
+
+      if (!pagosPorCredito.has(idCredito)) {
+        pagosPorCredito.set(idCredito, new Map());
+      }
+      const pagosDelCredito = pagosPorCredito.get(idCredito)!;
+
+      // Deduplicar por número de pago: conservar el de mayor monto_pagado
+      if (!pagosDelCredito.has(numPago)) {
+        pagosDelCredito.set(numPago, p);
+      } else {
+        const existingMonto = Number(pagosDelCredito.get(numPago)?.monto_pagado) || 0;
+        const nuevoMonto = Number(p.monto_pagado) || 0;
+        if (nuevoMonto > existingMonto) pagosDelCredito.set(numPago, p);
+      }
+    });
+
+    // console.log(`Créditos ENTREGADO con ciclo activo: ${pagosPorCredito.size}`);
+
+    let granTotal = 0;
+    const detallesMora: any[] = [];
+
+    // 2. Procesar cada crédito — misma lógica que financial-history.calcularAtrasos
+    pagosPorCredito.forEach((pagosMap, idCredito) => {
+      let deudaCredito = 0;
+      const pagosContados: any[] = [];
+
+      pagosMap.forEach(p => {
+        // Parsear fecha de vencimiento
+        let fechaVencimiento: Date;
+        try {
+          if (!p.fecha_vencimiento) return;
+          const cleanFecha = String(p.fecha_vencimiento).split('T')[0];
+          if (cleanFecha.includes('/')) {
+            const [d, m, y] = cleanFecha.split('/').map(Number);
+            fechaVencimiento = new Date(y, m - 1, d, 0, 0, 0, 0);
+          } else {
+            const [y, m, d] = cleanFecha.split('-').map(Number);
+            fechaVencimiento = new Date(y, m - 1, d, 0, 0, 0, 0);
+          }
+          fechaVencimiento.setHours(0, 0, 0, 0);
+        } catch { return; }
+
+        // Solo pagos vencidos (fecha_vencimiento < HOY)
+        if (fechaVencimiento >= hoy) return;
+
+        // REGLA CLAVE (SQL): WHERE cp.pagado = false
+        // Usar directamente el booleano 'pagado' de la BD es más seguro que el string 'estatus'
+        if (p.pagado === true || String(p.pagado) === 'true') return;
+
+        const montoEsperado = Number(p.total_semana) || 0;
+        const montoPagado = Number(p.monto_pagado) || 0;
+
+        // Suma: total_semana - monto_pagado
+        const faltante = Math.max(0, montoEsperado - montoPagado);
+        if (faltante > 0.01) {
+          deudaCredito += faltante;
+          pagosContados.push({
+            '#': p.numero_pago,
+            estatus: p.estatus, // Mantener estatus para debugging
+            esperado: montoEsperado,
+            pagado: montoPagado,
+            faltante: Math.round(faltante * 100) / 100
+          });
+        }
+      });
+
+      if (deudaCredito > 0.01) {
+        granTotal += deudaCredito;
+        const deudaRedondeada = Math.round(deudaCredito * 100) / 100;
+        detallesMora.push({ ID: idCredito, Mora: deudaRedondeada });
+        // Log detallado por crédito
+        // console.group(`[Crédito ${idCredito}] Mora: $${deudaRedondeada.toFixed(2)}`);
+        // console.table(pagosContados);
+        // console.groupEnd();
+      }
+    });
+
+    const totalMora = Math.round(granTotal * 100) / 100;
+
+    // console.log(`%c💰 Total Mora Corriente: $${totalMora.toFixed(2)}`, 'color: red; font-size: 16px; font-weight: bold;');
+    // console.log(`%c📊 Créditos con mora: ${detallesMora.length}`, 'color: orange; font-weight: bold;');
+    // console.table(detallesMora.sort((a, b) => a.ID - b.ID));
+    // console.groupEnd();
+
+    return totalMora;
+  }
+
+  private formatearMonedaDebugging(valor: number): string {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(valor);
   }
 
   private calculatePorcentaje(parte: number, total: number): number {
@@ -897,6 +1162,7 @@ export class DashboardService {
     return {
       vencida: distribucion.vencida,
       corriente: distribucion.corriente,
+      mora: distribucion.mora || 0
     };
   }
 

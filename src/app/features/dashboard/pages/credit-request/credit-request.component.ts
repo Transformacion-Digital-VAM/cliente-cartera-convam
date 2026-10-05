@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SolicitudService } from '../../../../services/solicitud.service';
 import { ClienteService } from '../../../../services/client.service';
+import { CreditoService } from '../../../../services/credito.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -15,44 +16,91 @@ import Swal from 'sweetalert2';
 export class CreditRequestComponent implements OnInit {
   // Lista de solicitudes pendientes
   solicitudesPendientes: any[] = [];
-  
+
   // Solicitud seleccionada para el modal
   solicitudSeleccionada: any = null;
-  
+
   // Monto para aprobación
   montoAprobado: number | null = null;
-  
+
   // Control de modal
   modalAbierto: boolean = false;
-  
+
+  // Tabs
+  activeTab: 'PENDIENTES' | 'APROBADO' = 'PENDIENTES';
+
   // Estados de carga
   cargando: boolean = false;
+  cargandoAprobadas: boolean = false;
   cargandoAprobacion: boolean = false;
-  
+
+  // Lista de solicitudes aprobadas
+  solicitudesAprobadas: any[] = [];
   // Estadísticas
   totalSolicitudes: number = 0;
   totalMontoSolicitado: number = 0;
+  filaExpandida: number | null = null;
 
-  constructor(private solicitudService: SolicitudService) {}
+  // Garantías
+  montoAnterior: number = 0;
+  garantiaAnterior: number = 0;
+  garantiaSolicitada: number = 0;
+  cargandoGarantia: boolean = false;
+
+  get nuevaGarantia(): number {
+    return (this.montoAprobado || 0) * 0.10;
+  }
+
+  get diferenciaGarantia(): number {
+    return this.nuevaGarantia - this.garantiaAnterior;
+  }
+
+  get alertClassGarantia(): string {
+    if (this.diferenciaGarantia > 0.01) return 'primary';
+    if (this.diferenciaGarantia < -0.01) return 'success';
+    return 'neutral';
+  }
+
+  constructor(
+    private solicitudService: SolicitudService,
+    private creditoService: CreditoService
+  ) { }
+
+  toggleFila(id: number): void {
+    if (this.filaExpandida === id) {
+      this.filaExpandida = null; // Cerrar si ya está abierta
+    } else {
+      this.filaExpandida = id; // Abrir la seleccionada
+    }
+  }
 
   ngOnInit(): void {
     this.cargarSolicitudesPendientes();
   }
 
+  setTab(tab: 'PENDIENTES' | 'APROBADO'): void {
+    this.activeTab = tab;
+    if (tab === 'PENDIENTES' && this.solicitudesPendientes.length === 0) {
+      this.cargarSolicitudesPendientes();
+    } else if (tab === 'APROBADO' && this.solicitudesAprobadas.length === 0) {
+      this.cargarSolicitudesAprobadas();
+    }
+    this.calcularEstadisticas();
+  }
+
   // Cargar solicitudes con estado PENDIENTE
   cargarSolicitudesPendientes(): void {
     this.cargando = true;
-    
+
     this.solicitudService.obtenerSolicitudesPorEstado('PENDIENTE').subscribe({
       next: (solicitudes) => {
-        this.solicitudesPendientes = solicitudes;
-        this.calcularEstadisticas();
+        this.solicitudesPendientes = solicitudes.sort((a, b) => {
+          const dateA = new Date(a.fecha_creacion || 0).getTime();
+          const dateB = new Date(b.fecha_creacion || 0).getTime();
+          return dateB - dateA;
+        });
+        if (this.activeTab === 'PENDIENTES') this.calcularEstadisticas();
         this.cargando = false;
-        
-        // Debug: verificar estructura de datos
-        if (solicitudes.length > 0) {
-          console.log('Primera solicitud con datos:', solicitudes[0]);
-        }
       },
       error: (error) => {
         console.error('Error al cargar solicitudes:', error);
@@ -61,9 +109,33 @@ export class CreditRequestComponent implements OnInit {
       }
     });
   }
+
+  // Cargar solicitudes con estado APROBADO
+  cargarSolicitudesAprobadas(): void {
+    this.cargandoAprobadas = true;
+
+    this.solicitudService.obtenerSolicitudesPorEstado('APROBADO').subscribe({
+      next: (solicitudes) => {
+        this.solicitudesAprobadas = solicitudes.sort((a, b) => {
+          const dateA = new Date(a.fecha_aprobacion || a.fecha_creacion || 0).getTime();
+          const dateB = new Date(b.fecha_aprobacion || b.fecha_creacion || 0).getTime();
+          return dateB - dateA;
+        });
+        if (this.activeTab === 'APROBADO') this.calcularEstadisticas();
+        this.cargandoAprobadas = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar solicitudes aprobadas:', error);
+        this.mostrarError('No se pudieron cargar las solicitudes aprobadas', error);
+        this.cargandoAprobadas = false;
+      }
+    });
+  }
+
   calcularEstadisticas(): void {
-    this.totalSolicitudes = this.solicitudesPendientes.length;
-    this.totalMontoSolicitado = this.solicitudesPendientes.reduce(
+    const listaActual = this.activeTab === 'PENDIENTES' ? this.solicitudesPendientes : this.solicitudesAprobadas;
+    this.totalSolicitudes = listaActual.length;
+    this.totalMontoSolicitado = listaActual.reduce(
       (total, solicitud) => total + (Number(solicitud.monto_solicitado) || 0), 0
     );
   }
@@ -75,18 +147,24 @@ export class CreditRequestComponent implements OnInit {
       solicitud.estado_domiciliacion ??
       solicitud.domiciliado ??
       solicitud.domiciliacion ??
-      solicitud.domiciliada
+      solicitud.domiciliada ??
+      solicitud.es_domiciliada ??
+      solicitud.fecha_domiciliada ??
+      solicitud.fecha_domiciliacion ??
+      solicitud.fecha_domicilio
     );
   }
 
-  
+
   getTextoDomiciliacion(solicitud: any): string {
-    return this.esDomiciliada(solicitud) ? 'Domiciliada' : 'No domiciliada';
+    if (this.esDomiciliada(solicitud)) return 'Domiciliada';
+    return (this.activeTab === 'APROBADO') ? 'Pendiente Visita' : 'No domiciliada';
   }
 
   // Clase CSS para badge según estado
   getClaseBadgeDomiciliacion(solicitud: any): string {
-    return this.esDomiciliada(solicitud) ? 'badge-success' : 'badge-secondary';
+    if (this.esDomiciliada(solicitud)) return 'badge-success';
+    return (this.activeTab === 'APROBADO') ? 'badge-danger' : 'badge-warning';
   }
 
   // Información adicional: fecha o quien confirmó (si existe)
@@ -105,7 +183,42 @@ export class CreditRequestComponent implements OnInit {
   abrirModal(solicitud: any): void {
     this.solicitudSeleccionada = solicitud;
     this.montoAprobado = solicitud.monto_solicitado;
-    this.modalAbierto = true; 
+    this.modalAbierto = true;
+
+    // Garantía sobre lo solicitado (estática)
+    this.garantiaSolicitada = (solicitud.monto_solicitado || 0) * 0.10;
+
+    // Resetear garantías fijas
+    this.montoAnterior = 0;
+    this.garantiaAnterior = 0;
+
+    this.calcularGarantias(solicitud);
+  }
+
+  calcularGarantias(solicitud: any): void {
+    const esRenovacion = solicitud.tipo_credito === 'RENOVACIÓN' || solicitud.tipo_credito === 'RE-INGRESO';
+
+    if (esRenovacion && solicitud.cliente_id) {
+      this.cargandoGarantia = true;
+      this.creditoService.obtenerCreditosPorCliente(solicitud.cliente_id).subscribe({
+        next: (creditos) => {
+          if (creditos && creditos.length > 0) {
+            // Obtener el crédito más reciente por ID
+            const ultimoCredito = [...creditos].sort((a, b) =>
+              (b.id_credito || 0) - (a.id_credito || 0)
+            )[0];
+
+            this.montoAnterior = parseFloat(ultimoCredito.monto_aprobado || ultimoCredito.monto || 0);
+            this.garantiaAnterior = parseFloat(ultimoCredito.total_garantia || 0);
+          }
+          this.cargandoGarantia = false;
+        },
+        error: (err) => {
+          console.error('Error al obtener crédito anterior:', err);
+          this.cargandoGarantia = false;
+        }
+      });
+    }
   }
 
   // Cerrar modal
@@ -156,22 +269,22 @@ export class CreditRequestComponent implements OnInit {
   // Procesar aprobación
   procesarAprobacion(): void {
     this.cargandoAprobacion = true;
-    
+
     this.solicitudService.aprobarSolicitud(
-      this.solicitudSeleccionada.id_solicitud, 
+      this.solicitudSeleccionada.id_solicitud,
       this.montoAprobado!
     ).subscribe({
       next: (response) => {
         console.log('Solicitud aprobada:', response);
-        
+
         // Remover la solicitud aprobada de la lista
         this.solicitudesPendientes = this.solicitudesPendientes.filter(
           s => s.id_solicitud !== this.solicitudSeleccionada.id_solicitud
         );
-        
+
         // Recalcular estadísticas
         this.calcularEstadisticas();
-        
+
         this.mostrarExito('¡Aprobado!', 'La solicitud ha sido aprobada exitosamente');
         this.cerrarModal();
         this.cargandoAprobacion = false;
@@ -207,7 +320,7 @@ export class CreditRequestComponent implements OnInit {
     });
 
     if (!motivo) {
-      return; 
+      return;
     }
 
     Swal.fire({
@@ -236,15 +349,15 @@ export class CreditRequestComponent implements OnInit {
     ).subscribe({
       next: (response) => {
         console.log('Solicitud rechazada:', response);
-        
+
         // Remover la solicitud rechazada de la lista
         this.solicitudesPendientes = this.solicitudesPendientes.filter(
           s => s.id_solicitud !== this.solicitudSeleccionada.id_solicitud
         );
-        
+
         // Recalcular estadísticas
         this.calcularEstadisticas();
-        
+
         this.mostrarAdvertencia('Rechazado', 'La solicitud ha sido rechazada');
         this.cerrarModal();
         this.cargandoAprobacion = false;
@@ -264,26 +377,130 @@ export class CreditRequestComponent implements OnInit {
   // Formatear nombre completo del cliente
   getNombreCompleto(solicitud: any): string {
     if (!solicitud) return 'N/A';
-    
+
     const nombre = solicitud.nombre_cliente || solicitud.nombre || '';
     const app = solicitud.app_cliente || solicitud.apellido_paterno || '';
     const apm = solicitud.apm_cliente || solicitud.apellido_materno || '';
-    
+
     return `${nombre} ${app} ${apm}`.trim() || 'Cliente sin nombre';
   }
 
+
+  // getNombreAval(solicitud: any): string {
+  //   console.log('Datos del aval para depuración:', {
+  //     aval_id: solicitud.aval_id,
+  //     nombre_aval: solicitud.nombre_aval,
+  //     nombre_cliente_aval: solicitud.nombre_cliente_aval,
+  //     nombre: solicitud.nombre_aval_simple,
+  //     app: solicitud.app_aval,
+  //     apm: solicitud.apm_aval
+  //   });
+
+  //   if (!solicitud.aval_id || solicitud.aval_id === 0) {
+  //     return 'Sin aval';
+  //   }
+
+  //   // Intenta diferentes formas de obtener el nombre
+  //   if (solicitud.nombre_cliente_aval) {
+  //     return solicitud.nombre_cliente_aval;
+  //   }
+
+  //   if (solicitud.nombre_aval) {
+  //     // Verifica si es un mensaje de error
+  //     if (typeof solicitud.nombre_aval === 'string' &&
+  //       (solicitud.nombre_aval.includes('no encontrado') ||
+  //         solicitud.nombre_aval.includes('No encontrado'))) {
+  //       return `ID: ${solicitud.aval_id}`;
+  //     }
+  //     return solicitud.nombre_aval;
+  //   }
+
+  //   // Construye el nombre desde partes
+  //   const nombre = solicitud.nombre_aval_simple || solicitud.nombre_aval_parte || '';
+  //   const app = solicitud.app_aval || '';
+  //   const apm = solicitud.apm_aval || '';
+
+  //   const nombreCompleto = `${nombre} ${app} ${apm}`.trim();
+
+  //   return nombreCompleto || `ID: ${solicitud.aval_id}`;
+  // }
+  // REEMPLAZA el método getNombreAval en tu componente
+
   getNombreAval(solicitud: any): string {
-    if (!solicitud.aval_id) {
+    // console.log('=== getNombreAval ===');
+    // console.log('Solicitud completa:', {
+    //   id: solicitud.id_solicitud,
+    //   aval_id: solicitud.aval_id,
+    //   nombre_aval: solicitud.nombre_aval,
+    //   nombre_cliente_aval: solicitud.nombre_cliente_aval,
+    //   app_aval: solicitud.app_aval,
+    //   apm_aval: solicitud.apm_aval
+    // });
+
+    // Caso 1: No hay aval asignado
+    if (!solicitud.aval_id || solicitud.aval_id === 0) {
+      console.log('→ Sin aval (ID no válido)');
       return 'Sin aval';
     }
-    
-    if (solicitud.nombre_aval && 
-        (solicitud.nombre_aval.includes('no encontrado') || 
-        solicitud.nombre_aval.includes('No encontrado'))) {
-      return `ID: ${solicitud.aval_id}`;
+
+    // Caso 2: Nombre completo del cliente aval
+    if (solicitud.nombre_cliente_aval) {
+      console.log('→ Usando nombre_cliente_aval:', solicitud.nombre_cliente_aval);
+      return solicitud.nombre_cliente_aval;
     }
-    
-    return solicitud.nombre_aval || `ID: ${solicitud.aval_id}`;
+
+    // Caso 3: nombre_aval válido (no es mensaje de error)
+    if (solicitud.nombre_aval &&
+      typeof solicitud.nombre_aval === 'string') {
+
+      // Verificar que NO sea un mensaje de error
+      const esError = solicitud.nombre_aval.toLowerCase().includes('no encontrado');
+
+      if (!esError) {
+        // console.log('→ Usando nombre_aval:', solicitud.nombre_aval);
+        return solicitud.nombre_aval;
+      }
+    }
+
+    // Caso 4: Construir desde partes (nombre, app_aval, apm_aval)
+    const partes: string[] = [];
+
+    if (solicitud.nombre_aval &&
+      !solicitud.nombre_aval.toLowerCase().includes('no encontrado')) {
+      partes.push(solicitud.nombre_aval);
+    }
+
+    if (solicitud.app_aval) {
+      partes.push(solicitud.app_aval);
+    }
+
+    if (solicitud.apm_aval) {
+      partes.push(solicitud.apm_aval);
+    }
+
+    const nombreConstruido = partes.join(' ').trim();
+
+    if (nombreConstruido) {
+      console.log('→ Nombre construido desde partes:', nombreConstruido);
+      return nombreConstruido;
+    }
+
+    // Caso 5: Solo mostrar el ID como último recurso
+    console.log('→ Mostrando solo ID (no se encontró nombre)');
+    return `Aval ID: ${solicitud.aval_id}`;
+  }
+
+
+  getNombreAliado(solicitud: any): string {
+    if (!solicitud.aliado_id) {
+      return 'Sin aliado';
+    }
+
+    if (solicitud.nombre_aliado) {
+      return solicitud.nombre_aliado;
+    }
+
+    return `ID: ${solicitud.aliado_id}`;
   }
 
   // Formatear moneda
@@ -327,7 +544,7 @@ export class CreditRequestComponent implements OnInit {
 
   mostrarError(titulo: string, error: any): void {
     const mensaje = error.error?.error || error.error?.detalle || error.message || 'Error desconocido';
-    
+
     Swal.fire({
       icon: 'error',
       title: titulo,

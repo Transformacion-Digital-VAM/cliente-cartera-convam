@@ -11,6 +11,7 @@ import { ClientListComponent } from './features/dashboard/pages/client-list/clie
 import { MinistracionComponent } from './features/dashboard/pages/ministracion/ministracion.component';
 import { CreditRequestComponent } from './features/dashboard/pages/credit-request/credit-request.component';
 import { FinancialHistoryComponent } from './features/dashboard/pages/financial-history/financial-history.component';
+import { ExpensesIncomeComponent } from './features/dashboard/pages/expenses-income/expenses-income.component';
 import { CreditAddressComponent } from './features/dashboard/pages/credit-address/credit-address.component';
 import { loginGuard } from './guards/login.guard';
 
@@ -25,26 +26,45 @@ export const routes: Routes = [
   { path: 'admin-control', component: AdminControlComponent, canActivate: [adminGuard], data: { breadcrumb: 'Control de administrador' } },
 
   // Rutas con acceso por roles
-  { path: 'dashboard', component: HomeComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Dashboard de cartera' } },
+  {
+    path: 'dashboard', component: HomeComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Dashboard de cartera' },
+  },
 
-  { path: 'enroll-customer', component: EnrollCustomerComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva','coordinador','administrador'], breadcrumb: 'Alta de Cliente' } },
+  {
+    path: 'gastos-ingresos', component: ExpensesIncomeComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Gastos e Ingresos' },
+  },
 
-  { path: 'clientes', component: ClientListComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Clientes' } },
+  {
+    path: 'enroll-customer', component: EnrollCustomerComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'coordinador', 'administrador'], breadcrumb: 'Alta de Cliente' }
+  },
 
-  { path: 'solicitud', component: CreditRequestComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['tesoreria','coordinador','administrador'], breadcrumb: 'Solicitudes' } },
+  {
+    path: 'clientes', component: ClientListComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Clientes' }
+  },
 
-  { path: 'ministracion', component: MinistracionComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Ministración de Créditos' } },
+  {
+    path: 'solicitud', component: CreditRequestComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Solicitudes' }
+  },
 
-  { path: 'domiciliacion', component: CreditAddressComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['coordinador','administrador'], breadcrumb: 'Domiciliación' } },
+  {
+    path: 'ministracion', component: MinistracionComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Ministración de Créditos' }
+  },
 
-  { path: 'cartera', component: FinancialHistoryComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva','tesoreria','coordinador','administrador'], breadcrumb: 'Cartera' } },
+  {
+    path: 'domiciliacion', component: CreditAddressComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['coordinador', 'administrador'], breadcrumb: 'Domiciliación' }
+  },
+
+  {
+    path: 'cartera', component: FinancialHistoryComponent, canActivate: [RoleGuard],
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Cartera' }
+  },
 
   { path: '**', redirectTo: 'dashboard' }
 ];

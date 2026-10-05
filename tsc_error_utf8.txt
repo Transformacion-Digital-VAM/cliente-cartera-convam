@@ -1,0 +1,3 @@
+﻿src/app/guards/role.guard.spec.ts(4,10): error TS2724: '"./role.guard"' has no exported member named 'roleGuard'. Did you mean 'RoleGuard'?
+src/app/services/client.service.spec.ts(3,10): error TS2724: '"./client.service"' has no exported member named 'ClientService'. Did you mean 'ClienteService'?
+src/app/services/roles.service.spec.ts(3,10): error TS2724: '"./roles.service"' has no exported member named 'RolesService'. Did you mean 'RolService'?
