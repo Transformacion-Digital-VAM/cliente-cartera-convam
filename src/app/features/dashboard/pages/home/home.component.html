@@ -463,9 +463,9 @@
                   <div class="truncate-text">{{ vencimiento.aliado }}</div>
                 </td>
                 <td>
-                  <button class="btn btn-sm btn-outline-primary" 
-                          [title]="'Llamar al: ' + (vencimiento.telefono || 'Sin registrar')" 
-                          (click)="contactarCliente(vencimiento)">
+                  <button class="btn btn-sm btn-outline-primary"
+                    [title]="'Llamar al: ' + (vencimiento.telefono || 'Sin registrar')"
+                    (click)="contactarCliente(vencimiento)">
                     <i class="fas fa-phone"></i>
                   </button>
                 </td>
@@ -527,8 +527,7 @@
                 </td>
                 <td>
                   <button class="btn btn-sm btn-outline-primary"
-                          [title]="'Llamar al: ' + (alerta.telefono || 'Sin registrar')" 
-                          (click)="contactarCliente(alerta)">
+                    [title]="'Llamar al: ' + (alerta.telefono || 'Sin registrar')" (click)="contactarCliente(alerta)">
                     <i class="fas fa-phone"></i>
                   </button>
                 </td>
