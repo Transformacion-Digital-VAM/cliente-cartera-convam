@@ -1,8 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { CreditoService } from '../../../../services/credito.service';
 import { PagoService } from '../../../../services/pago.service';
@@ -42,6 +43,22 @@ interface ViewData {
   totalAtrasado: number;
   estadoPago: { texto: string; clase: string; filaClase: string };
   periodoActual: number;
+  moraPendiente: number;
+  adeudoYFuturo: { adeudo: number; saldoFuturo: number };
+}
+
+interface FooterTotals {
+  totalPagosRealizados: number;
+  totalPagosProgramados: number;
+  totalAPagar: number;
+  totalPagado: number;
+  totalCartera: number;
+  totalAtrasado: number;
+  creditosActivos: number;
+  creditosAlDia: number;
+  creditosAtrasados: number;
+  creditosVencidos: number;
+  porcentajeAtrasado: number;
 }
 
 @Component({
@@ -49,7 +66,8 @@ interface ViewData {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './financial-history.component.html',
-  styleUrls: ['./financial-history.component.css']
+  styleUrls: ['./financial-history.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // ============================================
@@ -106,6 +124,16 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   usuarios: any[] = []; // <-- Nueva
   usuariosMap = new Map<number, any>();
 
+  // Pre-computed values (evitar recalcular en cada ciclo de change detection)
+  footerTotals: FooterTotals = {
+    totalPagosRealizados: 0, totalPagosProgramados: 0, totalAPagar: 0,
+    totalPagado: 0, totalCartera: 0, totalAtrasado: 0,
+    creditosActivos: 0, creditosAlDia: 0, creditosAtrasados: 0,
+    creditosVencidos: 0, porcentajeAtrasado: 0
+  };
+  semanaActualTexto: string = '';
+  private detallesPagosCache = new Map<number, any[]>();
+
   private subscriptions: Subscription[] = [];
 
 
@@ -118,13 +146,15 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     private aliadoService: AliadoService,
     private clienteService: ClienteService,
     private authService: AuthService,
-    private calendarioPagoService: CalendarioPagoService
+    private calendarioPagoService: CalendarioPagoService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   // ============================================
   // LIFECYCLE HOOKS
   // ============================================
   ngOnInit(): void {
+    this.semanaActualTexto = this.formatearSemanaActual();
     this.cargarUsuarioLogueado();
     this.cargarDatosIniciales();
   }
@@ -157,6 +187,8 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
           // es buena idea recalcular los detalles visuales cuando este cambie
           if (this.creditos.length > 0) {
             this.creditos.forEach(c => this.calcularViewData(c));
+            this.recalcularTotales();
+            this.cdr.markForCheck();
           }
         } else if (!usuarioGuardado) {
           // Si no hay usuario (ej. sesión expirada o no ha cargado)
@@ -188,8 +220,11 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         this.usuariosMap.clear();
         usuarios.forEach(u => this.usuariosMap.set(Number(u.id_usuario), u));
         if (this.creditos.length > 0) {
+          this.detallesPagosCache.clear();
           this.creditos.forEach(c => this.calcularViewData(c));
+          this.recalcularTotales();
         }
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error al cargar usuarios generales:', err);
@@ -201,6 +236,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       next: (clientes) => {
         this.clientes = clientes;
         clientes.forEach(c => this.clientesMap.set(c.id_cliente, c));
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Error al cargar clientes:', err)
     });
@@ -212,6 +248,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       next: (aliados) => {
         this.aliados = aliados;
         aliados.forEach(a => this.aliadosMap.set(a.id_aliado, a));
+        this.cdr.markForCheck();
       },
       error: (err) => console.error('Error al cargar aliados:', err)
     });
@@ -242,55 +279,54 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
   cargarCalendariosTodos(): void {
-    let completados = 0;
     const total = this.creditos.length;
 
     if (total === 0) {
       this.cargando = false;
+      this.cdr.markForCheck();
       return;
     }
 
-    const finalizarCarga = () => {
-      this.creditos.forEach(c => this.calcularViewData(c));
-      this.verificarEstadosCreditos();
-      this.cargando = false;
-    };
-
-    this.creditos.forEach(credito => {
-      // Cargar calendario de pago
-      const subCal = this.calendarioPagoService.obtenerPorCredito(credito.id_credito).subscribe({
-        next: (calendario) => {
-          this.calendarioPorCredito.set(credito.id_credito, calendario);
-
-          // Cargar pagos registrados
-          const subPagos = this.pagoService.obtenerPagosPorCredito(credito.id_credito).subscribe({
-            next: (pagos) => {
-              this.pagosPorCredito.set(credito.id_credito, pagos || []);
-
-              completados++;
-              if (completados === total) {
-                finalizarCarga();
-              }
-            },
-            error: () => {
-              completados++;
-              if (completados === total) {
-                finalizarCarga();
-              }
-            }
-          });
-          this.subscriptions.push(subPagos);
-        },
-        error: (err) => {
+    // Crear todas las peticiones en paralelo con forkJoin
+    const calendarioRequests = this.creditos.map(credito =>
+      this.calendarioPagoService.obtenerPorCredito(credito.id_credito).pipe(
+        catchError(err => {
           console.error(`Error al cargar calendario para crédito ${credito.id_credito}:`, err);
-          completados++;
-          if (completados === total) {
-            finalizarCarga();
-          }
-        }
-      });
-      this.subscriptions.push(subCal);
+          return of([] as CalendarioPago[]);
+        })
+      )
+    );
+
+    const pagosRequests = this.creditos.map(credito =>
+      this.pagoService.obtenerPagosPorCredito(credito.id_credito).pipe(
+        catchError(() => of([]))
+      )
+    );
+
+    // Ejecutar todo en paralelo: primero calendarios, luego pagos
+    const sub = forkJoin([forkJoin(calendarioRequests), forkJoin(pagosRequests)]).subscribe({
+      next: ([calendarios, pagos]) => {
+        // Asignar resultados
+        this.creditos.forEach((credito, i) => {
+          this.calendarioPorCredito.set(credito.id_credito, calendarios[i]);
+          this.pagosPorCredito.set(credito.id_credito, pagos[i] || []);
+        });
+
+        // Calcular todo de una vez
+        this.detallesPagosCache.clear();
+        this.creditos.forEach(c => this.calcularViewData(c));
+        this.recalcularTotales();
+        this.verificarEstadosCreditos();
+        this.cargando = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error al cargar datos:', err);
+        this.cargando = false;
+        this.cdr.markForCheck();
+      }
     });
+    this.subscriptions.push(sub);
   }
 
   verificarEstadosCreditos(): void {
@@ -334,6 +370,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
             );
             this.creditosFiltrados = [...this.creditos];
             this.buscar();
+            this.cdr.markForCheck();
           },
           error: (err) => {
             console.error(`Error al actualizar estado del crédito ${credito.id_credito}:`, err);
@@ -378,6 +415,9 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       const proximoPagoNum = Math.min(ultimoPagado + 1, totalSemanas);
       const proximaFecha = this.obtenerProximaFechaVencido(calendario, ultimoPagado);
 
+      const moraPendiente = this.calcularMoraPendienteInterno(calendario);
+      const saldoPendienteNum = Number(credito.saldo_pendiente) || 0;
+      const totalAtrasadoVencido = saldoPendienteNum;
       credito.viewData = {
         nombreCliente,
         nombreAliado,
@@ -393,9 +433,11 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         proximoPagoNum,
         diasAtraso: 0, // No aplica en vencidos
         periodosAtrasados: totalSemanas - ultimoPagado,
-        totalAtrasado: saldoPendiente, // Total atrasado = Saldo pendiente
+        totalAtrasado: totalAtrasadoVencido,
         estadoPago: { texto: 'VENCIDO', clase: 'text-danger font-weight-bold', filaClase: 'fila-vencida table-danger' },
-        periodoActual
+        periodoActual,
+        moraPendiente,
+        adeudoYFuturo: { adeudo: totalAtrasadoVencido, saldoFuturo: Math.max(0, saldoPendienteNum - totalAtrasadoVencido) }
       };
     } else {
       // ✅ CRÉDITO ENTREGADO
@@ -413,6 +455,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
       // Estado de pago
       const estadoPago = this.getEstadoPago(diasAtraso, periodosAtrasados, pagosRealizados, totalSemanas);
 
+      const moraPendienteEnt = this.calcularMoraPendienteInterno(calendario);
       credito.viewData = {
         nombreCliente,
         nombreAliado,
@@ -430,7 +473,9 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         periodosAtrasados,
         totalAtrasado,
         estadoPago,
-        periodoActual
+        periodoActual,
+        moraPendiente: moraPendienteEnt,
+        adeudoYFuturo: { adeudo: totalAtrasado, saldoFuturo: Math.max(0, saldoPendiente - totalAtrasado) }
       };
     }
   }
@@ -711,6 +756,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         this.mostrarExito('Pago registrado exitosamente');
         this.procesandoPago = false;
         this.cerrarModalPago();
+        this.cdr.markForCheck();
         setTimeout(() => this.cargarCreditos(), 1000);
       },
       error: (err) => {
@@ -722,20 +768,20 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     this.subscriptions.push(sub);
   }
 
+  // Versión interna que calcula sobre el calendario (usada en calcularViewData)
+  private calcularMoraPendienteInterno(calendario: CalendarioPago[]): number {
+    return calendario.reduce((sum, p) => sum + (Number(p.mora_acumulada) || 0), 0);
+  }
+
+  // Versión pública que usa el valor pre-computado en viewData
   calcularMoraPendiente(credito: any): number {
     if (!credito) return 0;
-    const calendario = this.calendarioPorCredito.get(credito.id_credito) || [];
-    return calendario.reduce((sum, p) => sum + (Number(p.mora_acumulada) || 0), 0);
+    return credito.viewData?.moraPendiente ?? 0;
   }
 
   calcularAdeudoYFuturo(credito: any): { adeudo: number; saldoFuturo: number } {
     if (!credito) return { adeudo: 0, saldoFuturo: 0 };
-    const totalAtrasado = credito.viewData?.totalAtrasado || 0;
-    const saldoPendiente = Number(credito.saldo_pendiente) || 0;
-    return {
-      adeudo: totalAtrasado,
-      saldoFuturo: Math.max(0, saldoPendiente - totalAtrasado)
-    };
+    return credito.viewData?.adeudoYFuturo ?? { adeudo: 0, saldoFuturo: 0 };
   }
 
   obtenerSemanasDisponibles(): any[] {
@@ -816,9 +862,12 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
   getDetallesPagos(creditoId: number): any[] {
-    const pagos = this.pagosPorCredito.get(creditoId) || [];
+    // Usar caché para evitar re-crear arrays en cada ciclo de detección
+    const cached = this.detallesPagosCache.get(creditoId);
+    if (cached) return cached;
 
-    return pagos.map((pago, index) => {
+    const pagos = this.pagosPorCredito.get(creditoId) || [];
+    const result = pagos.map((pago, index) => {
       return {
         numeroPago: pago.numero_pago || index + 1,
         fecha: pago.fecha_operacion || pago.fecha_pago,
@@ -830,6 +879,8 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
         registradoPor: this.getNombreRegistrador(pago.registrado_por)
       };
     });
+    this.detallesPagosCache.set(creditoId, result);
+    return result;
   }
 
 
@@ -857,6 +908,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
 
       return coincideAliado && coincideCliente && coincideEstado && coincideDia;
     });
+    this.recalcularTotales();
   }
 
   limpiarFiltros(): void {
@@ -865,6 +917,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
     this.filtroCliente = '';
     this.filtroDiaPago = '';
     this.creditosFiltrados = [...this.creditos];
+    this.recalcularTotales();
   }
 
   onAliadoChange(event: any, idAliado: number): void {
@@ -880,62 +933,57 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
   // ============================================
-  // TOTALES
+  // TOTALES (pre-computados, no se llaman desde el template)
   // ============================================
-  calcularTotalCartera(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (Number(c.saldo_pendiente) || 0), 0);
+  recalcularTotales(): void {
+    const filtrados = this.creditosFiltrados;
+    let totalPagosRealizados = 0, totalPagosProgramados = 0;
+    let totalAPagar = 0, totalPagado = 0, totalCartera = 0, totalAtrasado = 0;
+    let creditosActivos = 0, creditosAlDia = 0, creditosAtrasados = 0, creditosVencidos = 0;
+
+    for (const c of filtrados) {
+      totalPagosRealizados += c.viewData?.pagosRealizados || 0;
+      totalPagosProgramados += c.viewData?.totalSemanas || 0;
+      totalAPagar += Number(c.total_a_pagar) || 0;
+      totalPagado += c.viewData?.totalPagado || 0;
+      totalCartera += Number(c.saldo_pendiente) || 0;
+      totalAtrasado += c.viewData?.totalAtrasado || 0;
+
+      if (c.estado_credito === 'ENTREGADO') {
+        creditosActivos++;
+        if ((c.viewData?.totalAtrasado || 0) === 0) creditosAlDia++;
+        else creditosAtrasados++;
+      } else if (c.estado_credito === 'VENCIDO') {
+        creditosVencidos++;
+      }
+    }
+
+    this.footerTotals = {
+      totalPagosRealizados,
+      totalPagosProgramados,
+      totalAPagar,
+      totalPagado,
+      totalCartera,
+      totalAtrasado,
+      creditosActivos,
+      creditosAlDia,
+      creditosAtrasados,
+      creditosVencidos,
+      porcentajeAtrasado: totalCartera === 0 ? 0 : (totalAtrasado / totalCartera) * 100
+    };
   }
 
-  calcularTotalAtrasadoGeneral(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (c.viewData?.totalAtrasado || 0), 0);
+  // trackBy para *ngFor
+  trackByCredito(index: number, credito: any): number {
+    return credito.id_credito;
   }
 
-  calcularTotalAPagarGeneral(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (Number(c.total_a_pagar) || 0), 0);
+  trackByAliado(index: number, aliado: any): number {
+    return aliado.id_aliado;
   }
 
-  calcularTotalPagadoGeneral(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (c.viewData?.totalPagado || 0), 0);
-  }
-
-  calcularTotalPagosRealizados(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (c.viewData?.pagosRealizados || 0), 0);
-  }
-
-  calcularTotalPagosProgramados(): number {
-    return this.creditosFiltrados.reduce((sum, c) =>
-      sum + (c.viewData?.totalSemanas || 0), 0);
-  }
-
-  contarCreditosAlDia(): number {
-    return this.creditosFiltrados.filter(c =>
-      c.estado_credito === 'ENTREGADO' && (c.viewData?.totalAtrasado || 0) === 0
-    ).length;
-  }
-
-  contarCreditosAtrasados(): number {
-    return this.creditosFiltrados.filter(c =>
-      c.estado_credito === 'ENTREGADO' && (c.viewData?.totalAtrasado || 0) > 0
-    ).length;
-  }
-
-  contarCreditosActivos(): number {
-    return this.creditosFiltrados.filter(c => c.estado_credito === 'ENTREGADO').length;
-  }
-
-  contarCreditosVencidos(): number {
-    return this.creditosFiltrados.filter(c => c.estado_credito === 'VENCIDO').length;
-  }
-
-  calcularPorcentajeAtrasado(): number {
-    const total = this.calcularTotalCartera();
-    const atrasado = this.calcularTotalAtrasadoGeneral();
-    return total === 0 ? 0 : (atrasado / total) * 100;
+  trackByDetalle(index: number, detalle: any): number {
+    return detalle.numeroPago;
   }
 
   // ============================================
