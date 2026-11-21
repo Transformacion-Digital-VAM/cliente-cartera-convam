@@ -23,7 +23,8 @@ export class LoginComponent {
     1: { nombre: 'ejecutiva', ruta: '/dashboard' },
     2: { nombre: 'tesoreria', ruta: '/solicitud' },
     3: { nombre: 'coordinador', ruta: '/domiciliacion' },
-    4: { nombre: 'administrador', ruta: '/admin-control' }
+    4: { nombre: 'administrador', ruta: '/admin-control' },
+    5: { nombre: 'auditor', ruta: '/dashboard' }
   };
 
   constructor(
@@ -140,6 +141,11 @@ export class LoginComponent {
   // Método para verificar si es administrador 
   private isUserAdmin(user: any): boolean {
     return user.rol_id === 4; // Solo rol_id 1 es administrador
+  }
+
+  // Metodo para verificar que el auditoria
+  private isUserAuditor(user: any): boolean {
+    return user.rol_id === 5;
   }
 
   togglePasswordVisibility(): void {

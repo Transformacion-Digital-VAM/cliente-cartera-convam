@@ -17,6 +17,7 @@ export interface IngresoItem {
   mora_acumulada: number;
   estatus: string;
   id_credito: number;
+  estado_credito?: string;
   id_solicitud: number;
   tipo_vencimiento: string;
   id_cliente: number;
@@ -50,6 +51,7 @@ export interface FiltrosIngresos {
   cliente?: string;
   aliado?: string;   // legado (singular)
   aliados?: string;  // múltiple, separado por comas
+  estado_credito?: string;
 }
 
 @Injectable({
@@ -69,6 +71,7 @@ export class IngresosService {
       if (filtros.cliente) params = params.set('cliente', filtros.cliente);
       if (filtros.aliado) params = params.set('aliado', filtros.aliado);
       if (filtros.aliados) params = params.set('aliados', filtros.aliados);
+      if (filtros.estado_credito) params = params.set('estado_credito', filtros.estado_credito);
     }
     return this.http.get<IngresosResponse>(this.apiUrl, { params });
   }

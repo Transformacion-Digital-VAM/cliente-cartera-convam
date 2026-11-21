@@ -663,7 +663,7 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   // MODAL Y PAGOS
   // ============================================
   abrirModalSeleccion(credito: any): void {
-    if (this.usuarioActual?.rol_id == 1) {
+    if (this.usuarioActual?.rol_id == 1 || this.usuarioActual?.rol_id == 5) {
       this.mostrarAdvertencia('No tienes permisos para registrar pagos con este rol.');
       return;
     }
@@ -730,6 +730,11 @@ export class FinancialHistoryComponent implements OnInit, OnDestroy {
   }
 
   async registrarPago(): Promise<void> {
+    if (this.usuarioActual?.rol_id == 1 || this.usuarioActual?.rol_id == 5) {
+      await this.mostrarAdvertencia('No tienes permisos para registrar pagos con este rol.');
+      return;
+    }
+
     if (!this.montoPago || this.montoPago <= 0) {
       await this.mostrarAdvertencia('El monto debe ser mayor a 0');
       return;

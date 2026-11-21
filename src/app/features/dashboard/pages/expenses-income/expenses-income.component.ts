@@ -45,6 +45,7 @@ export class ExpensesIncomeComponent implements OnInit {
   filtroCliente: string = '';
   filtrosAliados: string[] = [];
   dropdownAliadosAbierto: boolean = false;
+  filtroEstadoCredito: string = 'ENTREGADO,VENCIDO,FINALIZADO';
 
   // ==========================================
   // DATOS DE GASTOS
@@ -163,6 +164,10 @@ export class ExpensesIncomeComponent implements OnInit {
       filtros.aliados = this.filtrosAliados.join(',');
     }
 
+    if (this.filtroEstadoCredito) {
+      filtros.estado_credito = this.filtroEstadoCredito;
+    }
+
     if (this.filtroPeriodo === 'rango') {
       if (this.fechaInicio) filtros.fecha_inicio = this.fechaInicio;
       if (this.fechaFin) filtros.fecha_fin = this.fechaFin;
@@ -248,6 +253,7 @@ export class ExpensesIncomeComponent implements OnInit {
     this.fechaFin = '';
     this.filtroCliente = '';
     this.filtrosAliados = [];
+    this.filtroEstadoCredito = '';
     this.dropdownAliadosAbierto = false;
     this.cargarIngresos();
   }
@@ -285,6 +291,7 @@ export class ExpensesIncomeComponent implements OnInit {
 
     const datosExportar = this.ingresos.map(item => ({
       'ID Crédito': item.id_credito,
+      'Estado Crédito': item.estado_credito || 'N/A',
       'Cliente': item.nombre_completo,
       'Aliado': item.nom_aliado,
       'No. Pago': `${item.numero_pago}/${item.no_pagos}`,
@@ -294,11 +301,12 @@ export class ExpensesIncomeComponent implements OnInit {
       'Ingreso Interés ($)': Number(item.interes) || 0,
       'Mora Pagada ($)': Number(item.mora_acumulada) || 0,
       'Total Pagado ($)': Number(item.monto_pagado) || 0,
-      'Estatus': item.estatus
+      'Estatus Pago': item.estatus
     }));
 
     datosExportar.push({
       'ID Crédito': '' as any,
+      'Estado Crédito': '',
       'Cliente': 'TOTALES',
       'Aliado': '',
       'No. Pago': '',
@@ -308,7 +316,7 @@ export class ExpensesIncomeComponent implements OnInit {
       'Ingreso Interés ($)': this.totales.total_ingresos,
       'Mora Pagada ($)': this.totales.total_mora,
       'Total Pagado ($)': this.totales.total_recaudado,
-      'Estatus': `${this.totales.cantidad_pagos} pagos`
+      'Estatus Pago': `${this.totales.cantidad_pagos} pagos`
     });
 
     const worksheet = XLSX.utils.json_to_sheet(datosExportar);

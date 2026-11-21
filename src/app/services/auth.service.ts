@@ -55,6 +55,7 @@ export interface RegisterResponse {
 export class AuthService {
   getRouteByRoleId(rol_id: number): string {
     switch (rol_id) {
+      case 5: return '/dashboard';
       case 4: return '/admin-control';
       case 3: return '/domiciliacion';
       case 2: return '/dashboard';
@@ -584,6 +585,7 @@ export class AuthService {
       case 2: return 'tesoreria';
       case 3: return 'coordinador';
       case 4: return 'administrador';
+      case 5: return 'auditor';
       default: return '';
     }
   }
@@ -634,9 +636,17 @@ export class AuthService {
         return '/solicitud';
       case 'ejecutiva':
         return '/dashboard';
+      case 'auditor':
+      case 'auditoria':
+        return '/dashboard';
       default:
         return '/dashboard';
     }
+  }
+
+  isAuditor(): boolean {
+    const user = this.currentUserSubject.value;
+    return user ? user.rol_id === 5 || user.nombre_rol?.toLowerCase() === 'auditor' : false;
   }
 
   getCurrentUserSync(): User | null {

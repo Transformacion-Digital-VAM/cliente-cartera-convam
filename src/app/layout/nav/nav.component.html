@@ -5,8 +5,8 @@
     </a>
 
     <ul class="nav">
-      <!-- Dashboard: ejecutiva, tesoreria, coordinador, admin -->
-      <li class="nav-item" *ngIf="isEjecutiva || isTesoreria || isCoordinador || isAdmin">
+      <!-- Dashboard: ejecutiva, tesoreria, coordinador, admin, auditor -->
+      <li class="nav-item" *ngIf="isEjecutiva || isTesoreria || isCoordinador || isAdmin || isAuditor">
         <a class="nav-link text-dark fw-semibold" routerLink="/dashboard">Dashboard</a>
       </li>
 
@@ -36,7 +36,7 @@
       </li>
 
       <!-- Cartera: ejecutiva, tesoreria, coordinador, admin -->
-      <li class="nav-item" *ngIf="isEjecutiva || isTesoreria || isCoordinador || isAdmin">
+      <li class="nav-item" *ngIf="isEjecutiva || isTesoreria || isCoordinador || isAdmin || isAuditor">
         <a class="nav-link text-dark fw-semibold" routerLink="/cartera">Cartera</a>
       </li>
 
@@ -45,7 +45,7 @@
         <a class="nav-link text-dark fw-semibold" routerLink="/admin-control">Usuarios</a>
       </li>
 
-      <li class="nav-item" *ngIf="isAdmin || isTesoreria">
+      <li class="nav-item" *ngIf="isAdmin"> <!---isTesoreria-->
         <a class="nav-link text-dark fw-semibold" routerLink="/gastos-ingresos">Gastos e Ingresos</a>
       </li>
     </ul>

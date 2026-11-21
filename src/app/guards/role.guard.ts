@@ -22,7 +22,7 @@ export class RoleGuard implements CanActivate {
 
     const expectedRoles: string[] | undefined = route.data['expectedRoles'];
     const expectedRole: string | undefined = route.data['expectedRole'];
-    const userRole = this.mapRoleIdToName(user.rol_id); // 'ejecutiva'|'tesoreria'|'coordinador'|'administrador'
+    const userRole = (user.nombre_rol ? user.nombre_rol.toLowerCase() : '') || this.mapRoleIdToName(user.rol_id); // 'ejecutiva'|'tesoreria'|'coordinador'|'administrador'|'auditor'
 
     if (expectedRoles && expectedRoles.length) {
       const allowed = expectedRoles.map(r => r.toLowerCase());
@@ -45,6 +45,7 @@ export class RoleGuard implements CanActivate {
       case 2: return 'tesoreria';
       case 3: return 'coordinador';
       case 4: return 'administrador';
+      case 5: return 'auditor';
       default: return '';
     }
   }

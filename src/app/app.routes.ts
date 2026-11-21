@@ -28,7 +28,7 @@ export const routes: Routes = [
   // Rutas con acceso por roles
   {
     path: 'dashboard', component: HomeComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Dashboard de cartera' },
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador', 'auditor'], breadcrumb: 'Dashboard de cartera' },
   },
 
   {
@@ -63,7 +63,7 @@ export const routes: Routes = [
 
   {
     path: 'cartera', component: FinancialHistoryComponent, canActivate: [RoleGuard],
-    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador'], breadcrumb: 'Cartera' }
+    data: { expectedRoles: ['ejecutiva', 'tesoreria', 'coordinador', 'administrador', 'auditor'], breadcrumb: 'Cartera' }
   },
 
   { path: '**', redirectTo: 'dashboard' }

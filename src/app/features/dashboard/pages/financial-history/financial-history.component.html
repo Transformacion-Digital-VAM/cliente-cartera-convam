@@ -160,12 +160,16 @@
                   {{ formatearMoneda(credito.viewData?.totalAtrasado || 0) }}
                 </td>
                 <td class="actions-cell">
-                  <button class="btn btn-success btn-sm"
+                  <button *ngIf="usuarioActual?.rol_id != 5"
+                    class="btn btn-success btn-sm"
                     [disabled]="usuarioActual?.rol_id == 1"
                     [title]="usuarioActual?.rol_id == 1 ? 'No tienes permisos para registrar pagos' : 'Registrar pago'"
                     (click)="abrirModalSeleccion(credito); $event.stopPropagation()">
                     <i class="fas fa-money-bill-wave"></i> PAGO
                   </button>
+                  <span *ngIf="usuarioActual?.rol_id == 5" class="badge bg-secondary p-2" title="Modo solo visualización">
+                    <i class="fas fa-eye me-1"></i> Solo lectura
+                  </span>
                 </td>
               </tr>
 
@@ -173,7 +177,7 @@
               <tr *ngIf="filaExpandida === credito.id_credito" class="detalle-row">
                 <td colspan="16">
                   <div class="detalle-pagos-container">
-                    <a class="btn btn-primary btn-sm" routerLink="/clientes">
+                    <a *ngIf="usuarioActual?.rol_id != 5" class="btn btn-primary btn-sm" routerLink="/clientes">
                       <i class="fas fa-users"></i> Ver Clientes
                     </a>
                     <h5><i class="fas fa-list-alt icon-detalles"></i> DETALLE DE PAGOS</h5>

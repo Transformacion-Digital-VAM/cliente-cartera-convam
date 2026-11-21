@@ -470,6 +470,19 @@
             </div>
 
 
+            <div class="form-group">
+              <label class="form-label">ESTADO CRÉDITO</label>
+              <select class="form-control" [(ngModel)]="filtroEstadoCredito" (change)="aplicarFiltros()">
+                <option value="ENTREGADO,VENCIDO,FINALIZADO">ENTREGADOS, VENCIDOS O FINALIZADOS</option>
+                <option value="">TODOS LOS ESTADOS</option>
+                <option value="ENTREGADO">SOLO ENTREGADOS</option>
+                <option value="VENCIDO">SOLO VENCIDOS</option>
+                <option value="FINALIZADO">SOLO FINALIZADOS</option>
+                <option value="PENDIENTE">SOLO PENDIENTES</option>
+                <option value="DEVOLUCION">SOLO DEVOLUCIÓN</option>
+              </select>
+            </div>
+
             <div class="botones-filtros">
               <button class="btn btn-primary" (click)="aplicarFiltros()">
                 <i class="fas fa-search"></i> BUSCAR
@@ -535,7 +548,18 @@
 
               <!-- Lista de Ingresos -->
               <tr *ngFor="let item of ingresos; trackBy: trackByIngreso">
-                <td class="text-center id-cell">#{{ item.id_credito }}</td>
+                <td class="text-center id-cell">
+                  <div>#{{ item.id_credito }}</div>
+                  <span class="badge mt-1" *ngIf="item.estado_credito" [ngClass]="{
+                    'badge-success': item.estado_credito === 'ENTREGADO',
+                    'badge-danger': item.estado_credito === 'VENCIDO',
+                    'badge-primary': item.estado_credito === 'FINALIZADO',
+                    'badge-secondary': item.estado_credito === 'PENDIENTE',
+                    'badge-warning': item.estado_credito === 'DEVOLUCION'
+                  }" style="font-size: 0.68rem; display: inline-block;">
+                    {{ item.estado_credito }}
+                  </span>
+                </td>
                 <td class="text-center">
                   <span class="fecha-badge">
                     <i class="far fa-calendar-check me-1"></i> {{ item.fecha_pago | formatoFecha }}
